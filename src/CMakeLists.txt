@@ -1,5 +1,5 @@
 set(SOURCES lib.cpp)
-set(HEADERS MultiBody.h Joint.h)
+set(HEADERS FK.h PGData.h EigenAutoDiffScalar.h)
 
 add_library(PG SHARED ${SOURCES} ${HEADERS})
 
