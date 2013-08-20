@@ -1,0 +1,13 @@
+set(SOURCES lib.cpp)
+set(HEADERS MultiBody.h Joint.h)
+
+add_library(PG SHARED ${SOURCES} ${HEADERS})
+
+
+PKG_CONFIG_USE_DEPENDENCY(PG SpaceVecAlg)
+PKG_CONFIG_USE_DEPENDENCY(PG RBDyn)
+
+set(INSTALL_PATH include/PG)
+install(FILES ${HEADERS} DESTINATION ${INSTALL_PATH})
+install(TARGETS PG DESTINATION "lib")
+
