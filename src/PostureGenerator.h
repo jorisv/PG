@@ -68,6 +68,29 @@ private:
 // inline
 
 
+/// Visitor to take the x component of the result
+struct ResultVisitor : public boost::static_visitor<>
+{
+  void operator()(const roboptim::Result& res)
+  {
+    x = res.x;
+  }
+
+  void operator()(const roboptim::ResultWithWarnings& res)
+  {
+    x = res.x;
+  }
+
+  template <typename T>
+  void operator()(const T& /* res */)
+  {
+    throw std::runtime_error("This result type is not handled !");
+  }
+
+  Eigen::VectorXd x;
+};
+
+
 template<typename Type>
 PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb)
   : pgdata_(mb)
@@ -133,13 +156,15 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
 
   solver_t::result_t res = solver.minimum();
   // Check if the minimization has succeed.
-  if(res.which () != solver_t::SOLVER_VALUE)
+  if(res.which() != solver_t::SOLVER_VALUE &&
+     res.which() != solver_t::SOLVER_VALUE_WARNINGS)
   {
     return false;
   }
 
-  roboptim::Result& result = boost::get<roboptim::Result>(res);
-  x_ = result.x;
+  ResultVisitor resVisitor;
+  boost::apply_visitor(resVisitor, res);
+  x_ = resVisitor.x;
 
   return true;
 }
