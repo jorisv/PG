@@ -58,6 +58,14 @@ def build_pg(pg):
   pgSolver.add_method('fixedContacts', None, [param('std::vector<pg::FixedContact>', 'contacts')])
   pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
                                         param('std::vector<std::vector<double> >', 'uq')])
+
+
+  # Don't change the order. We must try to convert in int before convert in double
+  # because double -> int fail but int -> double succeed (so int are read as double).
+  pgSolver.add_method('param', None, [param('const std::string&', 'name'), param('const std::string&', 'value')])
+  pgSolver.add_method('param', None, [param('const std::string&', 'name'), param('int', 'value')])
+  pgSolver.add_method('param', None, [param('const std::string&', 'name'), param('double', 'value')])
+
   pgSolver.add_method('run', retval('bool'), [param('std::vector<std::vector<double> >', 'q')])
   pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [])
 

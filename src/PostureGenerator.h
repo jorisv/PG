@@ -45,11 +45,18 @@ template<typename Type>
 class PostureGenerator
 {
 public:
+  typedef roboptim::IpoptSolver::solver_t solver_t;
+
+public:
   PostureGenerator(const rbd::MultiBody& mb);
 
   void fixedContacts(std::vector<FixedContact> contacts);
   void qBounds(const std::vector<std::vector<double>>& lq,
                const std::vector<std::vector<double>>& uq);
+
+  void param(const std::string& name, const std::string& value);
+  void param(const std::string& name, double value);
+  void param(const std::string& name, int value);
 
   bool run(const std::vector<std::vector<double>>& q);
 
@@ -57,6 +64,8 @@ public:
 
 private:
   PGData<Type> pgdata_;
+
+  solver_t::parameters_t params_;
 
   std::vector<FixedContact> fixedContacts_;
   Eigen::VectorXd ql_, qu_;
@@ -120,14 +129,29 @@ void PostureGenerator<Type>::qBounds(const std::vector<std::vector<double>>& ql,
 
 
 template<typename Type>
+void PostureGenerator<Type>::param(const std::string& name, const std::string& value)
+{
+  params_[name].value = value;
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::param(const std::string& name, double value)
+{
+  params_[name].value = value;
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::param(const std::string& name, int value)
+{
+  params_[name].value = value;
+}
+
+
+template<typename Type>
 bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
 {
-  /*
-  typedef roboptim::Solver<roboptim::DifferentiableFunction,
-      boost::mpl::vector<roboptim::LinearFunction, roboptim::DifferentiableFunction>> solver_t;
-      */
-  typedef roboptim::IpoptSolver::solver_t solver_t;
-
   StdCostFunc<Type> cost(&pgdata_);
 
   solver_t::problem_t problem(cost);
@@ -148,11 +172,12 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
         {{1.}, {1.}, {1.}});
   }
 
-  /*
-  roboptim::SolverFactory<solver_t> factory("ipopt", problem);
-  solver_t& solver = factory();
-  */
   roboptim::IpoptSolver solver(problem);
+
+  for(const auto& p: params_)
+  {
+    solver.parameters()[p.first] = p.second;
+  }
 
   solver_t::result_t res = solver.minimum();
   // Check if the minimization has succeed.
