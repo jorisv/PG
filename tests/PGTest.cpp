@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(PGTest)
   Vector3d target(0., 0.5, 0.5);
   pgPb.fixedContacts({{3, target}});
 
-  BOOST_CHECK(pgPb.run());
+  BOOST_CHECK(pgPb.run({{}, {0.}, {0.}, {0.}}));
 
   mbcWork.q = pgPb.q();
   forwardKinematics(mb, mbcWork);

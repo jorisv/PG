@@ -92,9 +92,15 @@ void PGData<Type>::x(const Eigen::VectorXd& x)
 {
   assert(x.size() == x_.size());
 
-  if(x != x_)
+  Eigen::VectorXd xNorm = x;
+  if(mb_.joint(0).type() == rbd::Joint::Free)
   {
-    x_ = x;
+    xNorm.head(4) /= xNorm.head(4).norm();
+  }
+
+  if(x_ != xNorm)
+  {
+    x_ = xNorm;
     int xPos = 0;
     for(int i = 0; i < mb_.nrJoints(); ++i)
     {

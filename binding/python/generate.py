@@ -50,15 +50,14 @@ def build_pg(pg):
   fixedContact = pg.add_struct('FixedContact')
 
   # build list type
-  pg.add_container('std::vector<pg::FixedContact>',
-                      'pg::FixedContact', 'vector')
+  pg.add_container('std::vector<pg::FixedContact>', 'pg::FixedContact', 'vector')
 
   # PostureGenerator
   pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb')])
 
   pgSolver.add_method('fixedContacts', None, [param('std::vector<pg::FixedContact>', 'contacts')])
-  pgSolver.add_method('run', retval('bool'), [])
-
+  pgSolver.add_method('run', retval('bool'), [param('std::vector<std::vector<double> >', 'q')])
+  pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [])
 
   # FixedContact
   fixedContact.add_constructor([])

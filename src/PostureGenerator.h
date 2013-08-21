@@ -19,6 +19,7 @@
 // roboptim
 #include <roboptim/core/solver.hh>
 #include <roboptim/core/solver-factory.hh>
+#include <roboptim/core/plugin/ipopt.hh>
 
 // RBDyn
 #include <RBDyn/MultiBody.h>
@@ -48,7 +49,7 @@ public:
 
   void fixedContacts(std::vector<FixedContact> contacts);
 
-  bool run();
+  bool run(const std::vector<std::vector<double>>& q);
 
   std::vector<std::vector<double>> q() const;
 
@@ -78,15 +79,20 @@ void PostureGenerator<Type>::fixedContacts(std::vector<FixedContact> contacts)
 
 
 template<typename Type>
-bool PostureGenerator<Type>::run()
+bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
 {
+  /*
   typedef roboptim::Solver<roboptim::DifferentiableFunction,
       boost::mpl::vector<roboptim::LinearFunction, roboptim::DifferentiableFunction>> solver_t;
+      */
+  typedef roboptim::IpoptSolver::solver_t solver_t;
 
   StdCostFunc<Type> cost(&pgdata_);
 
   solver_t::problem_t problem(cost);
   problem.startingPoint() = Eigen::VectorXd::Zero(pgdata_.pbSize());
+  problem.startingPoint()->head(pgdata_.multibody().nrParams()) =
+      rbd::paramToVector(pgdata_.multibody(), q);
 
   for(const FixedContact& fc: fixedContacts_)
   {
@@ -96,8 +102,11 @@ bool PostureGenerator<Type>::run()
         {{1.}, {1.}, {1.}});
   }
 
+  /*
   roboptim::SolverFactory<solver_t> factory("ipopt", problem);
   solver_t& solver = factory();
+  */
+  roboptim::IpoptSolver solver(problem);
 
   solver_t::result_t res = solver.minimum();
   // Check if the minimization has succeed.
@@ -117,6 +126,11 @@ template<typename Type>
 std::vector<std::vector<double> > PostureGenerator<Type>::q() const
 {
   Eigen::VectorXd eigenQ = x_.head(pgdata_.multibody().nrParams());
+  if(pgdata_.multibody().joint(0).type() == rbd::Joint::Free)
+  {
+    eigenQ.head(4) /= eigenQ.head(4).norm();
+  }
+
   return rbd::vectorToParam(pgdata_.multibody(), eigenQ);
 }
 
