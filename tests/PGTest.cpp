@@ -26,6 +26,7 @@
 
 #include "EigenAutoDiffScalar.h"
 // RBDyn
+#include "RBDyn/FK.h"
 #include <RBDyn/MultiBody.h>
 #include <RBDyn/MultiBodyConfig.h>
 #include <RBDyn/MultiBodyGraph.h>
@@ -33,6 +34,7 @@
 // PG
 #include "FK.h"
 #include "PGData.h"
+#include "PostureGenerator.h"
 
 /// @return An simple ZXZ arm with Y as up axis.
 std::tuple<rbd::MultiBody, rbd::MultiBodyConfig> makeZXZArm(bool isFixed=true)
@@ -125,4 +127,30 @@ BOOST_AUTO_TEST_CASE(PGDataTest)
 
   pg::PGData<pg::eigen_ad> pgdata(mb);
   pgdata.x(Eigen::VectorXd::Zero(3));
+}
+
+
+BOOST_AUTO_TEST_CASE(PGTest)
+{
+  using namespace Eigen;
+  using namespace sva;
+  using namespace rbd;
+  namespace cst = boost::math::constants;
+
+  MultiBody mb;
+  MultiBodyConfig mbcInit, mbcWork;
+
+  std::tie(mb, mbcInit) = makeZXZArm();
+  mbcWork = mbcInit;
+
+  pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+
+  Vector3d target(0., 0.5, 0.5);
+  pgPb.fixedContacts({{3, target}});
+
+  BOOST_CHECK(pgPb.run());
+
+  mbcWork.q = pgPb.q();
+  forwardKinematics(mb, mbcWork);
+  BOOST_CHECK_SMALL((mbcWork.bodyPosW[3].translation() - target).norm(), 1e-5);
 }

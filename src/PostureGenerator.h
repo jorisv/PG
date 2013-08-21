@@ -1,0 +1,124 @@
+// This file is part of PG.
+//
+// PG is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// PG is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with PG.  If not, see <http://www.gnu.org/licenses/>.
+
+#pragma once
+
+// include
+// roboptim
+#include <roboptim/core/solver.hh>
+#include <roboptim/core/solver-factory.hh>
+
+// RBDyn
+#include <RBDyn/MultiBody.h>
+#include <RBDyn/MultiBodyConfig.h>
+
+// PG
+#include "PGData.h"
+#include "StdCostFunc.h"
+#include "FixedContactConstr.h"
+
+namespace pg
+{
+
+struct FixedContact
+{
+  int bodyId;
+  Eigen::Vector3d pos;
+  /// @todo add friction and contact point in an inner struct member
+};
+
+
+template<typename Type>
+class PostureGenerator
+{
+public:
+  PostureGenerator(const rbd::MultiBody& mb);
+
+  void fixedContacts(std::vector<FixedContact> contacts);
+
+  bool run();
+
+  std::vector<std::vector<double>> q() const;
+
+private:
+  PGData<Type> pgdata_;
+  std::vector<FixedContact> fixedContacts_;
+
+  Eigen::VectorXd x_;
+};
+
+
+// inline
+
+
+template<typename Type>
+PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb)
+  : pgdata_(mb)
+  , fixedContacts_()
+{ }
+
+
+template<typename Type>
+void PostureGenerator<Type>::fixedContacts(std::vector<FixedContact> contacts)
+{
+  fixedContacts_ = std::move(contacts);
+}
+
+
+template<typename Type>
+bool PostureGenerator<Type>::run()
+{
+  typedef roboptim::Solver<roboptim::DifferentiableFunction,
+      boost::mpl::vector<roboptim::LinearFunction, roboptim::DifferentiableFunction>> solver_t;
+
+  StdCostFunc<Type> cost(&pgdata_);
+
+  solver_t::problem_t problem(cost);
+  problem.startingPoint() = Eigen::VectorXd::Zero(pgdata_.pbSize());
+
+  for(const FixedContact& fc: fixedContacts_)
+  {
+    boost::shared_ptr<FixedContactConstr<Type>> fcc(
+        new FixedContactConstr<Type>(&pgdata_, fc.bodyId, fc.pos));
+    problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.}},
+        {{1.}, {1.}, {1.}});
+  }
+
+  roboptim::SolverFactory<solver_t> factory("ipopt", problem);
+  solver_t& solver = factory();
+
+  solver_t::result_t res = solver.minimum();
+  // Check if the minimization has succeed.
+  if(res.which () != solver_t::SOLVER_VALUE)
+  {
+    return false;
+  }
+
+  roboptim::Result& result = boost::get<roboptim::Result>(res);
+  x_ = result.x;
+
+  return true;
+}
+
+
+template<typename Type>
+std::vector<std::vector<double> > PostureGenerator<Type>::q() const
+{
+  Eigen::VectorXd eigenQ = x_.head(pgdata_.multibody().nrParams());
+  return rbd::vectorToParam(pgdata_.multibody(), eigenQ);
+}
+
+
+} // namespace pg

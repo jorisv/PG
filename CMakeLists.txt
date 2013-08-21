@@ -24,9 +24,14 @@ SEARCH_FOR_EIGEN()
 
 ADD_REQUIRED_DEPENDENCY("SpaceVecAlg")
 ADD_REQUIRED_DEPENDENCY("RBDyn")
+ADD_REQUIRED_DEPENDENCY("roboptim-core > 2.0")
+ADD_REQUIRED_DEPENDENCY("roboptim-core-plugin-ipopt > 2.0")
 
 #########################
 # 
+
+add_definitions(-DROBOPTIM_DO_NOT_CHECK_ALLOCATION)
+
 
 add_subdirectory(src)
 add_subdirectory(tests)

@@ -44,7 +44,21 @@ public:
 
   void x(const Eigen::VectorXd& x);
 
-  const FK<scalar_t>& fk() const;
+
+  const FK<scalar_t>& fk() const
+  {
+    return fk_;
+  }
+
+  const rbd::MultiBody& multibody() const
+  {
+    return mb_;
+  }
+
+  int pbSize() const
+  {
+    return int(x_.size());
+  }
 
 private:
   rbd::MultiBody mb_;
@@ -92,13 +106,6 @@ void PGData<Type>::x(const Eigen::VectorXd& x)
     }
     fk_.run(mb_, q_);
   }
-}
-
-
-template<typename Type>
-const FK<typename Type::scalar_t>& PGData<Type>::fk() const
-{
-  return fk_;
 }
 
 } // namespace pg
