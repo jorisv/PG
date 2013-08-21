@@ -56,6 +56,8 @@ def build_pg(pg):
   pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb')])
 
   pgSolver.add_method('fixedContacts', None, [param('std::vector<pg::FixedContact>', 'contacts')])
+  pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
+                                        param('std::vector<std::vector<double> >', 'uq')])
   pgSolver.add_method('run', retval('bool'), [param('std::vector<std::vector<double> >', 'q')])
   pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [])
 

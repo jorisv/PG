@@ -48,6 +48,8 @@ public:
   PostureGenerator(const rbd::MultiBody& mb);
 
   void fixedContacts(std::vector<FixedContact> contacts);
+  void qBounds(const std::vector<std::vector<double>>& lq,
+               const std::vector<std::vector<double>>& uq);
 
   bool run(const std::vector<std::vector<double>>& q);
 
@@ -55,7 +57,9 @@ public:
 
 private:
   PGData<Type> pgdata_;
+
   std::vector<FixedContact> fixedContacts_;
+  Eigen::VectorXd ql_, qu_;
 
   Eigen::VectorXd x_;
 };
@@ -68,13 +72,27 @@ template<typename Type>
 PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb)
   : pgdata_(mb)
   , fixedContacts_()
-{ }
+  , ql_(mb.nrParams())
+  , qu_(mb.nrParams())
+{
+  ql_.setConstant(-std::numeric_limits<double>::infinity());
+  qu_.setConstant(std::numeric_limits<double>::infinity());
+}
 
 
 template<typename Type>
 void PostureGenerator<Type>::fixedContacts(std::vector<FixedContact> contacts)
 {
   fixedContacts_ = std::move(contacts);
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::qBounds(const std::vector<std::vector<double>>& ql,
+    const std::vector<std::vector<double>>& qu)
+{
+  ql_ = rbd::paramToVector(pgdata_.multibody(), ql);
+  qu_ = rbd::paramToVector(pgdata_.multibody(), qu);
 }
 
 
@@ -93,6 +111,11 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
   problem.startingPoint() = Eigen::VectorXd::Zero(pgdata_.pbSize());
   problem.startingPoint()->head(pgdata_.multibody().nrParams()) =
       rbd::paramToVector(pgdata_.multibody(), q);
+
+  for(int i = 0; i < pgdata_.multibody().nrParams(); ++i)
+  {
+    problem.argumentBounds()[i] = {ql_[i], qu_[i]};
+  }
 
   for(const FixedContact& fc: fixedContacts_)
   {
