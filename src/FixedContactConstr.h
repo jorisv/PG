@@ -16,24 +16,25 @@
 #pragma once
 
 // include
-// roboptim
-#include <roboptim/core/differentiable-function.hh>
-
 // PG
+#include "AutoDiffFunction.h"
 #include "PGData.h"
 
 namespace pg
 {
 
 template<typename Type>
-class FixedContactConstr : public roboptim::DifferentiableFunction
+class FixedContactConstr : public AutoDiffFunction<Type, 3>
 {
 public:
-  typedef typename Type::scalar_t scalar_t;
+  typedef AutoDiffFunction<Type, 3> parent_t;
+  typedef typename parent_t::scalar_t scalar_t;
+  typedef typename parent_t::result_ad_t result_ad_t;
+  typedef typename parent_t::argument_t argument_t;
 
 public:
   FixedContactConstr(PGData<Type>* pgdata, int bodyId, const Eigen::Vector3d& pos)
-    : roboptim::DifferentiableFunction(pgdata->pbSize(), 3, "FixedContact")
+    : parent_t(pgdata->pbSize(), 3, "FixedContact")
     , pgdata_(pgdata)
     , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
     , pos_(pos.cast<scalar_t>())
@@ -41,29 +42,12 @@ public:
   ~FixedContactConstr() throw()
   { }
 
-  void impl_compute(result_t& res, const argument_t& x) const throw()
+
+  void impl_compute(result_ad_t& res, const argument_t& x) const
   {
     pgdata_->x(x);
-    Eigen::Vector3<scalar_t> resDiff = pgdata_->fk().bodyPosW()[bodyIndex_].translation() - pos_;
-    for(int i = 0; i < 3; ++i)
-    {
-      res[i] = resDiff[i].value();
-    }
+    res = pgdata_->fk().bodyPosW()[bodyIndex_].translation() - pos_;
   }
-
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
-  {
-    pgdata_->x(x);
-    Eigen::Vector3<scalar_t> resDiff = pgdata_->fk().bodyPosW()[bodyIndex_].translation() - pos_;
-    for(int i = 0; i < 3; ++i)
-    {
-      jac.row(i) = resDiff[i].derivatives().transpose();
-    }
-  }
-
-  void impl_gradient(gradient_t& /* gradient */,
-      const argument_t& /* argument */, size_type /* functionId */) const throw()
-  { }
 
 private:
   PGData<Type>* pgdata_;

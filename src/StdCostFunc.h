@@ -16,43 +16,33 @@
 #pragma once
 
 // include
-// roboptim
-#include <roboptim/core/differentiable-function.hh>
-
 // PG
+#include "AutoDiffFunction.h"
 #include "PGData.h"
 
 namespace pg
 {
 
 template<typename Type>
-class StdCostFunc : public roboptim::DifferentiableFunction
+class StdCostFunc : public AutoDiffFunction<Type, 1>
 {
 public:
-  typedef typename Type::scalar_t scalar_t;
+  typedef AutoDiffFunction<Type, 1> parent_t;
+  typedef typename parent_t::scalar_t scalar_t;
+  typedef typename parent_t::result_ad_t result_ad_t;
+  typedef typename parent_t::argument_t argument_t;
 
 public:
   StdCostFunc(PGData<Type>* pgdata)
-    : roboptim::DifferentiableFunction(pgdata->pbSize(), 1, "StdCostFunc")
+    : parent_t(pgdata->pbSize(), 1, "StdCostFunc")
     , pgdata_(pgdata)
   {}
 
-  void impl_compute(result_t& res, const argument_t& x) const throw()
+
+  void impl_compute(result_ad_t& res, const argument_t& x) const throw()
   {
     pgdata_->x(x);
-    res(0) = 0.;
-  }
-
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
-  {
-    pgdata_->x(x);
-    jac.row(0).setZero();
-  }
-
-  void impl_gradient(gradient_t& gradient,
-      const argument_t& /* argument */, size_type /* functionId */) const throw()
-  {
-    gradient.setZero();
+    res(0) = scalar_t(0., Eigen::VectorXd::Zero(parent_t::inputSize()));
   }
 
 private:

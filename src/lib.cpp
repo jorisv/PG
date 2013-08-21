@@ -16,6 +16,7 @@
 #include "FK.h"
 #include "PGData.h"
 #include "EigenAutoDiffScalar.h"
+#include "AutoDiffFunction.h"
 #include "StdCostFunc.h"
 #include "FixedContactConstr.h"
 #include "PostureGenerator.h"
