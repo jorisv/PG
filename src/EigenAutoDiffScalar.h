@@ -57,6 +57,11 @@ pg::eigen_ad::scalar_t cos(const pg::eigen_ad::scalar_t& v)
   return Eigen::cos(v);
 }
 
+pg::eigen_ad::scalar_t acos(const pg::eigen_ad::scalar_t& v)
+{
+  return Eigen::acos(v);
+}
+
 pg::eigen_ad::scalar_t log(const pg::eigen_ad::scalar_t& v)
 {
   return Eigen::log(v);

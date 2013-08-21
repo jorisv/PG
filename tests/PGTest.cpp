@@ -143,14 +143,29 @@ BOOST_AUTO_TEST_CASE(PGTest)
   std::tie(mb, mbcInit) = makeZXZArm();
   mbcWork = mbcInit;
 
-  pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
 
-  Vector3d target(0., 0.5, 0.5);
-  pgPb.fixedContacts({{3, target}});
+    Vector3d target(0., 0.5, 0.5);
+    pgPb.fixedPositionContacts({{3, target, sva::PTransformd::Identity()}});
 
-  BOOST_CHECK(pgPb.run({{}, {0.}, {0.}, {0.}}));
+    BOOST_REQUIRE(pgPb.run({{}, {0.}, {0.}, {0.}}));
 
-  mbcWork.q = pgPb.q();
-  forwardKinematics(mb, mbcWork);
-  BOOST_CHECK_SMALL((mbcWork.bodyPosW[3].translation() - target).norm(), 1e-5);
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[3].translation() - target).norm(), 1e-5);
+  }
+
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+
+    Matrix3d target(Quaterniond(AngleAxisd(-cst::pi<double>()/2., Vector3d::UnitX())));
+    pgPb.fixedOrientationContacts({{3, target, sva::PTransformd::Identity()}});
+
+    BOOST_REQUIRE(pgPb.run({{}, {0.}, {0.}, {0.}}));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[3].rotation() - target).norm(), 1e-5);
+  }
 }

@@ -24,7 +24,7 @@ namespace pg
 {
 
 template<typename Type>
-class FixedContactConstr : public AutoDiffFunction<Type, 3>
+class FixedPositionContactConstr : public AutoDiffFunction<Type, 3>
 {
 public:
   typedef AutoDiffFunction<Type, 3> parent_t;
@@ -33,27 +33,72 @@ public:
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  FixedContactConstr(PGData<Type>* pgdata, int bodyId, const Eigen::Vector3d& pos)
-    : parent_t(pgdata->pbSize(), 3, "FixedContact")
+  FixedPositionContactConstr(PGData<Type>* pgdata, int bodyId,
+      const Eigen::Vector3d& target,
+      const sva::PTransformd& surfaceFrame)
+    : parent_t(pgdata->pbSize(), 3, "FixedPositionContact")
     , pgdata_(pgdata)
     , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
-    , pos_(pos.cast<scalar_t>())
+    , target_(target.cast<scalar_t>())
+    , surfaceFrame_(surfaceFrame.cast<scalar_t>())
   {}
-  ~FixedContactConstr() throw()
+  ~FixedPositionContactConstr() throw()
   { }
 
 
   void impl_compute(result_ad_t& res, const argument_t& x) const
   {
     pgdata_->x(x);
-    res = pgdata_->fk().bodyPosW()[bodyIndex_].translation() - pos_;
+    sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
+    res = target_ - pos.translation();
   }
 
 private:
   PGData<Type>* pgdata_;
 
   int bodyIndex_;
-  Eigen::Vector3<scalar_t> pos_;
+  Eigen::Vector3<scalar_t> target_;
+  sva::PTransform<scalar_t> surfaceFrame_;
+};
+
+
+
+template<typename Type>
+class FixedOrientationContactConstr : public AutoDiffFunction<Type, 3>
+{
+public:
+  typedef AutoDiffFunction<Type, 3> parent_t;
+  typedef typename parent_t::scalar_t scalar_t;
+  typedef typename parent_t::result_ad_t result_ad_t;
+  typedef typename parent_t::argument_t argument_t;
+
+public:
+  FixedOrientationContactConstr(PGData<Type>* pgdata, int bodyId,
+      const Eigen::Matrix3d& target,
+      const sva::PTransformd& surfaceFrame)
+    : parent_t(pgdata->pbSize(), 3, "FixedOrientationContact")
+    , pgdata_(pgdata)
+    , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
+    , target_(target.cast<scalar_t>())
+    , surfaceFrame_(surfaceFrame.cast<scalar_t>())
+  {}
+  ~FixedOrientationContactConstr() throw()
+  { }
+
+
+  void impl_compute(result_ad_t& res, const argument_t& x) const
+  {
+    pgdata_->x(x);
+    sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
+    res = sva::rotationError(pos.rotation(), target_);
+  }
+
+private:
+  PGData<Type>* pgdata_;
+
+  int bodyIndex_;
+  sva::Matrix3<scalar_t> target_;
+  sva::PTransform<scalar_t> surfaceFrame_;
 };
 
 } // namespace pg

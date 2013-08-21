@@ -47,15 +47,18 @@ def import_eigen3_types(mod):
 def build_pg(pg):
   pgSolver = pg.add_class('PostureGenerator', template_parameters=['pg::eigen_ad'], custom_name='PostureGenerator')
 
-  fixedContact = pg.add_struct('FixedContact')
+  fixedPositionContact = pg.add_struct('FixedPositionContact')
+  fixedOrientationContact = pg.add_struct('FixedOrientationContact')
 
   # build list type
-  pg.add_container('std::vector<pg::FixedContact>', 'pg::FixedContact', 'vector')
+  pg.add_container('std::vector<pg::FixedPositionContact>', 'pg::FixedPositionContact', 'vector')
+  pg.add_container('std::vector<pg::FixedOrientationContact>', 'pg::FixedOrientationContact', 'vector')
 
   # PostureGenerator
   pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb')])
 
-  pgSolver.add_method('fixedContacts', None, [param('std::vector<pg::FixedContact>', 'contacts')])
+  pgSolver.add_method('fixedPositionContacts', None, [param('std::vector<pg::FixedPositionContact>', 'contacts')])
+  pgSolver.add_method('fixedOrientationContacts', None, [param('std::vector<pg::FixedOrientationContact>', 'contacts')])
   pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
                                         param('std::vector<std::vector<double> >', 'uq')])
 
@@ -69,11 +72,19 @@ def build_pg(pg):
   pgSolver.add_method('run', retval('bool'), [param('std::vector<std::vector<double> >', 'q')])
   pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [])
 
-  # FixedContact
-  fixedContact.add_constructor([])
+  # FixedPositionContact
+  fixedPositionContact.add_constructor([])
 
-  fixedContact.add_instance_attribute('bodyId', 'int')
-  fixedContact.add_instance_attribute('pos', 'Eigen::Vector3d')
+  fixedPositionContact.add_instance_attribute('bodyId', 'int')
+  fixedPositionContact.add_instance_attribute('target', 'Eigen::Vector3d')
+  fixedPositionContact.add_instance_attribute('surfaceFrame', 'sva::PTransformd')
+
+  # FixedOrientationContact
+  fixedOrientationContact.add_constructor([])
+
+  fixedOrientationContact.add_instance_attribute('bodyId', 'int')
+  fixedOrientationContact.add_instance_attribute('target', 'Eigen::Matrix3d')
+  fixedOrientationContact.add_instance_attribute('surfaceFrame', 'sva::PTransformd')
 
 
 

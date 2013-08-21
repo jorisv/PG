@@ -33,11 +33,19 @@
 namespace pg
 {
 
-struct FixedContact
+struct FixedPositionContact
 {
   int bodyId;
-  Eigen::Vector3d pos;
-  /// @todo add friction and contact point in an inner struct member
+  Eigen::Vector3d target;
+  sva::PTransformd surfaceFrame;
+};
+
+
+struct FixedOrientationContact
+{
+  int bodyId;
+  Eigen::Matrix3d target;
+  sva::PTransformd surfaceFrame;
 };
 
 
@@ -50,7 +58,8 @@ public:
 public:
   PostureGenerator(const rbd::MultiBody& mb);
 
-  void fixedContacts(std::vector<FixedContact> contacts);
+  void fixedPositionContacts(std::vector<FixedPositionContact> contacts);
+  void fixedOrientationContacts(std::vector<FixedOrientationContact> contacts);
   void qBounds(const std::vector<std::vector<double>>& lq,
                const std::vector<std::vector<double>>& uq);
 
@@ -67,7 +76,8 @@ private:
 
   solver_t::parameters_t params_;
 
-  std::vector<FixedContact> fixedContacts_;
+  std::vector<FixedPositionContact> fixedPosContacts_;
+  std::vector<FixedOrientationContact> fixedOriContacts_;
   Eigen::VectorXd ql_, qu_;
 
   Eigen::VectorXd x_;
@@ -103,7 +113,6 @@ struct ResultVisitor : public boost::static_visitor<>
 template<typename Type>
 PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb)
   : pgdata_(mb)
-  , fixedContacts_()
   , ql_(mb.nrParams())
   , qu_(mb.nrParams())
 {
@@ -113,9 +122,16 @@ PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb)
 
 
 template<typename Type>
-void PostureGenerator<Type>::fixedContacts(std::vector<FixedContact> contacts)
+void PostureGenerator<Type>::fixedPositionContacts(std::vector<FixedPositionContact> contacts)
 {
-  fixedContacts_ = std::move(contacts);
+  fixedPosContacts_ = std::move(contacts);
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::fixedOrientationContacts(std::vector<FixedOrientationContact> contacts)
+{
+  fixedOriContacts_ = std::move(contacts);
 }
 
 
@@ -164,10 +180,18 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
     problem.argumentBounds()[i] = {ql_[i], qu_[i]};
   }
 
-  for(const FixedContact& fc: fixedContacts_)
+  for(const FixedPositionContact& fc: fixedPosContacts_)
   {
-    boost::shared_ptr<FixedContactConstr<Type>> fcc(
-        new FixedContactConstr<Type>(&pgdata_, fc.bodyId, fc.pos));
+    boost::shared_ptr<FixedPositionContactConstr<Type>> fcc(
+        new FixedPositionContactConstr<Type>(&pgdata_, fc.bodyId, fc.target, fc.surfaceFrame));
+    problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.}},
+        {{1.}, {1.}, {1.}});
+  }
+
+  for(const FixedOrientationContact& fc: fixedOriContacts_)
+  {
+    boost::shared_ptr<FixedOrientationContactConstr<Type>> fcc(
+        new FixedOrientationContactConstr<Type>(&pgdata_, fc.bodyId, fc.target, fc.surfaceFrame));
     problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.}},
         {{1.}, {1.}, {1.}});
   }
