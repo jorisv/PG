@@ -25,9 +25,12 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 add_library(_pg SHARED ${SOURCES})
 PKG_CONFIG_USE_DEPENDENCY(_pg SpaceVecAlg)
 PKG_CONFIG_USE_DEPENDENCY(_pg RBDyn)
+PKG_CONFIG_USE_DEPENDENCY(_pg roboptim-core)
+PKG_CONFIG_USE_DEPENDENCY(_pg roboptim-core-plugin-ipopt)
 
-target_link_libraries(_pg PG)
 set_target_properties(_pg PROPERTIES PREFIX "")
+set_target_properties(_pg PROPERTIES INSTALL_RPATH
+    "${CMAKE_INSTALL_RPATH};${ROBOPTIM_CORE_PLUGIN_IPOPT_LIBRARY_DIRS}")
 
 
 # install rules
@@ -39,10 +42,7 @@ string(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+.*" "\\1"
        PYTHON_VERSION_MAJOR "${PYTHON_VERSION_STRING}")
 string(REGEX REPLACE "^[0-9]+\\.([0-9])+\\.[0-9]+.*" "\\1"
        PYTHON_VERSION_MINOR "${PYTHON_VERSION_STRING}")
-
 set(INSTALL_PATH
   "lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages/pg/")
 install(TARGETS _pg DESTINATION ${INSTALL_PATH})
 install(FILES __init__.py DESTINATION ${INSTALL_PATH})
-
-
