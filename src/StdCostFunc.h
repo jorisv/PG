@@ -33,20 +33,34 @@ public:
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  StdCostFunc(PGData<Type>* pgdata)
+  StdCostFunc(PGData<Type>* pgdata, std::vector<std::vector<double>> q)
     : parent_t(pgdata->pbSize(), 1, "StdCostFunc")
     , pgdata_(pgdata)
+    , tq_(std::move(q))
   {}
 
 
   void impl_compute(result_ad_t& res, const argument_t& x) const throw()
   {
     pgdata_->x(x);
-    res(0) = scalar_t(0., Eigen::VectorXd::Zero(parent_t::inputSize()));
+
+    // compute posture task
+    scalar_t posture = 0.;
+    const std::vector<std::vector<scalar_t>>& q = pgdata_->q();
+    for(int i = 0; i < pgdata_->multibody().nrJoints(); ++i)
+    {
+      if(pgdata_->multibody().joint(i).params() == 1)
+      {
+        posture += std::pow(tq_[i][0] - q[i][0], 2);
+      }
+    }
+
+    res(0) = posture;
   }
 
 private:
   PGData<Type>* pgdata_;
+  std::vector<std::vector<double>> tq_;
 };
 
 } // namespace pg

@@ -168,7 +168,7 @@ void PostureGenerator<Type>::param(const std::string& name, int value)
 template<typename Type>
 bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
 {
-  StdCostFunc<Type> cost(&pgdata_);
+  StdCostFunc<Type> cost(&pgdata_, q);
 
   solver_t::problem_t problem(cost);
   problem.startingPoint() = Eigen::VectorXd::Zero(pgdata_.pbSize());

@@ -45,6 +45,11 @@ public:
   void x(const Eigen::VectorXd& x);
 
 
+  const std::vector<std::vector<scalar_t> >& q()
+  {
+    return q_;
+  }
+
   const FK<scalar_t>& fk() const
   {
     return fk_;
