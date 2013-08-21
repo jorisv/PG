@@ -60,6 +60,9 @@ public:
     return int(x_.size());
   }
 
+protected:
+  void update();
+
 private:
   rbd::MultiBody mb_;
 
@@ -80,10 +83,12 @@ PGData<Type>::PGData(const rbd::MultiBody& mb)
   , q_(mb.nrJoints())
   , fk_(mb)
 {
+  x_.setZero();
   for(int i = 0; i < mb.nrJoints(); ++i)
   {
     q_[i].resize(mb.joint(i).params());
   }
+  update();
 }
 
 
@@ -101,17 +106,24 @@ void PGData<Type>::x(const Eigen::VectorXd& x)
   if(x_ != xNorm)
   {
     x_ = xNorm;
-    int xPos = 0;
-    for(int i = 0; i < mb_.nrJoints(); ++i)
-    {
-      for(int j = 0; j < mb_.joint(i).params(); ++j)
-      {
-        construct_f()(int(x_.size()), xPos, x_[xPos], q_[i][j]);
-        ++xPos;
-      }
-    }
-    fk_.run(mb_, q_);
+    update();
   }
+}
+
+
+template<typename Type>
+void PGData<Type>::update()
+{
+  int xPos = 0;
+  for(int i = 0; i < mb_.nrJoints(); ++i)
+  {
+    for(int j = 0; j < mb_.joint(i).params(); ++j)
+    {
+      construct_f()(int(x_.size()), xPos, x_[xPos], q_[i][j]);
+      ++xPos;
+    }
+  }
+  fk_.run(mb_, q_);
 }
 
 } // namespace pg
