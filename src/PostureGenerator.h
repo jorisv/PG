@@ -29,6 +29,7 @@
 #include "PGData.h"
 #include "StdCostFunc.h"
 #include "FixedContactConstr.h"
+#include "StaticStabilityConstr.h"
 
 namespace pg
 {
@@ -49,10 +50,19 @@ struct FixedOrientationContact
 };
 
 
+struct ForceContact
+{
+  int bodyId;
+  std::vector<sva::PTransformd> points;
+  /// @todo add friction stuff
+};
+
+
 template<typename Type>
 class PostureGenerator
 {
 public:
+  typedef typename Type::scalar_t scalar_t;
   typedef roboptim::IpoptSolver::solver_t solver_t;
 
 public:
@@ -60,6 +70,7 @@ public:
 
   void fixedPositionContacts(std::vector<FixedPositionContact> contacts);
   void fixedOrientationContacts(std::vector<FixedOrientationContact> contacts);
+  void forceContacts(std::vector<ForceContact> contacts);
   void qBounds(const std::vector<std::vector<double>>& lq,
                const std::vector<std::vector<double>>& uq);
 
@@ -78,6 +89,7 @@ private:
 
   std::vector<FixedPositionContact> fixedPosContacts_;
   std::vector<FixedOrientationContact> fixedOriContacts_;
+  std::vector<ForceContact> forceContacts_;
   Eigen::VectorXd ql_, qu_;
 
   Eigen::VectorXd x_;
@@ -132,6 +144,30 @@ template<typename Type>
 void PostureGenerator<Type>::fixedOrientationContacts(std::vector<FixedOrientationContact> contacts)
 {
   fixedOriContacts_ = std::move(contacts);
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::forceContacts(std::vector<ForceContact> contacts)
+{
+  typedef PGData<Type> pgdata_t;
+  typedef typename pgdata_t::ForceData forcedata_t;
+
+  forceContacts_ = std::move(contacts);
+  std::vector<forcedata_t> forceDatas;
+  forceDatas.reserve(forceContacts_.size());
+  for(const ForceContact& fc: forceContacts_)
+  {
+    std::vector<sva::PTransform<scalar_t>> points(fc.points.size());
+    std::vector<sva::ForceVec<scalar_t>> forces(fc.points.size());
+    for(std::size_t i = 0; i < fc.points.size(); ++i)
+    {
+      points[i] = fc.points[i].cast<scalar_t>();
+      forces[i] = sva::ForceVec<scalar_t>(Eigen::Vector6<scalar_t>::Zero());
+    }
+    forceDatas.push_back({pgdata_.multibody().bodyIndexById(fc.bodyId), points, forces});
+  }
+  pgdata_.forces(forceDatas);
 }
 
 
@@ -193,7 +229,15 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
     boost::shared_ptr<FixedOrientationContactConstr<Type>> fcc(
         new FixedOrientationContactConstr<Type>(&pgdata_, fc.bodyId, fc.target, fc.surfaceFrame));
     problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.}},
-        {{1.}, {1.}, {1.}});
+        {{1e-2}, {1e-2}, {1e-2}});
+  }
+
+  if(!forceContacts_.empty())
+  {
+    boost::shared_ptr<StaticStabilityConstr<Type>> stab(
+        new StaticStabilityConstr<Type>(&pgdata_));
+    problem.addConstraint(stab, {{0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}},
+        {{1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}});
   }
 
   roboptim::IpoptSolver solver(problem);

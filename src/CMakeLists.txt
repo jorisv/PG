@@ -2,7 +2,7 @@ set(SOURCES lib.cpp)
 set(HEADERS FK.h ID.h
             PGData.h EigenAutoDiffScalar.h AutoDiffFunction.h
             StdCostFunc.h
-            FixedContactConstr.h
+            FixedContactConstr.h StaticStabilityConstr.h
             PostureGenerator.h)
 
 add_library(PG SHARED ${SOURCES} ${HEADERS})

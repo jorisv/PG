@@ -41,10 +41,19 @@ public:
   typedef typename Type::construct_f construct_f;
 
 public:
+  struct ForceData
+  {
+    int bodyIndex;
+    std::vector<sva::PTransform<scalar_t>> points;
+    std::vector<sva::ForceVec<scalar_t>> forces;
+  };
+
+public:
   PGData(const rbd::MultiBody& mb);
 
   void x(const Eigen::VectorXd& x);
 
+  void forces(std::vector<ForceData> fd);
 
   const std::vector<std::vector<scalar_t> >& q()
   {
@@ -56,6 +65,11 @@ public:
     return fk_;
   }
 
+  const ID<scalar_t>& id() const
+  {
+    return id_;
+  }
+
   const rbd::MultiBody& multibody() const
   {
     return mb_;
@@ -63,7 +77,7 @@ public:
 
   int pbSize() const
   {
-    return int(x_.size());
+    return mb_.nrParams() + nrForcePoints_;
   }
 
 protected:
@@ -75,7 +89,12 @@ private:
   Eigen::VectorXd x_;
   std::vector<std::vector<scalar_t>> q_;
 
+  std::vector<ForceData> forceDatas_;
+  int nrForcePoints_;
+  std::vector<sva::ForceVec<scalar_t>> forcesB_;
+
   FK<scalar_t> fk_;
+  ID<scalar_t> id_;
 };
 
 
@@ -87,12 +106,19 @@ PGData<Type>::PGData(const rbd::MultiBody& mb)
   : mb_(mb)
   , x_(mb.nrParams())
   , q_(mb.nrJoints())
+  , nrForcePoints_(0)
+  , forcesB_(mb.nrBodies())
   , fk_(mb)
+  , id_(mb, Eigen::Vector3d(0., 9.81, 0.))
 {
   x_.setZero();
   for(int i = 0; i < mb.nrJoints(); ++i)
   {
     q_[i].resize(mb.joint(i).params());
+  }
+  for(int i = 0; i < mb.nrBodies(); ++i)
+  {
+    forcesB_[i] = sva::ForceVec<scalar_t>(Eigen::Vector6<scalar_t>::Zero());
   }
   update();
 }
@@ -118,6 +144,24 @@ void PGData<Type>::x(const Eigen::VectorXd& x)
 
 
 template<typename Type>
+void PGData<Type>::forces(std::vector<ForceData> fd)
+{
+  forceDatas_ = std::move(fd);
+  nrForcePoints_ = 0;
+  for(const ForceData& fd: forceDatas_)
+  {
+    nrForcePoints_ += int(fd.points.size())*3;
+  }
+
+  x_.setZero(pbSize());
+  /// @todo clean that
+  fk_ = FK<scalar_t>(mb_);
+  id_ = ID<scalar_t>(mb_, Eigen::Vector3d(0., 9.81, 0.));
+  update();
+}
+
+
+template<typename Type>
 void PGData<Type>::update()
 {
   int xPos = 0;
@@ -130,6 +174,28 @@ void PGData<Type>::update()
     }
   }
   fk_.run(mb_, q_);
+
+  scalar_t zero(0., Eigen::VectorXd::Zero(x_.size()));
+  Eigen::Vector3<scalar_t> zeroVec3(zero, zero, zero);
+  for(ForceData& fd: forceDatas_)
+  {
+    forcesB_[fd.bodyIndex] = sva::ForceVec<scalar_t>(Eigen::Vector6<scalar_t>::Zero());
+    for(std::size_t i = 0; i < fd.forces.size(); ++i)
+    {
+      sva::ForceVec<scalar_t>& fv = fd.forces[i];
+      const sva::PTransform<scalar_t>& pt = fd.points[i];
+      Eigen::Vector3<scalar_t> forceAd;
+      construct_f()(int(x_.size()), xPos + 0, x_[xPos + 0], forceAd(0));
+      construct_f()(int(x_.size()), xPos + 1, x_[xPos + 1], forceAd(1));
+      construct_f()(int(x_.size()), xPos + 2, x_[xPos + 2], forceAd(2));
+      fv = sva::ForceVec<scalar_t>(zeroVec3, forceAd);
+      forcesB_[fd.bodyIndex] = forcesB_[fd.bodyIndex] + pt.inv().dualMul(fv);
+      xPos += 3;
+    }
+  }
+
+
+  id_.run(mb_, fk_.bodyPosW(), fk_.parentToSon(), forcesB_);
 }
 
 } // namespace pg

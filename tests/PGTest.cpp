@@ -211,4 +211,20 @@ BOOST_AUTO_TEST_CASE(PGTest)
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[3].rotation() - target).norm(), 1e-5);
   }
+
+  /// @todo Need a bigger robot to test that
+  /*
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    // pgPb.param("ipopt.print_level", 0);
+
+    pgPb.forceContacts({{0, {sva::PTransformd::Identity()}}});
+
+    BOOST_REQUIRE(pgPb.run({{}, {0.}, {0.}, {0.}}));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    //BOOST_CHECK_SMALL((mbcWork.bodyPosW[3].rotation() - target).norm(), 1e-5);
+  }
+  */
 }

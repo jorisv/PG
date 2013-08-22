@@ -20,4 +20,5 @@
 #include "AutoDiffFunction.h"
 #include "StdCostFunc.h"
 #include "FixedContactConstr.h"
+#include "StaticStabilityConstr.h"
 #include "PostureGenerator.h"

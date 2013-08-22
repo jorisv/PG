@@ -24,43 +24,31 @@ namespace pg
 {
 
 template<typename Type>
-class StdCostFunc : public AutoDiffFunction<Type, 1>
+class StaticStabilityConstr : public AutoDiffFunction<Type, 6>
 {
 public:
-  typedef AutoDiffFunction<Type, 1> parent_t;
+  typedef AutoDiffFunction<Type, 6> parent_t;
   typedef typename parent_t::scalar_t scalar_t;
   typedef typename parent_t::result_ad_t result_ad_t;
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  StdCostFunc(PGData<Type>* pgdata, std::vector<std::vector<double>> q)
-    : parent_t(pgdata->pbSize(), 1, "StdCostFunc")
+  StaticStabilityConstr(PGData<Type>* pgdata)
+    : parent_t(pgdata->pbSize(), 6, "StaticStability")
     , pgdata_(pgdata)
-    , tq_(std::move(q))
   {}
+  ~StaticStabilityConstr() throw()
+  { }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const throw()
+  void impl_compute(result_ad_t& res, const argument_t& x) const
   {
     pgdata_->x(x);
-
-    // compute posture task
-    scalar_t posture = 0.;
-    const std::vector<std::vector<scalar_t>>& q = pgdata_->q();
-    for(int i = 0; i < pgdata_->multibody().nrJoints(); ++i)
-    {
-      if(pgdata_->multibody().joint(i).params() == 1)
-      {
-        posture += std::pow(tq_[i][0] - q[i][0], 2);
-      }
-    }
-
-    res(0) = posture*0.;
+    res = pgdata_->id().bodyAcc()[0].vector();
   }
 
 private:
   PGData<Type>* pgdata_;
-  std::vector<std::vector<double>> tq_;
 };
 
 } // namespace pg
