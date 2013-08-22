@@ -54,6 +54,7 @@ public:
   void x(const Eigen::VectorXd& x);
 
   void forces(std::vector<ForceData> fd);
+  void update();
 
   const std::vector<std::vector<scalar_t> >& q()
   {
@@ -79,9 +80,6 @@ public:
   {
     return mb_.nrParams() + nrForcePoints_;
   }
-
-protected:
-  void update();
 
 private:
   rbd::MultiBody mb_;
@@ -120,7 +118,6 @@ PGData<Type>::PGData(const rbd::MultiBody& mb)
   {
     forcesB_[i] = sva::ForceVec<scalar_t>(Eigen::Vector6<scalar_t>::Zero());
   }
-  update();
 }
 
 
@@ -154,10 +151,6 @@ void PGData<Type>::forces(std::vector<ForceData> fd)
   }
 
   x_.setZero(pbSize());
-  /// @todo clean that
-  fk_ = FK<scalar_t>(mb_);
-  id_ = ID<scalar_t>(mb_, Eigen::Vector3d(0., 9.81, 0.));
-  update();
 }
 
 
@@ -193,7 +186,6 @@ void PGData<Type>::update()
       xPos += 3;
     }
   }
-
 
   id_.run(mb_, fk_.bodyPosW(), fk_.parentToSon(), forcesB_);
 }
