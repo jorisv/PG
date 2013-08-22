@@ -38,9 +38,15 @@ public:
     return bodyPosW_;
   }
 
+  const std::vector<sva::PTransform<T>>& parentToSon() const
+  {
+    return parentToSon_;
+  }
+
 private:
   std::vector<sva::PTransform<T>> Xt_;
   std::vector<sva::PTransform<T>> bodyPosW_;
+  std::vector<sva::PTransform<T>> parentToSon_;
 };
 
 
@@ -51,6 +57,7 @@ template<typename T>
 FK<T>::FK(const rbd::MultiBody& mb)
   : Xt_()
   , bodyPosW_(mb.nrBodies())
+  , parentToSon_(mb.nrJoints())
 {
   Xt_.reserve(mb.nrJoints());
   for(const sva::PTransformd& Xt: mb.transforms())
@@ -69,12 +76,12 @@ void FK<T>::run(const rbd::MultiBody& mb, const std::vector<std::vector<T>>& q)
 
   for(std::size_t i = 0; i < joints.size(); ++i)
   {
-    sva::PTransform<T> parentToSon = joints[i].pose(q[i])*Xt_[i];
+    parentToSon_[i] = joints[i].pose(q[i])*Xt_[i];
 
     if(pred[i] != -1)
-      bodyPosW_[succ[i]] = parentToSon*bodyPosW_[pred[i]];
+      bodyPosW_[succ[i]] = parentToSon_[i]*bodyPosW_[pred[i]];
     else
-      bodyPosW_[succ[i]] = parentToSon;
+      bodyPosW_[succ[i]] = parentToSon_[i];
   }
 }
 
