@@ -47,6 +47,11 @@ pg::eigen_ad::scalar_t pow(const pg::eigen_ad::scalar_t& v, int p)
   return Eigen::pow(v, p);
 }
 
+pg::eigen_ad::scalar_t sqrt(const pg::eigen_ad::scalar_t& v)
+{
+  return Eigen::sqrt(v);
+}
+
 pg::eigen_ad::scalar_t sin(const pg::eigen_ad::scalar_t& v)
 {
   return Eigen::sin(v);

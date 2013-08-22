@@ -90,7 +90,7 @@ public:
   {
     pgdata_->x(x);
     sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
-    res = sva::rotationError(pos.rotation(), target_);
+    res = sva::rotationError(pos.rotation(), target_, 1e-7);
   }
 
 private:
