@@ -91,11 +91,11 @@ void ID<T>::run(const rbd::MultiBody& mb,
   {
     bodyAcc_[i] = parentToSon[i]*bodyAcc_[parents[i]];
     Ic_[i] = I_[i];
-    bodySupFor_[i] = I_[i]*bodyAcc_[i] - bodyPosW[i].dualMul(forces[i]);
+    bodySupFor_[i] = I_[i]*bodyAcc_[i] - forces[i];
   }
 
   Ic_[0] = I_[0];
-  bodySupFor_[0] = I_[0]*bodyAcc_[0] - bodyPosW[0].dualMul(forces[0]);
+  bodySupFor_[0] = I_[0]*bodyAcc_[0] - forces[0];
 
   for(int i = mb.nrBodies() - 1; i > 0; --i)
   {
