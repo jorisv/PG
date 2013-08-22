@@ -36,6 +36,22 @@ struct eigen_ad
   };
 };
 
+
+template<int Row, int Col>
+Eigen::Matrix<double, Row, Col> toValue(
+    const Eigen::Matrix<eigen_ad::scalar_t, Row, Col>& matrix)
+{
+  Eigen::Matrix<double, Row, Col> ret(matrix.rows(), matrix.cols());
+  for(int i = 0; i < ret.rows(); ++i)
+  {
+    for(int j = 0; j < ret.cols(); ++j)
+    {
+      ret(i, j) = matrix(i, j).value();
+    }
+  }
+  return ret;
+}
+
 } // namespace pg
 
 
