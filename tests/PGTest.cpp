@@ -92,6 +92,53 @@ std::tuple<rbd::MultiBody, rbd::MultiBodyConfig> makeZXZArm(bool isFixed=true)
 }
 
 
+/// @return An simple Z*12 arm with Y as up axis.
+std::tuple<rbd::MultiBody, rbd::MultiBodyConfig> makeZ12Arm(bool isFixed=true)
+{
+  using namespace Eigen;
+  using namespace sva;
+  using namespace rbd;
+
+  MultiBodyGraph mbg;
+
+  double mass = 1.;
+  Matrix3d I = Matrix3d::Identity();
+  Vector3d h = Vector3d::Zero();
+
+  RBInertiad rbi(mass, h, I);
+
+  for(int i = 0; i < 13; ++i)
+  {
+    std::stringstream ss;
+    ss << "b" << i;
+    mbg.addBody({rbi, i, ss.str()});
+  }
+
+  for(int i = 0; i < 12; ++i)
+  {
+    std::stringstream ss;
+    ss << "j" << i;
+    mbg.addJoint({Joint::RevZ, true, i, ss.str()});
+  }
+
+  PTransformd to(Vector3d(0., 0.5, 0.));
+  PTransformd from(Vector3d(0., 0., 0.));
+
+  mbg.linkBodies(0, PTransformd::Identity(), 1, from, 0);
+  for(int i = 1; i < 12; ++i)
+  {
+    mbg.linkBodies(i, to, i + 1, from, i);
+  }
+
+  MultiBody mb = mbg.makeMultiBody(0, isFixed);
+
+  MultiBodyConfig mbc(mb);
+  mbc.zero(mb);
+
+  return std::make_tuple(mb, mbc);
+}
+
+
 BOOST_AUTO_TEST_CASE(FKTest)
 {
   using namespace Eigen;
@@ -211,20 +258,55 @@ BOOST_AUTO_TEST_CASE(PGTest)
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[3].rotation() - target).norm(), 1e-5);
   }
+}
 
-  /// @todo Need a bigger robot to test that
-  /*
+
+BOOST_AUTO_TEST_CASE(PGTestZ12)
+{
+  using namespace Eigen;
+  using namespace sva;
+  using namespace rbd;
+  namespace cst = boost::math::constants;
+
+  MultiBody mb;
+  MultiBodyConfig mbcInit, mbcWork;
+
+  std::tie(mb, mbcInit) = makeZ12Arm();
+  mbcWork = mbcInit;
+
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
-    // pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.print_level", 0);
 
-    pgPb.forceContacts({{0, {sva::PTransformd::Identity()}}});
+    Vector3d target(0.2, 0., 0.);
+    int id = 12;
+    int index = mb.bodyIndexById(id);
+    pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
 
-    BOOST_REQUIRE(pgPb.run({{}, {0.}, {0.}, {0.}}));
+    BOOST_REQUIRE(pgPb.run(mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
-    //BOOST_CHECK_SMALL((mbcWork.bodyPosW[3].rotation() - target).norm(), 1e-5);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
   }
-  */
+
+
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "ma27");
+
+    Vector3d target(0.2, 0., 0.);
+    int id = 12;
+    int index = mb.bodyIndexById(id);
+    pgPb.fixedPositionContacts({{12, target, sva::PTransformd::Identity()}});
+    pgPb.forceContacts({{0, {sva::PTransformd(Vector3d(0.01, 0., 0.)),
+                             sva::PTransformd(Vector3d(-0.01, 0., 0.))}}});
+
+    BOOST_REQUIRE(pgPb.run(mbcInit.q));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
+  }
 }

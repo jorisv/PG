@@ -80,7 +80,7 @@ ID<T>::ID(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
 
 template<typename T>
 void ID<T>::run(const rbd::MultiBody& mb,
-                const std::vector<sva::PTransform<T>>& bodyPosW,
+                const std::vector<sva::PTransform<T>>& /* bodyPosW */,
                 const std::vector<sva::PTransform<T>>& parentToSon,
                 const std::vector<sva::ForceVec<T>>& forces)
 {
