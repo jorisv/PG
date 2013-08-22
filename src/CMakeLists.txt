@@ -3,6 +3,7 @@ set(HEADERS FK.h ID.h
             PGData.h EigenAutoDiffScalar.h AutoDiffFunction.h
             StdCostFunc.h
             FixedContactConstr.h StaticStabilityConstr.h
+            PositiveForceConstr.h
             PostureGenerator.h)
 
 add_library(PG SHARED ${SOURCES} ${HEADERS})

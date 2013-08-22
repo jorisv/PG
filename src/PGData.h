@@ -78,7 +78,17 @@ public:
 
   int pbSize() const
   {
-    return mb_.nrParams() + nrForcePoints_;
+    return mb_.nrParams() + nrForcePoints_*3;
+  }
+
+  int nrForcePoints() const
+  {
+    return nrForcePoints_;
+  }
+
+  const std::vector<ForceData>& forceDatas() const
+  {
+    return forceDatas_;
   }
 
 private:
@@ -147,7 +157,7 @@ void PGData<Type>::forces(std::vector<ForceData> fd)
   nrForcePoints_ = 0;
   for(const ForceData& fd: forceDatas_)
   {
-    nrForcePoints_ += int(fd.points.size())*3;
+    nrForcePoints_ += int(fd.points.size());
   }
 
   x_.setZero(pbSize());

@@ -21,4 +21,5 @@
 #include "StdCostFunc.h"
 #include "FixedContactConstr.h"
 #include "StaticStabilityConstr.h"
+#include "PositiveForceConstr.h"
 #include "PostureGenerator.h"

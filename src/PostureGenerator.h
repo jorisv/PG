@@ -30,6 +30,7 @@
 #include "StdCostFunc.h"
 #include "FixedContactConstr.h"
 #include "StaticStabilityConstr.h"
+#include "PositiveForceConstr.h"
 
 namespace pg
 {
@@ -240,6 +241,12 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
         new StaticStabilityConstr<Type>(&pgdata_));
     problem.addConstraint(stab, {{0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}},
         {{1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}});
+
+    boost::shared_ptr<PositiveForceConstr<Type>> pf(
+        new PositiveForceConstr<Type>(&pgdata_));
+    typename PositiveForceConstr<Type>::intervals_t lim(pgdata_.nrForcePoints(), {0., 10000.});
+    typename solver_t::problem_t::scales_t scal(pgdata_.nrForcePoints(), 1.);
+    problem.addConstraint(pf, lim, scal);
   }
 
   roboptim::IpoptSolver solver(problem);
