@@ -49,16 +49,19 @@ def build_pg(pg):
 
   fixedPositionContact = pg.add_struct('FixedPositionContact')
   fixedOrientationContact = pg.add_struct('FixedOrientationContact')
+  forceContact = pg.add_struct('ForceContact')
 
   # build list type
   pg.add_container('std::vector<pg::FixedPositionContact>', 'pg::FixedPositionContact', 'vector')
   pg.add_container('std::vector<pg::FixedOrientationContact>', 'pg::FixedOrientationContact', 'vector')
+  pg.add_container('std::vector<pg::ForceContact>', 'pg::ForceContact', 'vector')
 
   # PostureGenerator
   pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb')])
 
   pgSolver.add_method('fixedPositionContacts', None, [param('std::vector<pg::FixedPositionContact>', 'contacts')])
   pgSolver.add_method('fixedOrientationContacts', None, [param('std::vector<pg::FixedOrientationContact>', 'contacts')])
+  pgSolver.add_method('forceContacts', None, [param('std::vector<pg::ForceContact>', 'contacts')])
   pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
                                         param('std::vector<std::vector<double> >', 'uq')])
 
@@ -86,6 +89,12 @@ def build_pg(pg):
   fixedOrientationContact.add_instance_attribute('target', 'Eigen::Matrix3d')
   fixedOrientationContact.add_instance_attribute('surfaceFrame', 'sva::PTransformd')
 
+  # ForceContact
+  forceContact.add_constructor([])
+
+  forceContact.add_instance_attribute('bodyId', 'int')
+  forceContact.add_instance_attribute('points', 'std::vector<sva::PTransformd>')
+
 
 
 if __name__ == '__main__':
@@ -109,6 +118,7 @@ if __name__ == '__main__':
   # build list type
   pg.add_container('std::vector<double>', 'double', 'vector')
   pg.add_container('std::vector<std::vector<double> >', 'std::vector<double>', 'vector')
+  pg.add_container('std::vector<sva::PTransformd>', 'sva::PTransformd', 'vector')
 
   # pg
   build_pg(pg)
