@@ -1,5 +1,6 @@
 set(SOURCES lib.cpp)
-set(HEADERS FK.h PGData.h EigenAutoDiffScalar.h AutoDiffFunction.h
+set(HEADERS FK.h ID.h
+            PGData.h EigenAutoDiffScalar.h AutoDiffFunction.h
             StdCostFunc.h
             FixedContactConstr.h
             PostureGenerator.h)

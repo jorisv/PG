@@ -14,6 +14,7 @@
 // along with PG.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "FK.h"
+#include "ID.h"
 #include "PGData.h"
 #include "EigenAutoDiffScalar.h"
 #include "AutoDiffFunction.h"

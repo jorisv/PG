@@ -33,6 +33,7 @@
 
 // PG
 #include "FK.h"
+#include "ID.h"
 #include "PGData.h"
 #include "PostureGenerator.h"
 
@@ -113,6 +114,46 @@ BOOST_AUTO_TEST_CASE(FKTest)
 }
 
 
+BOOST_AUTO_TEST_CASE(IDTest)
+{
+  using namespace Eigen;
+  using namespace sva;
+  using namespace rbd;
+  namespace cst = boost::math::constants;
+  using scalar_t = pg::eigen_ad::scalar_t;
+
+  MultiBody mb;
+  MultiBodyConfig mbcInit;
+
+  std::tie(mb, mbcInit) = makeZXZArm();
+  double mass = 0.;
+  for(const Body& b: mb.bodies())
+  {
+    mass += b.inertia().mass();
+  }
+
+  pg::FK<scalar_t> fk(mb);
+  std::vector<std::vector<scalar_t>> q = {{},
+                                          {scalar_t(0., 6, 0)},
+                                          {scalar_t(0., 6, 1)},
+                                          {scalar_t(0., 6, 2)}};
+  fk.run(mb, q);
+
+  pg::ID<scalar_t> id(mb, mbcInit.gravity);
+
+  ForceVec<scalar_t> fNull(Vector6<scalar_t>::Zero());
+  ForceVec<scalar_t> fbaseNull(Vector3<scalar_t>::Zero(),
+                               Vector3<scalar_t>(
+                                 scalar_t(0., 6, 3),
+                                 scalar_t(mass*9.81, 6, 4),
+                                 scalar_t(0., 6, 5)
+                                 ));
+
+  id.run(mb, fk.bodyPosW(), fk.parentToSon(), {fbaseNull, fNull, fNull, fNull});
+  BOOST_CHECK_SMALL((pg::toValue(id.bodyAcc()[0].vector()) - Vector6d::Zero()).norm(), 1e-6);
+}
+
+
 BOOST_AUTO_TEST_CASE(PGDataTest)
 {
   using namespace Eigen;
@@ -145,6 +186,7 @@ BOOST_AUTO_TEST_CASE(PGTest)
 
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    pgPb.param("ipopt.print_level", 0);
 
     Vector3d target(0., 0.5, 0.5);
     pgPb.fixedPositionContacts({{3, target, sva::PTransformd::Identity()}});
@@ -158,6 +200,7 @@ BOOST_AUTO_TEST_CASE(PGTest)
 
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    pgPb.param("ipopt.print_level", 0);
 
     Matrix3d target(Quaterniond(AngleAxisd(-cst::pi<double>()/2., Vector3d::UnitX())));
     pgPb.fixedOrientationContacts({{3, target, sva::PTransformd::Identity()}});
