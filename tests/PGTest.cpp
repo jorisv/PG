@@ -16,6 +16,7 @@
 
 // include
 // std
+#include <fstream>
 #include <iostream>
 #include <tuple>
 
@@ -261,6 +262,21 @@ BOOST_AUTO_TEST_CASE(PGTest)
 }
 
 
+void toPython(const rbd::MultiBodyConfig& mbc, const std::string& filename)
+{
+  std::ofstream out(filename);
+
+  out << "pos = [";
+  for(std::size_t i = 0; i < mbc.bodyPosW.size(); ++i)
+  {
+    out << "[" << mbc.bodyPosW[i].translation()[0] << ", "
+        << mbc.bodyPosW[i].translation()[1] << ", "
+        << mbc.bodyPosW[i].translation()[2] << "], ";
+  }
+  out << "]" << std::endl;
+}
+
+
 BOOST_AUTO_TEST_CASE(PGTestZ12)
 {
   using namespace Eigen;
@@ -272,24 +288,9 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   MultiBodyConfig mbcInit, mbcWork;
 
   std::tie(mb, mbcInit) = makeZ12Arm();
+  // to avoid to start in singularity
+  mbcInit.q[3][0] = 0.1;
   mbcWork = mbcInit;
-
-  {
-    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
-    pgPb.param("ipopt.print_level", 0);
-
-    Vector3d target(0.2, 0., 0.);
-    int id = 12;
-    int index = mb.bodyIndexById(id);
-    pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
-
-    BOOST_REQUIRE(pgPb.run(mbcInit.q));
-
-    mbcWork.q = pgPb.q();
-    forwardKinematics(mb, mbcWork);
-    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
-  }
-
 
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
@@ -297,16 +298,68 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.param("ipopt.linear_solver", "ma27");
 
     Vector3d target(0.2, 0., 0.);
+    Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
     int id = 12;
     int index = mb.bodyIndexById(id);
-    pgPb.fixedPositionContacts({{12, target, sva::PTransformd::Identity()}});
-    pgPb.forceContacts({{0, {sva::PTransformd(Vector3d(0.01, 0., 0.)),
-                             sva::PTransformd(Vector3d(-0.01, 0., 0.))}}});
+    pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
+    pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
 
     BOOST_REQUIRE(pgPb.run(mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-5);
+    toPython(mbcWork, "Z12.py");
+  }
+
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "ma27");
+
+    Vector3d target(0.2, 0., 0.);
+    Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
+    int id = 12;
+    int index = mb.bodyIndexById(id);
+    pgPb.fixedPositionContacts({{12, target, sva::PTransformd::Identity()}});
+    pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
+    Matrix3d frame(RotX(-cst::pi<double>()/2.));
+    pgPb.forceContacts({{0, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
+                             sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}}});
+
+    BOOST_REQUIRE(pgPb.run(mbcInit.q));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-5);
+    toPython(mbcWork, "Z12Stab.py");
+  }
+
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "ma27");
+
+    Vector3d target(0.2, 0., 0.);
+    Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
+    int id = 12;
+    int index = mb.bodyIndexById(id);
+    pgPb.fixedPositionContacts({{12, target, sva::PTransformd::Identity()}});
+    pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
+    Matrix3d frame(RotX(-cst::pi<double>()/2.));
+    pgPb.forceContacts({{0 , {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
+                              sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}},
+                        {id, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
+                              sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}}});
+
+    BOOST_REQUIRE(pgPb.run(mbcInit.q));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-5);
+    toPython(mbcWork, "Z12Stab2.py");
   }
 }
