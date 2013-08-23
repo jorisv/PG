@@ -244,7 +244,8 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
 
     boost::shared_ptr<PositiveForceConstr<Type>> pf(
         new PositiveForceConstr<Type>(&pgdata_));
-    typename PositiveForceConstr<Type>::intervals_t lim(pgdata_.nrForcePoints(), {0., 10000.});
+    typename PositiveForceConstr<Type>::intervals_t lim(
+          pgdata_.nrForcePoints(), {0., std::numeric_limits<double>::infinity()});
     typename solver_t::problem_t::scales_t scal(pgdata_.nrForcePoints(), 1.);
     problem.addConstraint(pf, lim, scal);
   }
