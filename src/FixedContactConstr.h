@@ -88,7 +88,7 @@ public:
 
   void impl_compute(result_ad_t& res, const argument_t& x) const
   {
-    /// @todo rotation error derivative is not numericly stable
+    /// @todo rotation error derivative is not numericaly stable
     pgdata_->x(x);
     sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
     res = sva::rotationError(pos.rotation(), target_, 1e-7);

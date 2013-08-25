@@ -262,7 +262,11 @@ BOOST_AUTO_TEST_CASE(PGTest)
 }
 
 
-void toPython(const rbd::MultiBodyConfig& mbc, const std::string& filename)
+void toPython(const rbd::MultiBody& mb,
+              const rbd::MultiBodyConfig& mbc,
+              const std::vector<pg::ForceContact>& fc,
+              const std::vector<sva::ForceVecd>& forces,
+              const std::string& filename)
 {
   std::ofstream out(filename);
 
@@ -270,8 +274,30 @@ void toPython(const rbd::MultiBodyConfig& mbc, const std::string& filename)
   for(std::size_t i = 0; i < mbc.bodyPosW.size(); ++i)
   {
     out << "[" << mbc.bodyPosW[i].translation()[0] << ", "
-        << mbc.bodyPosW[i].translation()[1] << ", "
-        << mbc.bodyPosW[i].translation()[2] << "], ";
+               << mbc.bodyPosW[i].translation()[1] << ", "
+               << mbc.bodyPosW[i].translation()[2] << "], ";
+  }
+  out << "]" << std::endl;
+
+  out << "forces = [";
+  std::size_t findex = 0;
+  for(std::size_t i = 0; i < fc.size(); ++i)
+  {
+    int bodyIndex = mb.bodyIndexById(fc[i].bodyId);
+    for(std::size_t j = 0; j < fc[i].points.size(); ++j)
+    {
+      Eigen::Vector3d start = (mbc.bodyPosW[bodyIndex]*fc[i].points[j]).translation();
+      out << "[";
+      out << "(" << start[0] << ", "
+                 << start[1] << ", "
+                 << start[2] << "), ";
+      Eigen::Vector3d end = start + forces[findex].force();
+      out << "(" << end[0] << ", "
+                 << end[1] << ", "
+                 << end[2] << "), ";
+      out << "]," << std::endl;
+      ++findex;
+    }
   }
   out << "]" << std::endl;
 }
@@ -297,7 +323,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "ma27");
 
-    Vector3d target(0.2, 0., 0.);
+    Vector3d target(2., 0., 0.);
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
     int id = 12;
     int index = mb.bodyIndexById(id);
@@ -310,7 +336,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-5);
-    toPython(mbcWork, "Z12.py");
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12.py");
   }
 
   {
@@ -318,7 +344,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "ma27");
 
-    Vector3d target(0.2, 0., 0.);
+    Vector3d target(2., 0., 0.);
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
     int id = 12;
     int index = mb.bodyIndexById(id);
@@ -334,7 +360,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-5);
-    toPython(mbcWork, "Z12Stab.py");
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Stab.py");
   }
 
   {
@@ -342,7 +368,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "ma27");
 
-    Vector3d target(0.2, 0., 0.);
+    Vector3d target(2., 0., 0.);
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
     int id = 12;
     int index = mb.bodyIndexById(id);
@@ -360,6 +386,6 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-5);
-    toPython(mbcWork, "Z12Stab2.py");
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Stab2.py");
   }
 }

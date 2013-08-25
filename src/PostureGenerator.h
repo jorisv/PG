@@ -72,6 +72,7 @@ public:
   void fixedPositionContacts(std::vector<FixedPositionContact> contacts);
   void fixedOrientationContacts(std::vector<FixedOrientationContact> contacts);
   void forceContacts(std::vector<ForceContact> contacts);
+  const std::vector<ForceContact>& forceContacts();
   void qBounds(const std::vector<std::vector<double>>& lq,
                const std::vector<std::vector<double>>& uq);
 
@@ -82,6 +83,7 @@ public:
   bool run(const std::vector<std::vector<double>>& q);
 
   std::vector<std::vector<double>> q() const;
+  std::vector<sva::ForceVecd> forces() const;
 
 private:
   PGData<Type> pgdata_;
@@ -169,6 +171,13 @@ void PostureGenerator<Type>::forceContacts(std::vector<ForceContact> contacts)
     forceDatas.push_back({pgdata_.multibody().bodyIndexById(fc.bodyId), points, forces});
   }
   pgdata_.forces(forceDatas);
+}
+
+
+template<typename Type>
+const std::vector<ForceContact>& PostureGenerator<Type>::forceContacts()
+{
+  return forceContacts_;
 }
 
 
@@ -283,6 +292,21 @@ std::vector<std::vector<double> > PostureGenerator<Type>::q() const
   }
 
   return rbd::vectorToParam(pgdata_.multibody(), eigenQ);
+}
+
+
+template<typename Type>
+std::vector<sva::ForceVecd> PostureGenerator<Type>::forces() const
+{
+  std::vector<sva::ForceVecd> res(pgdata_.nrForcePoints());
+  int pos = pgdata_.multibody().nrParams();
+  for(int i = 0; i < int(res.size()); ++i)
+  {
+    res[i] = sva::ForceVecd(Eigen::Vector3d::Zero(), x_.segment<3>(pos));
+    pos += 3;
+  }
+
+  return std::move(res);
 }
 
 
