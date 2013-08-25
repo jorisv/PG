@@ -49,7 +49,7 @@ public:
     {
       for(std::size_t fi = 0; fi < fd.points.size(); ++fi)
       {
-        res(i) = fd.points[fi].rotation().row(2)*fd.forces[fi].force();
+        res(i) = fd.forces[fi].force()[2];
         ++i;
       }
     }

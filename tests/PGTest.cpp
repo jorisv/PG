@@ -315,7 +315,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
 
   std::tie(mb, mbcInit) = makeZ12Arm();
   // to avoid to start in singularity
-  mbcInit.q[3][0] = 0.1;
+  mbcInit.q[3][0] = -0.1;
   mbcWork = mbcInit;
 
   {
