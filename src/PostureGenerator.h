@@ -225,6 +225,23 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
   problem.startingPoint()->head(pgdata_.multibody().nrParams()) =
       rbd::paramToVector(pgdata_.multibody(), q);
 
+  // compute initial force value
+  // this is not really smart but work well
+  // for contacts with N vector against gravity vector
+  double robotMass = 0.;
+  for(const rbd::Body& b: pgdata_.multibody().bodies())
+  {
+    robotMass += b.inertia().mass();
+  }
+
+  double initialForce = (pgdata_.gravity().norm()*robotMass)/pgdata_.nrForcePoints();
+  int pos = pgdata_.multibody().nrParams();
+  for(int i = 0; i < pgdata_.nrForcePoints(); ++i)
+  {
+    (*problem.startingPoint())[pos + 2] = initialForce;
+    pos += 3;
+  }
+
   for(int i = 0; i < pgdata_.multibody().nrParams(); ++i)
   {
     problem.argumentBounds()[i] = {ql_[i], qu_[i]};

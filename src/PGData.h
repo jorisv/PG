@@ -92,8 +92,14 @@ public:
     return forceDatas_;
   }
 
+  const Eigen::Vector3d& gravity() const
+  {
+    return gravity_;
+  }
+
 private:
   rbd::MultiBody mb_;
+  Eigen::Vector3d gravity_;
 
   Eigen::VectorXd x_;
   std::vector<std::vector<scalar_t>> q_;
@@ -113,6 +119,7 @@ private:
 template<typename Type>
 PGData<Type>::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
   : mb_(mb)
+  , gravity_(gravity)
   , x_(mb.nrParams())
   , q_(mb.nrJoints())
   , nrForcePoints_(0)
