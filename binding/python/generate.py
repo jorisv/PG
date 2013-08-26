@@ -57,7 +57,7 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::ForceContact>', 'pg::ForceContact', 'vector')
 
   # PostureGenerator
-  pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb')])
+  pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb'), param('const Eigen::Vector3d&', 'gravity')])
 
   pgSolver.add_method('fixedPositionContacts', None, [param('std::vector<pg::FixedPositionContact>', 'contacts')])
   pgSolver.add_method('fixedOrientationContacts', None, [param('std::vector<pg::FixedOrientationContact>', 'contacts')])

@@ -49,7 +49,7 @@ public:
   };
 
 public:
-  PGData(const rbd::MultiBody& mb);
+  PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity);
 
   void x(const Eigen::VectorXd& x);
 
@@ -110,14 +110,14 @@ private:
 
 
 template<typename Type>
-PGData<Type>::PGData(const rbd::MultiBody& mb)
+PGData<Type>::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
   : mb_(mb)
   , x_(mb.nrParams())
   , q_(mb.nrJoints())
   , nrForcePoints_(0)
   , forcesB_(mb.nrBodies())
   , fk_(mb)
-  , id_(mb, Eigen::Vector3d(0., 9.81, 0.))
+  , id_(mb, gravity)
 {
   x_.setZero();
   for(int i = 0; i < mb.nrJoints(); ++i)

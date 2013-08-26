@@ -67,7 +67,7 @@ public:
   typedef roboptim::IpoptSolver::solver_t solver_t;
 
 public:
-  PostureGenerator(const rbd::MultiBody& mb);
+  PostureGenerator(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity);
 
   void fixedPositionContacts(std::vector<FixedPositionContact> contacts);
   void fixedOrientationContacts(std::vector<FixedOrientationContact> contacts);
@@ -126,8 +126,9 @@ struct ResultVisitor : public boost::static_visitor<>
 
 
 template<typename Type>
-PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb)
-  : pgdata_(mb)
+PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb,
+                                         const Eigen::Vector3d& gravity)
+  : pgdata_(mb, gravity)
   , ql_(mb.nrParams())
   , qu_(mb.nrParams())
 {

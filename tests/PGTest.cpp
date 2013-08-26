@@ -38,6 +38,8 @@
 #include "PGData.h"
 #include "PostureGenerator.h"
 
+const Eigen::Vector3d gravity(0., 9.81, 0.);
+
 /// @return An simple ZXZ arm with Y as up axis.
 std::tuple<rbd::MultiBody, rbd::MultiBodyConfig> makeZXZArm(bool isFixed=true)
 {
@@ -214,7 +216,7 @@ BOOST_AUTO_TEST_CASE(PGDataTest)
 
   std::tie(mb, mbcInit) = makeZXZArm();
 
-  pg::PGData<pg::eigen_ad> pgdata(mb);
+  pg::PGData<pg::eigen_ad> pgdata(mb, gravity);
   pgdata.x(Eigen::VectorXd::Zero(3));
 }
 
@@ -233,7 +235,7 @@ BOOST_AUTO_TEST_CASE(PGTest)
   mbcWork = mbcInit;
 
   {
-    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
 
     Vector3d target(0., 0.5, 0.5);
@@ -247,7 +249,7 @@ BOOST_AUTO_TEST_CASE(PGTest)
   }
 
   {
-    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
 
     Matrix3d target(Quaterniond(AngleAxisd(-cst::pi<double>()/2., Vector3d::UnitX())));
@@ -319,7 +321,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   mbcWork = mbcInit;
 
   {
-    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "ma27");
 
@@ -340,7 +342,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   }
 
   {
-    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "ma27");
 
@@ -364,7 +366,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   }
 
   {
-    pg::PostureGenerator<pg::eigen_ad> pgPb(mb);
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "ma27");
 
