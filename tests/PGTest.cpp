@@ -288,7 +288,7 @@ void toPython(const rbd::MultiBody& mb,
     int bodyIndex = mb.bodyIndexById(fc[i].bodyId);
     for(std::size_t j = 0; j < fc[i].points.size(); ++j)
     {
-      Eigen::Vector3d start = (mbc.bodyPosW[bodyIndex]*fc[i].points[j]).translation();
+      Eigen::Vector3d start = (fc[i].points[j]*mbc.bodyPosW[bodyIndex]).translation();
       out << "[";
       out << "(" << start[0] << ", "
                  << start[1] << ", "
@@ -377,10 +377,11 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.fixedPositionContacts({{12, target, sva::PTransformd::Identity()}});
     pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
     Matrix3d frame(RotX(-cst::pi<double>()/2.));
+    Matrix3d frameEnd(RotX(cst::pi<double>()/2.));
     pgPb.forceContacts({{0 , {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
                               sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.},
-                        {id, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
-                              sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.}});
+                        {id, {sva::PTransformd(frameEnd, Vector3d(0.01, 0., 0.)),
+                              sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}});
 
     BOOST_REQUIRE(pgPb.run(mbcInit.q));
 
