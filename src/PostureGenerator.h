@@ -258,6 +258,17 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
           pgdata_.nrForcePoints(), {0., std::numeric_limits<double>::infinity()});
     typename solver_t::problem_t::scales_t scal(pgdata_.nrForcePoints(), 1.);
     problem.addConstraint(pf, lim, scal);
+    /*
+     * constraint seem to converge more quickly than variable bound.
+     * maybe scale fault ?
+    int pos = pgdata_.multibody().nrParams();
+    for(int i = 0; i < pgdata_.nrForcePoints(); ++i)
+    {
+      double inf = std::numeric_limits<double>::infinity();
+      problem.argumentBounds()[pos + 2] = {0., inf};
+      pos += 3;
+    }
+    */
   }
 
   roboptim::IpoptSolver solver(problem);
