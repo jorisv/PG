@@ -94,6 +94,7 @@ def build_pg(pg):
 
   forceContact.add_instance_attribute('bodyId', 'int')
   forceContact.add_instance_attribute('points', 'std::vector<sva::PTransformd>')
+  forceContact.add_instance_attribute('mu', 'double')
 
 
 

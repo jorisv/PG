@@ -46,6 +46,7 @@ public:
     int bodyIndex;
     std::vector<sva::PTransform<scalar_t>> points;
     std::vector<sva::ForceVec<scalar_t>> forces;
+    double mu;
   };
 
 public:

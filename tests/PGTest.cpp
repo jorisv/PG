@@ -354,7 +354,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
     Matrix3d frame(RotX(-cst::pi<double>()/2.));
     pgPb.forceContacts({{0, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
-                             sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}}});
+                             sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.}});
 
     BOOST_REQUIRE(pgPb.run(mbcInit.q));
 
@@ -370,7 +370,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "ma27");
 
-    Vector3d target(2., 0., 0.);
+    Vector3d target(1.5, 0., 0.);
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
     int id = 12;
     int index = mb.bodyIndexById(id);
@@ -378,9 +378,9 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
     Matrix3d frame(RotX(-cst::pi<double>()/2.));
     pgPb.forceContacts({{0 , {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
-                              sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}},
+                              sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.},
                         {id, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
-                              sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}}});
+                              sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.}});
 
     BOOST_REQUIRE(pgPb.run(mbcInit.q));
 

@@ -31,6 +31,7 @@
 #include "FixedContactConstr.h"
 #include "StaticStabilityConstr.h"
 #include "PositiveForceConstr.h"
+#include "FrictionConeConstr.h"
 
 namespace pg
 {
@@ -55,7 +56,7 @@ struct ForceContact
 {
   int bodyId;
   std::vector<sva::PTransformd> points;
-  /// @todo add friction stuff
+  double mu;
 };
 
 
@@ -169,7 +170,7 @@ void PostureGenerator<Type>::forceContacts(std::vector<ForceContact> contacts)
       points[i] = fc.points[i].cast<scalar_t>();
       forces[i] = sva::ForceVec<scalar_t>(Eigen::Vector6<scalar_t>::Zero());
     }
-    forceDatas.push_back({pgdata_.multibody().bodyIndexById(fc.bodyId), points, forces});
+    forceDatas.push_back({pgdata_.multibody().bodyIndexById(fc.bodyId), points, forces, fc.mu});
   }
   pgdata_.forces(forceDatas);
 }
@@ -252,12 +253,12 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
     problem.addConstraint(stab, {{0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}},
         {{1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}});
 
-    boost::shared_ptr<PositiveForceConstr<Type>> pf(
+    boost::shared_ptr<PositiveForceConstr<Type>> positiveForce(
         new PositiveForceConstr<Type>(&pgdata_));
-    typename PositiveForceConstr<Type>::intervals_t lim(
+    typename PositiveForceConstr<Type>::intervals_t limPositive(
           pgdata_.nrForcePoints(), {0., std::numeric_limits<double>::infinity()});
-    typename solver_t::problem_t::scales_t scal(pgdata_.nrForcePoints(), 1.);
-    problem.addConstraint(pf, lim, scal);
+    typename solver_t::problem_t::scales_t scalPositive(pgdata_.nrForcePoints(), 1.);
+    problem.addConstraint(positiveForce, limPositive, scalPositive);
     /*
      * constraint seem to converge more quickly than variable bound.
      * maybe scale fault ?
@@ -269,6 +270,13 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
       pos += 3;
     }
     */
+
+    boost::shared_ptr<FrictionConeConstr<Type>> frictionCone(
+        new FrictionConeConstr<Type>(&pgdata_));
+    typename PositiveForceConstr<Type>::intervals_t limFriction(
+          pgdata_.nrForcePoints(), {-std::numeric_limits<double>::infinity(), 0.});
+    typename solver_t::problem_t::scales_t scalFriction(pgdata_.nrForcePoints(), 1.);
+    problem.addConstraint(frictionCone, limFriction, scalFriction);
   }
 
   roboptim::IpoptSolver solver(problem);

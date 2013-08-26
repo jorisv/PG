@@ -22,4 +22,5 @@
 #include "FixedContactConstr.h"
 #include "StaticStabilityConstr.h"
 #include "PositiveForceConstr.h"
+#include "FrictionConeConstr.h"
 #include "PostureGenerator.h"
