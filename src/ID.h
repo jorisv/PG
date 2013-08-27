@@ -46,12 +46,12 @@ public:
            const std::vector<sva::PTransform<T>>& parentToSon,
            const std::vector<sva::ForceVec<T>>& forces);
 
-  std::vector<sva::MotionVec<T>> bodyAcc() const
+  const std::vector<sva::MotionVec<T>>& bodyAcc() const
   {
     return bodyAcc_;
   }
 
-  std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>> torque() const
+  const std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>& torque() const
   {
     return t_;
   }

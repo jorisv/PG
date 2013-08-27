@@ -4,7 +4,7 @@ set(HEADERS FK.h ID.h
             StdCostFunc.h
             FixedContactConstr.h StaticStabilityConstr.h
             PositiveForceConstr.h FrictionConeConstr.h
-            PlanarSurfaceConstr.h
+            PlanarSurfaceConstr.h TorqueConstr.h
             PostureGenerator.h)
 
 # !!! PG is an empty library !!!

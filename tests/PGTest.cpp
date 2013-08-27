@@ -27,7 +27,9 @@
 
 #include "EigenAutoDiffScalar.h"
 // RBDyn
-#include "RBDyn/FK.h"
+#include <RBDyn/FK.h>
+#include <RBDyn/FV.h>
+#include <RBDyn/ID.h>
 #include <RBDyn/MultiBody.h>
 #include <RBDyn/MultiBodyConfig.h>
 #include <RBDyn/MultiBodyGraph.h>
@@ -417,5 +419,77 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     BOOST_CHECK_SMALL(posErr, 1e-5);
     BOOST_CHECK_SMALL(oriErr, 1e-5);
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Planar.py");
+  }
+
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
+    // pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "ma27");
+
+    Vector3d target(1.5, 0., 0.);
+    Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
+    int id = 12;
+    pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
+    pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
+    Matrix3d frame(RotX(-cst::pi<double>()/2.));
+    Matrix3d frameEnd(RotX(cst::pi<double>()/2.));
+    std::vector<pg::ForceContact> fcVec =
+        {{0 , {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
+               sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.},
+         {id, {sva::PTransformd(frameEnd, Vector3d(0.01, 0., 0.)),
+               sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}};
+    pgPb.forceContacts(fcVec);
+
+    std::vector<std::vector<double>> ql(mb.nrJoints());
+    std::vector<std::vector<double>> qu(mb.nrJoints());
+    for(std::size_t i = 0; i < ql.size(); ++i)
+    {
+      ql[i].resize(mb.joint(int(i)).dof());
+      qu[i].resize(mb.joint(int(i)).dof());
+      for(std::size_t j = 0; j < ql[i].size(); ++j)
+      {
+        ql[i][j] = -100.;
+        qu[i][j] = 100.;
+      }
+    }
+    pgPb.torqueBounds(ql, qu);
+
+    BOOST_REQUIRE(pgPb.run(mbcInit.q));
+
+    std::vector<sva::ForceVecd> forces = pgPb.forces();
+    std::vector<std::vector<double>> torque = pgPb.torque();
+
+    mbcWork.zero(mb);
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    forwardVelocity(mb, mbcWork);
+
+    // Input force computed by the pg
+    int forceIndex = 0;
+    for(const pg::ForceContact& f: fcVec)
+    {
+      int index = mb.bodyIndexById(f.bodyId);
+      for(const sva::PTransformd& p: f.points)
+      {
+        mbcWork.force[index] = mbcWork.force[index] +
+            mbcWork.bodyPosW[index].inv().dualMul(p.inv().dualMul(forces[forceIndex]));
+        ++forceIndex;
+      }
+    }
+
+    // Compute the inverse dynamics
+    rbd::InverseDynamics invDyn(mb);
+    invDyn.inverseDynamics(mb, mbcWork);
+
+    // check if torque are equals
+    for(int i = 0; i < mb.nrJoints(); ++i)
+    {
+      for(int j = 0; j < mb.joint(i).dof(); ++j)
+      {
+        BOOST_CHECK_SMALL(mbcWork.jointTorque[i][j] -torque[i][j], 1e-5);
+      }
+    }
+
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Torque.py");
   }
 }

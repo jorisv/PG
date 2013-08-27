@@ -32,6 +32,7 @@
 #include "StaticStabilityConstr.h"
 #include "PositiveForceConstr.h"
 #include "FrictionConeConstr.h"
+#include "TorqueConstr.h"
 #include "PlanarSurfaceConstr.h"
 
 namespace pg
@@ -88,6 +89,8 @@ public:
   const std::vector<ForceContact>& forceContacts();
   void qBounds(const std::vector<std::vector<double>>& lq,
                const std::vector<std::vector<double>>& uq);
+  void torqueBounds(const std::vector<std::vector<double>>& lt,
+                    const std::vector<std::vector<double>>& ut);
 
   void param(const std::string& name, const std::string& value);
   void param(const std::string& name, double value);
@@ -97,6 +100,7 @@ public:
 
   std::vector<std::vector<double>> q() const;
   std::vector<sva::ForceVecd> forces() const;
+  std::vector<std::vector<double>> torque();
 
 private:
   PGData<Type> pgdata_;
@@ -108,6 +112,8 @@ private:
   std::vector<PlanarContact> planarContacts_;
   std::vector<ForceContact> forceContacts_;
   Eigen::VectorXd ql_, qu_;
+  Eigen::VectorXd tl_, tu_;
+  bool isTorque_;
 
   Eigen::VectorXd x_;
 };
@@ -145,9 +151,14 @@ PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb,
   : pgdata_(mb, gravity)
   , ql_(mb.nrParams())
   , qu_(mb.nrParams())
+  , tl_(mb.nrDof())
+  , tu_(mb.nrDof())
+  , isTorque_(false)
 {
   ql_.setConstant(-std::numeric_limits<double>::infinity());
   qu_.setConstant(std::numeric_limits<double>::infinity());
+  tl_.setConstant(-std::numeric_limits<double>::infinity());
+  tu_.setConstant(std::numeric_limits<double>::infinity());
 }
 
 
@@ -209,6 +220,16 @@ void PostureGenerator<Type>::qBounds(const std::vector<std::vector<double>>& ql,
 {
   ql_ = rbd::paramToVector(pgdata_.multibody(), ql);
   qu_ = rbd::paramToVector(pgdata_.multibody(), qu);
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::torqueBounds(const std::vector<std::vector<double>>& tl,
+    const std::vector<std::vector<double>>& tu)
+{
+  tl_ = rbd::dofToVector(pgdata_.multibody(), tl);
+  tu_ = rbd::dofToVector(pgdata_.multibody(), tu);
+  isTorque_ = true;
 }
 
 
@@ -336,6 +357,20 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
     problem.addConstraint(frictionCone, limFriction, scalFriction);
   }
 
+  if(isTorque_)
+  {
+    boost::shared_ptr<TorqueConstr<Type>> torque(
+        new TorqueConstr<Type>(&pgdata_));
+    typename TorqueConstr<Type>::intervals_t limTorque(torque->outputSize());
+    for(std::size_t i = 0; i < limTorque.size(); ++i)
+    {
+      limTorque[i] = {tl_[i], tu_[i]};
+    }
+
+    typename solver_t::problem_t::scales_t scalTorque(torque->outputSize(), 1.);
+    problem.addConstraint(torque, limTorque, scalTorque);
+  }
+
   roboptim::IpoptSolver solver(problem);
 
   for(const auto& p: params_)
@@ -381,6 +416,25 @@ std::vector<sva::ForceVecd> PostureGenerator<Type>::forces() const
   {
     res[i] = sva::ForceVecd(Eigen::Vector3d::Zero(), x_.segment<3>(pos));
     pos += 3;
+  }
+
+  return std::move(res);
+}
+
+
+template<typename Type>
+std::vector<std::vector<double> > PostureGenerator<Type>::torque()
+{
+  pgdata_.x(x_);
+  const auto& torque  = pgdata_.id().torque();
+  std::vector<std::vector<double>> res(pgdata_.multibody().nrJoints());
+  for(std::size_t i = 0; i < res.size(); ++i)
+  {
+    res[i].resize(pgdata_.multibody().joint(int(i)).dof());
+    for(std::size_t j = 0; j < res[i].size(); ++j)
+    {
+      res[i][j] = torque[i](j).value();
+    }
   }
 
   return std::move(res);
