@@ -68,6 +68,8 @@ def build_pg(pg):
   pgSolver.add_method('forceContacts', None, [param('std::vector<pg::ForceContact>', 'contacts')])
   pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
                                         param('std::vector<std::vector<double> >', 'uq')])
+  pgSolver.add_method('torqueBounds', None, [param('std::vector<std::vector<double> >', 'lt'),
+                                             param('std::vector<std::vector<double> >', 'ut')])
 
 
   # Don't change the order. We must try to convert in int before convert in double
