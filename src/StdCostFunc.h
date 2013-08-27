@@ -18,6 +18,7 @@
 // include
 // PG
 #include "AutoDiffFunction.h"
+#include "ConfigStruct.h"
 #include "PGData.h"
 
 namespace pg
@@ -34,13 +35,30 @@ public:
 
 public:
   StdCostFunc(PGData<Type>* pgdata, std::vector<std::vector<double>> q,
-              double postureScale, double torqueScale)
+              double postureScale, double torqueScale,
+              const std::vector<BodyPositionTarget>& bodyPosTargets,
+              const std::vector<BodyOrientationTarget>& bodyOriTargets)
     : parent_t(pgdata->pbSize(), 1, "StdCostFunc")
     , pgdata_(pgdata)
     , tq_(std::move(q))
     , postureScale_(postureScale)
     , torqueScale_(torqueScale)
-  {}
+    , bodyPosTargets_(bodyPosTargets.size())
+    , bodyOriTargets_(bodyOriTargets.size())
+  {
+    for(std::size_t i = 0; i < bodyPosTargets_.size(); ++i)
+    {
+      bodyPosTargets_[i] = {pgdata->multibody().bodyIndexById(bodyPosTargets[i].bodyId),
+                            bodyPosTargets[i].target.cast<scalar_t>(),
+                            bodyPosTargets[i].scale};
+    }
+    for(std::size_t i = 0; i < bodyOriTargets_.size(); ++i)
+    {
+      bodyOriTargets_[i] = {pgdata->multibody().bodyIndexById(bodyOriTargets[i].bodyId),
+                            bodyOriTargets[i].target.cast<scalar_t>(),
+                            bodyOriTargets[i].scale};
+    }
+  }
 
 
   void impl_compute(result_ad_t& res, const argument_t& x) const throw()
@@ -75,14 +93,47 @@ public:
       }
     }
 
-    res(0) = posture*postureScale_ + torque*torqueScale_;
+    const FK<scalar_t>& fk = pgdata_->fk();
+    scalar_t pos = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    for(const BodyPositionTargetData& bp: bodyPosTargets_)
+    {
+      pos += (fk.bodyPosW()[bp.bodyIndex].translation() - bp.target).squaredNorm()*
+          bp.scale;
+    }
+
+    scalar_t ori = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    for(const BodyOrientationTargetData& bo: bodyOriTargets_)
+    {
+      ori += sva::rotationError(
+            fk.bodyPosW()[bo.bodyIndex].rotation(), bo.target, 1e-7).squaredNorm()*
+          bo.scale;
+    }
+
+    res(0) = posture*postureScale_ + torque*torqueScale_ + pos + ori;
   }
+
+private:
+  struct BodyPositionTargetData
+  {
+    int bodyIndex;
+    Eigen::Vector3<scalar_t> target;
+    double scale;
+  };
+
+  struct BodyOrientationTargetData
+  {
+    int bodyIndex;
+    Eigen::Matrix3<scalar_t> target;
+    double scale;
+  };
 
 private:
   PGData<Type>* pgdata_;
   std::vector<std::vector<double>> tq_;
   double postureScale_;
   double torqueScale_;
+  std::vector<BodyPositionTargetData> bodyPosTargets_;
+  std::vector<BodyOrientationTargetData> bodyOriTargets_;
 };
 
 } // namespace pg

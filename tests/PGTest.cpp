@@ -407,6 +407,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     std::vector<Eigen::Vector2d> targetPoints = {{1., 1.}, {-0., 1.}, {-0., -1.}, {1., -1.}};
     std::vector<Eigen::Vector2d> surfPoints = {{0.1, 0.1}, {-0.1, 0.1}, {-0.1, -0.1}, {0.1, -0.1}};
     pgPb.planarContacts({{id, targetSurface, targetPoints, bodySurface, surfPoints}});
+    pgPb.bodyPositionTargets({{id, Vector3d(2., 1., 0.), 10.}});
 
     BOOST_REQUIRE(pgPb.run(mbcInit.q));
 

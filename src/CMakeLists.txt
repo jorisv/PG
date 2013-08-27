@@ -1,6 +1,7 @@
 set(SOURCES lib.cpp)
 set(HEADERS FK.h ID.h
             PGData.h EigenAutoDiffScalar.h AutoDiffFunction.h
+            ConfigStruct.h
             StdCostFunc.h
             FixedContactConstr.h StaticStabilityConstr.h
             PositiveForceConstr.h FrictionConeConstr.h

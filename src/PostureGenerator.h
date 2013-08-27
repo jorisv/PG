@@ -34,43 +34,10 @@
 #include "FrictionConeConstr.h"
 #include "TorqueConstr.h"
 #include "PlanarSurfaceConstr.h"
+#include "ConfigStruct.h"
 
 namespace pg
 {
-
-struct FixedPositionContact
-{
-  int bodyId;
-  Eigen::Vector3d target; ///< Position target in world coordinate.
-  sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
-};
-
-
-struct FixedOrientationContact
-{
-  int bodyId;
-  Eigen::Matrix3d target; ///< Orientation target in world coordinate.
-  sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
-};
-
-
-struct PlanarContact
-{
-  int bodyId;
-  sva::PTransformd targetFrame; ///< Target frame in world coordinate.
-  std::vector<Eigen::Vector2d> targetPoints; ///< Target surface points in surface coordinate.
-  sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
-  std::vector<Eigen::Vector2d> surfacePoints; ///< Body surface points in surface coordinate.
-};
-
-
-struct ForceContact
-{
-  int bodyId;
-  std::vector<sva::PTransformd> points;
-  double mu;
-};
-
 
 template<typename Type>
 class PostureGenerator
@@ -85,8 +52,13 @@ public:
   void fixedPositionContacts(std::vector<FixedPositionContact> contacts);
   void fixedOrientationContacts(std::vector<FixedOrientationContact> contacts);
   void planarContacts(std::vector<PlanarContact> contacts);
+
   void forceContacts(std::vector<ForceContact> contacts);
   const std::vector<ForceContact>& forceContacts();
+
+  void bodyPositionTargets(std::vector<BodyPositionTarget> targets);
+  void bodyOrientationTargets(std::vector<BodyOrientationTarget> targets);
+
   void qBounds(const std::vector<std::vector<double>>& lq,
                const std::vector<std::vector<double>>& uq);
   void torqueBounds(const std::vector<std::vector<double>>& lt,
@@ -111,6 +83,8 @@ private:
   std::vector<FixedOrientationContact> fixedOriContacts_;
   std::vector<PlanarContact> planarContacts_;
   std::vector<ForceContact> forceContacts_;
+  std::vector<BodyPositionTarget> bodyPosTargets_;
+  std::vector<BodyOrientationTarget> bodyOriTargets_;
   Eigen::VectorXd ql_, qu_;
   Eigen::VectorXd tl_, tu_;
   bool isTorque_;
@@ -215,6 +189,20 @@ const std::vector<ForceContact>& PostureGenerator<Type>::forceContacts()
 
 
 template<typename Type>
+void PostureGenerator<Type>::bodyPositionTargets(std::vector<BodyPositionTarget> targets)
+{
+  bodyPosTargets_ = std::move(targets);
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::bodyOrientationTargets(std::vector<BodyOrientationTarget> targets)
+{
+  bodyOriTargets_ = std::move(targets);
+}
+
+
+template<typename Type>
 void PostureGenerator<Type>::qBounds(const std::vector<std::vector<double>>& ql,
     const std::vector<std::vector<double>>& qu)
 {
@@ -259,7 +247,7 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
 {
   pgdata_.update();
 
-  StdCostFunc<Type> cost(&pgdata_, q, 0., 0.);
+  StdCostFunc<Type> cost(&pgdata_, q, 0., 0., bodyPosTargets_, bodyOriTargets_);
 
   solver_t::problem_t problem(cost);
   problem.startingPoint() = Eigen::VectorXd::Zero(pgdata_.pbSize());
