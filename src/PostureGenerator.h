@@ -68,7 +68,9 @@ public:
   void param(const std::string& name, double value);
   void param(const std::string& name, int value);
 
-  bool run(const std::vector<std::vector<double>>& q);
+  bool run(const std::vector<std::vector<double> >& initQ,
+           const std::vector<std::vector<double> >& targetQ,
+           double postureScale, double torqueScale);
 
   std::vector<std::vector<double>> q() const;
   std::vector<sva::ForceVecd> forces() const;
@@ -243,16 +245,18 @@ void PostureGenerator<Type>::param(const std::string& name, int value)
 
 
 template<typename Type>
-bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
+bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
+                                 const std::vector<std::vector<double> >& targetQ,
+                                 double postureScale, double torqueScale)
 {
   pgdata_.update();
 
-  StdCostFunc<Type> cost(&pgdata_, q, 0., 0., bodyPosTargets_, bodyOriTargets_);
+  StdCostFunc<Type> cost(&pgdata_, targetQ, postureScale, torqueScale, bodyPosTargets_, bodyOriTargets_);
 
   solver_t::problem_t problem(cost);
   problem.startingPoint() = Eigen::VectorXd::Zero(pgdata_.pbSize());
   problem.startingPoint()->head(pgdata_.multibody().nrParams()) =
-      rbd::paramToVector(pgdata_.multibody(), q);
+      rbd::paramToVector(pgdata_.multibody(), initQ);
 
   // compute initial force value
   // this is not really smart but work well
