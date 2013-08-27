@@ -51,12 +51,19 @@ public:
     return bodyAcc_;
   }
 
+  std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>> torque() const
+  {
+    return t_;
+  }
+
 private:
   sva::MotionVec<T> gravity_;
   std::vector<sva::RBInertia<T>> I_;
+  std::vector<Eigen::Matrix<double, 6, Eigen::Dynamic>> S_;
   std::vector<sva::RBInertia<T>> Ic_;
   std::vector<sva::MotionVec<T>> bodyAcc_;
   std::vector<sva::ForceVec<T>> bodySupFor_;
+  std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>> t_;
 };
 
 
@@ -67,13 +74,21 @@ template<typename T>
 ID<T>::ID(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
   : gravity_(Eigen::Vector3<T>::Zero(), gravity.cast<T>())
   , I_(mb.nrBodies())
+  , S_(mb.nrJoints())
   , Ic_(mb.nrBodies())
   , bodyAcc_(mb.nrBodies())
   , bodySupFor_(mb.nrBodies())
+  , t_(mb.nrJoints())
 {
   for(int i = 0; i < mb.nrBodies(); ++i)
   {
     I_[i] = mb.body(i).inertia().cast<T>();
+  }
+
+  for(int i = 1; i < mb.nrJoints(); ++i)
+  {
+    S_[i] = mb.joint(i).motionSubspace();
+    t_[i].resize(mb.joint(i).dof(), 1);
   }
 }
 
@@ -106,6 +121,12 @@ void ID<T>::run(const rbd::MultiBody& mb,
   }
 
   bodyAcc_[0] = sva::MotionVec<T>(-(Ic_[0].matrix().ldlt().solve(bodySupFor_[0].vector())));
+
+  for(int i = 1; i < mb.nrBodies(); ++i)
+  {
+    bodyAcc_[i] = parentToSon[i]*bodyAcc_[parents[i]];
+    t_[i] = S_[i].transpose()*(Ic_[i]*bodyAcc_[i] + bodySupFor_[i]).vector();
+  }
 }
 
 
