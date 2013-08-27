@@ -32,6 +32,7 @@
 #include "StaticStabilityConstr.h"
 #include "PositiveForceConstr.h"
 #include "FrictionConeConstr.h"
+#include "PlanarSurfaceConstr.h"
 
 namespace pg
 {
@@ -49,6 +50,15 @@ struct FixedOrientationContact
   int bodyId;
   Eigen::Matrix3d target;
   sva::PTransformd surfaceFrame;
+};
+
+
+struct PlanarContact
+{
+  int bodyId;
+  sva::PTransformd targetFrame;
+  sva::PTransformd surfaceFrame;
+  /// @todo Add surfaces points
 };
 
 
@@ -72,6 +82,7 @@ public:
 
   void fixedPositionContacts(std::vector<FixedPositionContact> contacts);
   void fixedOrientationContacts(std::vector<FixedOrientationContact> contacts);
+  void planarContacts(std::vector<PlanarContact> contacts);
   void forceContacts(std::vector<ForceContact> contacts);
   const std::vector<ForceContact>& forceContacts();
   void qBounds(const std::vector<std::vector<double>>& lq,
@@ -93,6 +104,7 @@ private:
 
   std::vector<FixedPositionContact> fixedPosContacts_;
   std::vector<FixedOrientationContact> fixedOriContacts_;
+  std::vector<PlanarContact> planarContacts_;
   std::vector<ForceContact> forceContacts_;
   Eigen::VectorXd ql_, qu_;
 
@@ -149,6 +161,13 @@ template<typename Type>
 void PostureGenerator<Type>::fixedOrientationContacts(std::vector<FixedOrientationContact> contacts)
 {
   fixedOriContacts_ = std::move(contacts);
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::planarContacts(std::vector<PlanarContact> contacts)
+{
+  planarContacts_ = std::move(contacts);
 }
 
 
@@ -261,6 +280,17 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
         new FixedOrientationContactConstr<Type>(&pgdata_, fc.bodyId, fc.target, fc.surfaceFrame));
     problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.}},
         {{1e-2}, {1e-2}, {1e-2}});
+  }
+
+  for(const PlanarContact& pc: planarContacts_)
+  {
+    boost::shared_ptr<PlanarPositionContactConstr<Type>> ppc(
+        new PlanarPositionContactConstr<Type>(&pgdata_, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
+    problem.addConstraint(ppc, {{0., 0.}}, {{1.}});
+
+    boost::shared_ptr<PlanarOrientationContactConstr<Type>> poc(
+        new PlanarOrientationContactConstr<Type>(&pgdata_, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
+    problem.addConstraint(poc, {{1., 1.}}, {{1.}});
   }
 
   if(!forceContacts_.empty())

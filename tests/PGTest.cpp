@@ -350,7 +350,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
     int id = 12;
     int index = mb.bodyIndexById(id);
-    pgPb.fixedPositionContacts({{12, target, sva::PTransformd::Identity()}});
+    pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
     pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
     Matrix3d frame(RotX(-cst::pi<double>()/2.));
     pgPb.forceContacts({{0, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
@@ -374,7 +374,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
     int id = 12;
     int index = mb.bodyIndexById(id);
-    pgPb.fixedPositionContacts({{12, target, sva::PTransformd::Identity()}});
+    pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
     pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
     Matrix3d frame(RotX(-cst::pi<double>()/2.));
     Matrix3d frameEnd(RotX(cst::pi<double>()/2.));
@@ -390,5 +390,30 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-5);
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Stab2.py");
+  }
+
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
+    //pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "ma27");
+
+    int id = 12;
+    int index = mb.bodyIndexById(id);
+    Matrix3d frame(RotX(-cst::pi<double>()/2.));
+    sva::PTransformd targetSurface(frame, Vector3d(0., 1., 0.));
+    sva::PTransformd bodySurface(frame);
+    pgPb.planarContacts({{id, targetSurface, bodySurface}});
+
+    BOOST_REQUIRE(pgPb.run(mbcInit.q));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    sva::PTransformd surfPos = bodySurface*mbcWork.bodyPosW[index];
+    double posErr = (surfPos.translation() -
+        targetSurface.translation()).dot(targetSurface.rotation().row(2));
+    double oriErr = surfPos.rotation().row(2).dot(targetSurface.rotation().row(2)) - 1.;
+    BOOST_CHECK_SMALL(posErr, 1e-5);
+    BOOST_CHECK_SMALL(oriErr, 1e-5);
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Planar.py");
   }
 }

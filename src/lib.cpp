@@ -23,4 +23,5 @@
 #include "StaticStabilityConstr.h"
 #include "PositiveForceConstr.h"
 #include "FrictionConeConstr.h"
+#include "PlanarSurfaceConstr.h"
 #include "PostureGenerator.h"

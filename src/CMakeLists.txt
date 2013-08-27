@@ -4,8 +4,12 @@ set(HEADERS FK.h ID.h
             StdCostFunc.h
             FixedContactConstr.h StaticStabilityConstr.h
             PositiveForceConstr.h FrictionConeConstr.h
+            PlanarSurfaceConstr.h
             PostureGenerator.h)
 
+# !!! PG is an empty library !!!
+# !!! Its aim is to test header file and have an IDE integration !!!
+# !!! Don't link against it !!!
 add_library(PG SHARED ${SOURCES} ${HEADERS})
 
 
@@ -17,5 +21,4 @@ PKG_CONFIG_USE_DEPENDENCY(PG roboptim-core-plugin-ipopt)
 
 set(INSTALL_PATH include/PG)
 install(FILES ${HEADERS} DESTINATION ${INSTALL_PATH})
-install(TARGETS PG DESTINATION "lib")
 
