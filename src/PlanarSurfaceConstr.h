@@ -104,4 +104,80 @@ private:
   sva::PTransform<scalar_t> surfaceFrame_;
 };
 
+
+
+template<typename Type>
+class PlanarInclusionConstr : public AutoDiffFunction<Type, Eigen::Dynamic>
+{
+public:
+  typedef AutoDiffFunction<Type, Eigen::Dynamic> parent_t;
+  typedef typename parent_t::scalar_t scalar_t;
+  typedef typename parent_t::result_ad_t result_ad_t;
+  typedef typename parent_t::argument_t argument_t;
+
+public:
+  PlanarInclusionConstr(PGData<Type>* pgdata, int bodyId,
+      const sva::PTransformd& targetFrame,
+      const std::vector<Eigen::Vector2d>& targetPoints,
+      const sva::PTransformd& surfaceFrame,
+      const std::vector<Eigen::Vector2d>& surfacePoints)
+    : parent_t(pgdata->pbSize(), int(surfacePoints.size()*targetPoints.size()), "PlanarInclusionContact")
+    , pgdata_(pgdata)
+    , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
+    , targetFrame_(targetFrame.cast<scalar_t>())
+    , targetPoints_(targetPoints)
+    , targetVecNorm_(targetPoints.size())
+    , surfacePoints_(surfacePoints.size())
+  {
+    assert(targetPoints.size() > 2);
+    for(std::size_t i = 0; i < targetPoints.size(); ++i)
+    {
+      const Eigen::Vector2d& p1 = targetPoints[i];
+      const Eigen::Vector2d& p2 = targetPoints[(i + 1) % (targetPoints.size() - 1)];
+      // just take T,B composant
+      Eigen::Vector2d vec = p2 - p1;
+      targetVecNorm_[i] = Eigen::Vector2d(-vec.y(), vec.x()).normalized();
+    }
+
+    for(std::size_t i = 0; i < surfacePoints.size(); ++i)
+    {
+      sva::PTransformd p(Eigen::Vector3d(surfacePoints[i].x(), surfacePoints[i].y(), 0.));
+      surfacePoints_[i] = (p*surfaceFrame).cast<scalar_t>();
+    }
+  }
+  ~PlanarInclusionConstr() throw()
+  { }
+
+
+  void impl_compute(result_ad_t& res, const argument_t& x) const
+  {
+    pgdata_->x(x);
+    int resIndex = 0;
+    for(const sva::PTransform<scalar_t>& sp: surfacePoints_)
+    {
+      sva::PTransform<scalar_t> pos = sp*pgdata_->fk().bodyPosW()[bodyIndex_];
+      Eigen::Vector3<scalar_t> posTargCoord = pos.translation() - targetFrame_.translation();
+      scalar_t T = targetFrame_.rotation().row(0).dot(posTargCoord);
+      scalar_t B = targetFrame_.rotation().row(1).dot(posTargCoord);
+      Eigen::Matrix<scalar_t, 2, 1> vec(T, B);
+      for(std::size_t i = 0; i < targetPoints_.size(); ++i)
+      {
+        const auto& n = targetVecNorm_[i];
+        const auto& p = targetPoints_[i];
+        res(resIndex) = n.x()*(vec.x() - p.x()) + n.y()*(vec.y() - p.y());
+        ++resIndex;
+      }
+    }
+  }
+
+private:
+  PGData<Type>* pgdata_;
+
+  int bodyIndex_;
+  sva::PTransform<scalar_t> targetFrame_;
+  std::vector<Eigen::Vector2d> targetPoints_;
+  std::vector<Eigen::Vector2d> targetVecNorm_;
+  std::vector<sva::PTransform<scalar_t>> surfacePoints_; ///< Surface points in body coord.
+};
+
 } // namespace pg

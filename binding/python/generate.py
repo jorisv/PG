@@ -32,6 +32,7 @@ def import_sva_types(mod):
 
 def import_eigen3_types(mod):
   mod.add_class('Vector3d', foreign_cpp_namespace='Eigen', import_from_module='eigen3')
+  mod.add_class('Vector2d', foreign_cpp_namespace='Eigen', import_from_module='eigen3')
   mod.add_class('Vector6d', foreign_cpp_namespace='Eigen', import_from_module='eigen3')
 
   mod.add_class('Matrix3d', foreign_cpp_namespace='Eigen', import_from_module='eigen3')
@@ -97,7 +98,9 @@ def build_pg(pg):
 
   planarContact.add_instance_attribute('bodyId', 'int')
   planarContact.add_instance_attribute('targetFrame', 'sva::PTransformd')
+  planarContact.add_instance_attribute('targetPoints', 'std::vector<Eigen::Vector2d>')
   planarContact.add_instance_attribute('surfaceFrame', 'sva::PTransformd')
+  planarContact.add_instance_attribute('surfacePoints', 'std::vector<Eigen::Vector2d>')
 
   # ForceContact
   forceContact.add_constructor([])
@@ -130,6 +133,7 @@ if __name__ == '__main__':
   pg.add_container('std::vector<double>', 'double', 'vector')
   pg.add_container('std::vector<std::vector<double> >', 'std::vector<double>', 'vector')
   pg.add_container('std::vector<sva::PTransformd>', 'sva::PTransformd', 'vector')
+  pg.add_container('std::vector<Eigen::Vector2d>', 'Eigen::Vector2d', 'vector')
 
   # pg
   build_pg(pg)

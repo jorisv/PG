@@ -40,25 +40,26 @@ namespace pg
 struct FixedPositionContact
 {
   int bodyId;
-  Eigen::Vector3d target;
-  sva::PTransformd surfaceFrame;
+  Eigen::Vector3d target; ///< Position target in world coordinate.
+  sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
 };
 
 
 struct FixedOrientationContact
 {
   int bodyId;
-  Eigen::Matrix3d target;
-  sva::PTransformd surfaceFrame;
+  Eigen::Matrix3d target; ///< Orientation target in world coordinate.
+  sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
 };
 
 
 struct PlanarContact
 {
   int bodyId;
-  sva::PTransformd targetFrame;
-  sva::PTransformd surfaceFrame;
-  /// @todo Add surfaces points
+  sva::PTransformd targetFrame; ///< Target frame in world coordinate.
+  std::vector<Eigen::Vector2d> targetPoints; ///< Target surface points in surface coordinate.
+  sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
+  std::vector<Eigen::Vector2d> surfacePoints; ///< Body surface points in surface coordinate.
 };
 
 
@@ -291,6 +292,15 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
     boost::shared_ptr<PlanarOrientationContactConstr<Type>> poc(
         new PlanarOrientationContactConstr<Type>(&pgdata_, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
     problem.addConstraint(poc, {{1., 1.}}, {{1.}});
+
+    boost::shared_ptr<PlanarInclusionConstr<Type>> pic(
+        new PlanarInclusionConstr<Type>(&pgdata_, pc.bodyId,
+                                        pc.targetFrame, pc.targetPoints,
+                                        pc.surfaceFrame, pc.surfacePoints));
+    typename PlanarInclusionConstr<Type>::intervals_t limInc(
+          pic->outputSize(), {0., std::numeric_limits<double>::infinity()});
+    typename solver_t::problem_t::scales_t scalInc(pic->outputSize(), 1.);
+    problem.addConstraint(pic, limInc, scalInc);
   }
 
   if(!forceContacts_.empty())
@@ -320,7 +330,7 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
 
     boost::shared_ptr<FrictionConeConstr<Type>> frictionCone(
         new FrictionConeConstr<Type>(&pgdata_));
-    typename PositiveForceConstr<Type>::intervals_t limFriction(
+    typename FrictionConeConstr<Type>::intervals_t limFriction(
           pgdata_.nrForcePoints(), {-std::numeric_limits<double>::infinity(), 0.});
     typename solver_t::problem_t::scales_t scalFriction(pgdata_.nrForcePoints(), 1.);
     problem.addConstraint(frictionCone, limFriction, scalFriction);
