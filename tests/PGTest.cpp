@@ -423,7 +423,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
 
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
-    // pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "ma27");
 
     Vector3d target(1.5, 0., 0.);

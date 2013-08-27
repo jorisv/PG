@@ -259,7 +259,7 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& q)
 {
   pgdata_.update();
 
-  StdCostFunc<Type> cost(&pgdata_, q);
+  StdCostFunc<Type> cost(&pgdata_, q, 0., 0.);
 
   solver_t::problem_t problem(cost);
   problem.startingPoint() = Eigen::VectorXd::Zero(pgdata_.pbSize());

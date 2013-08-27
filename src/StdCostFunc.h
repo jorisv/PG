@@ -33,10 +33,13 @@ public:
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  StdCostFunc(PGData<Type>* pgdata, std::vector<std::vector<double>> q)
+  StdCostFunc(PGData<Type>* pgdata, std::vector<std::vector<double>> q,
+              double postureScale, double torqueScale)
     : parent_t(pgdata->pbSize(), 1, "StdCostFunc")
     , pgdata_(pgdata)
     , tq_(std::move(q))
+    , postureScale_(postureScale)
+    , torqueScale_(torqueScale)
   {}
 
 
@@ -45,25 +48,41 @@ public:
     pgdata_->x(x);
 
     // compute posture task
-    scalar_t posture = 0.;
-    scalar_t torque = 0.;
-    const std::vector<std::vector<scalar_t>>& q = pgdata_->q();
-    const auto& torqueVec = pgdata_->id().torque();
-    for(int i = 0; i < pgdata_->multibody().nrJoints(); ++i)
+    scalar_t posture = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    if(postureScale_ > 0.)
     {
-      if(pgdata_->multibody().joint(i).params() == 1)
+      const std::vector<std::vector<scalar_t>>& q = pgdata_->q();
+      for(int i = 0; i < pgdata_->multibody().nrJoints(); ++i)
       {
-        posture += std::pow(tq_[i][0] - q[i][0], 2);
-        torque += std::pow(torqueVec[i](0), 2);
+        if(pgdata_->multibody().joint(i).params() == 1)
+        {
+          posture += std::pow(tq_[i][0] - q[i][0], 2);
+        }
       }
     }
 
-    res(0) = posture*0. + torque*0.;
+    // compute torque task
+    scalar_t torque = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    if(torqueScale_ > 0.)
+    {
+      const auto& torqueVec = pgdata_->id().torque();
+      for(int i = 0; i < pgdata_->multibody().nrJoints(); ++i)
+      {
+        for(int j = 0; j < pgdata_->multibody().joint(i).dof(); ++j)
+        {
+          torque += std::pow(torqueVec[i](j), 2);
+        }
+      }
+    }
+
+    res(0) = posture*postureScale_ + torque*torqueScale_;
   }
 
 private:
   PGData<Type>* pgdata_;
   std::vector<std::vector<double>> tq_;
+  double postureScale_;
+  double torqueScale_;
 };
 
 } // namespace pg
