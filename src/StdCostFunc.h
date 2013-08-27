@@ -46,16 +46,19 @@ public:
 
     // compute posture task
     scalar_t posture = 0.;
+    scalar_t torque = 0.;
     const std::vector<std::vector<scalar_t>>& q = pgdata_->q();
+    const auto& torqueVec = pgdata_->id().torque();
     for(int i = 0; i < pgdata_->multibody().nrJoints(); ++i)
     {
       if(pgdata_->multibody().joint(i).params() == 1)
       {
         posture += std::pow(tq_[i][0] - q[i][0], 2);
+        torque += std::pow(torqueVec[i](0), 2);
       }
     }
 
-    res(0) = posture*0.;
+    res(0) = posture*0. + torque*0.;
   }
 
 private:
