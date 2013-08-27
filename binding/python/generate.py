@@ -52,12 +52,16 @@ def build_pg(pg):
   fixedOrientationContact = pg.add_struct('FixedOrientationContact')
   planarContact = pg.add_struct('PlanarContact')
   forceContact = pg.add_struct('ForceContact')
+  bodyPosTarget = pg.add_struct('BodyPositionTarget')
+  bodyOriTarget = pg.add_struct('BodyOrientationTarget')
 
   # build list type
   pg.add_container('std::vector<pg::FixedPositionContact>', 'pg::FixedPositionContact', 'vector')
   pg.add_container('std::vector<pg::FixedOrientationContact>', 'pg::FixedOrientationContact', 'vector')
   pg.add_container('std::vector<pg::PlanarContact>', 'pg::PlanarContact', 'vector')
   pg.add_container('std::vector<pg::ForceContact>', 'pg::ForceContact', 'vector')
+  pg.add_container('std::vector<pg::BodyPositionTarget>', 'pg::BodyPositionTarget', 'vector')
+  pg.add_container('std::vector<pg::BodyOrientationTarget>', 'pg::BodyOrientationTarget', 'vector')
 
   # PostureGenerator
   pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb'), param('const Eigen::Vector3d&', 'gravity')])
@@ -66,6 +70,8 @@ def build_pg(pg):
   pgSolver.add_method('fixedOrientationContacts', None, [param('std::vector<pg::FixedOrientationContact>', 'contacts')])
   pgSolver.add_method('planarContacts', None, [param('std::vector<pg::PlanarContact>', 'contacts')])
   pgSolver.add_method('forceContacts', None, [param('std::vector<pg::ForceContact>', 'contacts')])
+  pgSolver.add_method('bodyPositionTargets', None, [param('std::vector<pg::BodyPositionTarget>', 'targets')])
+  pgSolver.add_method('bodyOrientationTargets', None, [param('std::vector<pg::BodyOrientationTarget>', 'targets')])
   pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
                                         param('std::vector<std::vector<double> >', 'uq')])
   pgSolver.add_method('torqueBounds', None, [param('std::vector<std::vector<double> >', 'lt'),
@@ -78,7 +84,11 @@ def build_pg(pg):
   pgSolver.add_method('param', None, [param('const std::string&', 'name'), param('int', 'value')])
   pgSolver.add_method('param', None, [param('const std::string&', 'name'), param('double', 'value')])
 
-  pgSolver.add_method('run', retval('bool'), [param('std::vector<std::vector<double> >', 'q')])
+  pgSolver.add_method('run', retval('bool'), [param('std::vector<std::vector<double> >', 'initQ'),
+                                              param('std::vector<std::vector<double> >', 'targetQ'),
+                                              param('double', 'postureScale'),
+                                              param('double', 'torqueScale')])
+
   pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [])
 
   # FixedPositionContact
@@ -110,6 +120,20 @@ def build_pg(pg):
   forceContact.add_instance_attribute('bodyId', 'int')
   forceContact.add_instance_attribute('points', 'std::vector<sva::PTransformd>')
   forceContact.add_instance_attribute('mu', 'double')
+
+  # BodyPositionTarget
+  bodyPosTarget.add_constructor([])
+
+  bodyPosTarget.add_instance_attribute('bodyId', 'int')
+  bodyPosTarget.add_instance_attribute('target', 'Eigen::Vector3d')
+  bodyPosTarget.add_instance_attribute('scale', 'double')
+
+  # BodyOrientationTarget
+  bodyOriTarget.add_constructor([])
+
+  bodyOriTarget.add_instance_attribute('bodyId', 'int')
+  bodyOriTarget.add_instance_attribute('target', 'Eigen::Matrix3d')
+  bodyOriTarget.add_instance_attribute('scale', 'double')
 
 
 
