@@ -133,8 +133,7 @@ public:
     for(std::size_t i = 0; i < targetPoints.size(); ++i)
     {
       const Eigen::Vector2d& p1 = targetPoints[i];
-      const Eigen::Vector2d& p2 = targetPoints[(i + 1) % (targetPoints.size() - 1)];
-      // just take T,B composant
+      const Eigen::Vector2d& p2 = targetPoints[(i + 1) % targetPoints.size()];
       Eigen::Vector2d vec = p2 - p1;
       targetVecNorm_[i] = Eigen::Vector2d(-vec.y(), vec.x()).normalized();
     }
