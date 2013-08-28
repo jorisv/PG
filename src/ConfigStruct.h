@@ -30,6 +30,14 @@ namespace pg
 
 struct FixedPositionContact
 {
+  FixedPositionContact() {}
+  FixedPositionContact(int bId, const Eigen::Vector3d& t,
+                       const sva::PTransformd& sf)
+    : bodyId(bId)
+    , target(t)
+    , surfaceFrame(sf)
+  {}
+
   int bodyId;
   Eigen::Vector3d target; ///< Position target in world coordinate.
   sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
@@ -38,6 +46,14 @@ struct FixedPositionContact
 
 struct FixedOrientationContact
 {
+  FixedOrientationContact() {}
+  FixedOrientationContact(int bId, const Eigen::Matrix3d& t,
+                          const sva::PTransformd& sf)
+    : bodyId(bId)
+    , target(t)
+    , surfaceFrame(sf)
+  {}
+
   int bodyId;
   Eigen::Matrix3d target; ///< Orientation target in world coordinate.
   sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
@@ -46,6 +62,17 @@ struct FixedOrientationContact
 
 struct PlanarContact
 {
+  PlanarContact() {}
+  PlanarContact(int bId,
+                const sva::PTransformd& tf, std::vector<Eigen::Vector2d> tp,
+                const sva::PTransformd& sf, std::vector<Eigen::Vector2d> sp)
+    : bodyId(bId)
+    , targetFrame(tf)
+    , targetPoints(std::move(tp))
+    , surfaceFrame(sf)
+    , surfacePoints(std::move(sp))
+  {}
+
   int bodyId;
   sva::PTransformd targetFrame; ///< Target frame in world coordinate.
   std::vector<Eigen::Vector2d> targetPoints; ///< Target surface points in surface coordinate.
@@ -56,6 +83,13 @@ struct PlanarContact
 
 struct ForceContact
 {
+  ForceContact() {}
+  ForceContact(int bId, std::vector<sva::PTransformd> p, double m)
+    : bodyId(bId)
+    , points(std::move(p))
+    , mu(m)
+  {}
+
   int bodyId;
   std::vector<sva::PTransformd> points;
   double mu;
@@ -64,6 +98,13 @@ struct ForceContact
 
 struct BodyPositionTarget
 {
+  BodyPositionTarget() {}
+  BodyPositionTarget(int bId, const Eigen::Vector3d& t, double s)
+    : bodyId(bId)
+    , target(t)
+    , scale(s)
+  {}
+
   int bodyId;
   Eigen::Vector3d target;
   double scale;
@@ -72,6 +113,13 @@ struct BodyPositionTarget
 
 struct BodyOrientationTarget
 {
+  BodyOrientationTarget() {}
+  BodyOrientationTarget(int bId, const Eigen::Matrix3d& t, double s)
+    : bodyId(bId)
+    , target(t)
+    , scale(s)
+  {}
+
   int bodyId;
   Eigen::Matrix3d target;
   double scale;

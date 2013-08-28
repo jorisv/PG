@@ -93,6 +93,9 @@ def build_pg(pg):
 
   # FixedPositionContact
   fixedPositionContact.add_constructor([])
+  fixedPositionContact.add_constructor([param('int', 'bodyId'),
+                                        param('const Eigen::Vector3d&', 't'),
+                                        param('const sva::PTransformd&', 'sf')])
 
   fixedPositionContact.add_instance_attribute('bodyId', 'int')
   fixedPositionContact.add_instance_attribute('target', 'Eigen::Vector3d')
@@ -100,6 +103,9 @@ def build_pg(pg):
 
   # FixedOrientationContact
   fixedOrientationContact.add_constructor([])
+  fixedOrientationContact.add_constructor([param('int', 'bodyId'),
+                                           param('const Eigen::Matrix3d&', 't'),
+                                           param('const sva::PTransformd&', 'sf')])
 
   fixedOrientationContact.add_instance_attribute('bodyId', 'int')
   fixedOrientationContact.add_instance_attribute('target', 'Eigen::Matrix3d')
@@ -107,6 +113,9 @@ def build_pg(pg):
 
   # PlanarContact
   planarContact.add_constructor([])
+  planarContact.add_constructor([param('int', 'bodyId'),
+                                 param('const sva::PTransformd&', 'tf'), param('std::vector<Eigen::Vector2d>', 'tp'),
+                                 param('const sva::PTransformd&', 'sf'), param('std::vector<Eigen::Vector2d>', 'sp')])
 
   planarContact.add_instance_attribute('bodyId', 'int')
   planarContact.add_instance_attribute('targetFrame', 'sva::PTransformd')
@@ -116,6 +125,9 @@ def build_pg(pg):
 
   # ForceContact
   forceContact.add_constructor([])
+  forceContact.add_constructor([param('int', 'bodyId'),
+                                param('std::vector<sva::PTransformd>', 'points'),
+                                param('double', 'mu')])
 
   forceContact.add_instance_attribute('bodyId', 'int')
   forceContact.add_instance_attribute('points', 'std::vector<sva::PTransformd>')
@@ -123,6 +135,9 @@ def build_pg(pg):
 
   # BodyPositionTarget
   bodyPosTarget.add_constructor([])
+  bodyPosTarget.add_constructor([param('int', 'bodyId'),
+                                 param('const Eigen::Vector3d&', 'target'),
+                                 param('double', 'scale')])
 
   bodyPosTarget.add_instance_attribute('bodyId', 'int')
   bodyPosTarget.add_instance_attribute('target', 'Eigen::Vector3d')
@@ -130,6 +145,9 @@ def build_pg(pg):
 
   # BodyOrientationTarget
   bodyOriTarget.add_constructor([])
+  bodyOriTarget.add_constructor([param('int', 'bodyId'),
+                                 param('const Eigen::Matrix3d&', 'target'),
+                                 param('double', 'scale')])
 
   bodyOriTarget.add_instance_attribute('bodyId', 'int')
   bodyOriTarget.add_instance_attribute('target', 'Eigen::Matrix3d')
