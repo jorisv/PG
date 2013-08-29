@@ -70,6 +70,7 @@ def build_pg(pg):
   pgSolver.add_method('fixedOrientationContacts', None, [param('std::vector<pg::FixedOrientationContact>', 'contacts')])
   pgSolver.add_method('planarContacts', None, [param('std::vector<pg::PlanarContact>', 'contacts')])
   pgSolver.add_method('forceContacts', None, [param('std::vector<pg::ForceContact>', 'contacts')])
+  pgSolver.add_method('forceContacts', retval('std::vector<pg::ForceContact>'), [])
   pgSolver.add_method('bodyPositionTargets', None, [param('std::vector<pg::BodyPositionTarget>', 'targets')])
   pgSolver.add_method('bodyOrientationTargets', None, [param('std::vector<pg::BodyOrientationTarget>', 'targets')])
   pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
@@ -90,6 +91,8 @@ def build_pg(pg):
                                               param('double', 'torqueScale')])
 
   pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [])
+  pgSolver.add_method('forces', retval('std::vector<sva::ForceVecd>'), [])
+  pgSolver.add_method('torque', retval('std::vector<std::vector<double> >'), [])
 
   # FixedPositionContact
   fixedPositionContact.add_constructor([])
@@ -177,6 +180,7 @@ if __name__ == '__main__':
   pg.add_container('std::vector<double>', 'double', 'vector')
   pg.add_container('std::vector<std::vector<double> >', 'std::vector<double>', 'vector')
   pg.add_container('std::vector<sva::PTransformd>', 'sva::PTransformd', 'vector')
+  pg.add_container('std::vector<sva::ForceVecd>', 'sva::ForceVecd', 'vector')
   pg.add_container('std::vector<Eigen::Vector2d>', 'Eigen::Vector2d', 'vector')
 
   # pg
