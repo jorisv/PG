@@ -302,8 +302,11 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
         new PlanarPositionContactConstr<Type>(&pgdata_, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
     problem.addConstraint(ppc, {{0., 0.}}, {{1.}});
 
+    // N axis must be aligned between target and surface frame.
     boost::shared_ptr<PlanarOrientationContactConstr<Type>> poc(
-        new PlanarOrientationContactConstr<Type>(&pgdata_, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
+        new PlanarOrientationContactConstr<Type>(&pgdata_, pc.bodyId,
+                                                 pc.targetFrame, pc.surfaceFrame,
+                                                 2));
     problem.addConstraint(poc, {{1., 1.}}, {{1.}});
 
     boost::shared_ptr<PlanarInclusionConstr<Type>> pic(

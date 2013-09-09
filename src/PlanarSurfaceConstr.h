@@ -77,12 +77,14 @@ public:
 public:
   PlanarOrientationContactConstr(PGData<Type>* pgdata, int bodyId,
       const sva::PTransformd& targetFrame,
-      const sva::PTransformd& surfaceFrame)
+      const sva::PTransformd& surfaceFrame,
+      int axis)
     : parent_t(pgdata->pbSize(), 1, "PlanarPositionContact")
     , pgdata_(pgdata)
     , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
     , targetFrame_(targetFrame.cast<scalar_t>())
     , surfaceFrame_(surfaceFrame.cast<scalar_t>())
+    , axis_(axis)
   {}
   ~PlanarOrientationContactConstr() throw()
   { }
@@ -93,7 +95,7 @@ public:
     pgdata_->x(x);
     sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
 
-    res(0) = (pos.rotation().row(2)).dot(targetFrame_.rotation().row(2));
+    res(0) = (pos.rotation().row(axis_)).dot(targetFrame_.rotation().row(axis_));
   }
 
 private:
@@ -102,6 +104,7 @@ private:
   int bodyIndex_;
   sva::PTransform<scalar_t> targetFrame_;
   sva::PTransform<scalar_t> surfaceFrame_;
+  int axis_;
 };
 
 
