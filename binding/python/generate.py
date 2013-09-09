@@ -51,6 +51,7 @@ def build_pg(pg):
   fixedPositionContact = pg.add_struct('FixedPositionContact')
   fixedOrientationContact = pg.add_struct('FixedOrientationContact')
   planarContact = pg.add_struct('PlanarContact')
+  gripperContact = pg.add_struct('GripperContact')
   forceContact = pg.add_struct('ForceContact')
   bodyPosTarget = pg.add_struct('BodyPositionTarget')
   bodyOriTarget = pg.add_struct('BodyOrientationTarget')
@@ -59,6 +60,7 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::FixedPositionContact>', 'pg::FixedPositionContact', 'vector')
   pg.add_container('std::vector<pg::FixedOrientationContact>', 'pg::FixedOrientationContact', 'vector')
   pg.add_container('std::vector<pg::PlanarContact>', 'pg::PlanarContact', 'vector')
+  pg.add_container('std::vector<pg::GripperContact>', 'pg::GripperContact', 'vector')
   pg.add_container('std::vector<pg::ForceContact>', 'pg::ForceContact', 'vector')
   pg.add_container('std::vector<pg::BodyPositionTarget>', 'pg::BodyPositionTarget', 'vector')
   pg.add_container('std::vector<pg::BodyOrientationTarget>', 'pg::BodyOrientationTarget', 'vector')
@@ -69,6 +71,7 @@ def build_pg(pg):
   pgSolver.add_method('fixedPositionContacts', None, [param('std::vector<pg::FixedPositionContact>', 'contacts')])
   pgSolver.add_method('fixedOrientationContacts', None, [param('std::vector<pg::FixedOrientationContact>', 'contacts')])
   pgSolver.add_method('planarContacts', None, [param('std::vector<pg::PlanarContact>', 'contacts')])
+  pgSolver.add_method('gripperContacts', None, [param('std::vector<pg::GripperContact>', 'contacts')])
   pgSolver.add_method('forceContacts', None, [param('std::vector<pg::ForceContact>', 'contacts')])
   pgSolver.add_method('forceContacts', retval('std::vector<pg::ForceContact>'), [])
   pgSolver.add_method('bodyPositionTargets', None, [param('std::vector<pg::BodyPositionTarget>', 'targets')])
@@ -125,6 +128,18 @@ def build_pg(pg):
   planarContact.add_instance_attribute('targetPoints', 'std::vector<Eigen::Vector2d>')
   planarContact.add_instance_attribute('surfaceFrame', 'sva::PTransformd')
   planarContact.add_instance_attribute('surfacePoints', 'std::vector<Eigen::Vector2d>')
+
+  # GripperContact
+  gripperContact.add_constructor([])
+  gripperContact.add_constructor([param('int', 'bodyId'),
+                                 param('const sva::PTransformd&', 'tf'), param('std::vector<Eigen::Vector2d>', 'tp'),
+                                 param('const sva::PTransformd&', 'sf'), param('std::vector<Eigen::Vector2d>', 'sp')])
+
+  gripperContact.add_instance_attribute('bodyId', 'int')
+  gripperContact.add_instance_attribute('targetFrame', 'sva::PTransformd')
+  gripperContact.add_instance_attribute('targetPoints', 'std::vector<Eigen::Vector2d>')
+  gripperContact.add_instance_attribute('surfaceFrame', 'sva::PTransformd')
+  gripperContact.add_instance_attribute('surfacePoints', 'std::vector<Eigen::Vector2d>')
 
   # ForceContact
   forceContact.add_constructor([])

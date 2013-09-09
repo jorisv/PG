@@ -52,6 +52,7 @@ public:
   void fixedPositionContacts(std::vector<FixedPositionContact> contacts);
   void fixedOrientationContacts(std::vector<FixedOrientationContact> contacts);
   void planarContacts(std::vector<PlanarContact> contacts);
+  void gripperContacts(std::vector<GripperContact> contacts);
 
   void forceContacts(std::vector<ForceContact> contacts);
   const std::vector<ForceContact>& forceContacts();
@@ -84,6 +85,7 @@ private:
   std::vector<FixedPositionContact> fixedPosContacts_;
   std::vector<FixedOrientationContact> fixedOriContacts_;
   std::vector<PlanarContact> planarContacts_;
+  std::vector<GripperContact> gripperContacts_;
   std::vector<ForceContact> forceContacts_;
   std::vector<BodyPositionTarget> bodyPosTargets_;
   std::vector<BodyOrientationTarget> bodyOriTargets_;
@@ -156,6 +158,13 @@ template<typename Type>
 void PostureGenerator<Type>::planarContacts(std::vector<PlanarContact> contacts)
 {
   planarContacts_ = std::move(contacts);
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::gripperContacts(std::vector<GripperContact> contacts)
+{
+  gripperContacts_ = std::move(contacts);
 }
 
 
@@ -313,6 +322,37 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
         new PlanarInclusionConstr<Type>(&pgdata_, pc.bodyId,
                                         pc.targetFrame, pc.targetPoints,
                                         pc.surfaceFrame, pc.surfacePoints));
+    typename PlanarInclusionConstr<Type>::intervals_t limInc(
+          pic->outputSize(), {0., std::numeric_limits<double>::infinity()});
+    typename solver_t::problem_t::scales_t scalInc(pic->outputSize(), 1.);
+    problem.addConstraint(pic, limInc, scalInc);
+  }
+
+  for(const GripperContact& gc: gripperContacts_)
+  {
+    boost::shared_ptr<PlanarPositionContactConstr<Type>> ppc(
+        new PlanarPositionContactConstr<Type>(&pgdata_, gc.bodyId, gc.targetFrame, gc.surfaceFrame));
+    problem.addConstraint(ppc, {{0., 0.}}, {{1.}});
+
+    // N axis must be aligned between target and surface frame.
+    boost::shared_ptr<PlanarOrientationContactConstr<Type>> pocN(
+        new PlanarOrientationContactConstr<Type>(&pgdata_, gc.bodyId,
+                                                 gc.targetFrame, gc.surfaceFrame,
+                                                 2));
+    problem.addConstraint(pocN, {{1., 1.}}, {{1.}});
+
+    // T axis must be aligned between target and surface frame.
+    // (B could be choose also)
+    boost::shared_ptr<PlanarOrientationContactConstr<Type>> pocT(
+        new PlanarOrientationContactConstr<Type>(&pgdata_, gc.bodyId,
+                                                 gc.targetFrame, gc.surfaceFrame,
+                                                 0));
+    problem.addConstraint(pocT, {{1., 1.}}, {{1.}});
+
+    boost::shared_ptr<PlanarInclusionConstr<Type>> pic(
+        new PlanarInclusionConstr<Type>(&pgdata_, gc.bodyId,
+                                        gc.targetFrame, gc.targetPoints,
+                                        gc.surfaceFrame, gc.surfacePoints));
     typename PlanarInclusionConstr<Type>::intervals_t limInc(
           pic->outputSize(), {0., std::numeric_limits<double>::infinity()});
     typename solver_t::problem_t::scales_t scalInc(pic->outputSize(), 1.);

@@ -81,6 +81,27 @@ struct PlanarContact
 };
 
 
+struct GripperContact
+{
+  GripperContact() {}
+  GripperContact(int bId,
+                const sva::PTransformd& tf, std::vector<Eigen::Vector2d> tp,
+                const sva::PTransformd& sf, std::vector<Eigen::Vector2d> sp)
+    : bodyId(bId)
+    , targetFrame(tf)
+    , targetPoints(std::move(tp))
+    , surfaceFrame(sf)
+    , surfacePoints(std::move(sp))
+  {}
+
+  int bodyId;
+  sva::PTransformd targetFrame; ///< Target frame in world coordinate.
+  std::vector<Eigen::Vector2d> targetPoints; ///< Target surface points in surface coordinate.
+  sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
+  std::vector<Eigen::Vector2d> surfacePoints; ///< Body surface points in surface coordinate.
+};
+
+
 struct ForceContact
 {
   ForceContact() {}
