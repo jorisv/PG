@@ -301,8 +301,8 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
   {
     boost::shared_ptr<FixedOrientationContactConstr<Type>> fcc(
         new FixedOrientationContactConstr<Type>(&pgdata_, fc.bodyId, fc.target, fc.surfaceFrame));
-    problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.}},
-        {{1e-2}, {1e-2}, {1e-2}});
+    problem.addConstraint(fcc, {{1., 1.}, {1., 1.}, {1., 1.}},
+        {{1e+1}, {1e+1}, {1e+1}});
   }
 
   for(const PlanarContact& pc: planarContacts_)

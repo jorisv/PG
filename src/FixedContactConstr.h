@@ -88,10 +88,12 @@ public:
 
   void impl_compute(result_ad_t& res, const argument_t& x) const
   {
-    /// @todo rotation error derivative is not numericaly stable
     pgdata_->x(x);
     sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
-    res = sva::rotationError(pos.rotation(), target_, 1e-7);
+    res(0) = pos.rotation().row(0).dot(target_.row(0));
+    res(1) = pos.rotation().row(1).dot(target_.row(1));
+    // this is redundant, but give better result in some case.
+    res(2) = pos.rotation().row(2).dot(target_.row(2));
   }
 
 private:

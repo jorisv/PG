@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(PGTest)
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
-    BOOST_CHECK_SMALL((mbcWork.bodyPosW[3].rotation() - target).norm(), 1e-5);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[3].rotation() - target).norm(), 1e-3);
   }
 }
 
@@ -339,7 +339,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
-    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-5);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-3);
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12.py");
   }
 
@@ -363,7 +363,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
-    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-5);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-3);
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Stab.py");
   }
 
@@ -390,7 +390,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
-    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-5);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-3);
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Stab2.py");
   }
 
