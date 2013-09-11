@@ -74,6 +74,7 @@ T computeDist(SCD::CD_Pair* pair,
 }
 
 
+
 template<typename Type>
 class EnvCollisionConstr : public AutoDiffFunction<Type, Eigen::Dynamic>
 {
@@ -129,6 +130,79 @@ private:
   {
     int bodyIndex;
     sva::PTransformd bodyT;
+    SCD::CD_Pair* pair;
+  };
+
+private:
+  PGData<Type>* pgdata_;
+  std::vector<CollisionData> cols_;
+};
+
+
+
+template<typename Type>
+class SelfCollisionConstr : public AutoDiffFunction<Type, Eigen::Dynamic>
+{
+public:
+  typedef AutoDiffFunction<Type, Eigen::Dynamic> parent_t;
+  typedef typename parent_t::scalar_t scalar_t;
+  typedef typename parent_t::result_ad_t result_ad_t;
+  typedef typename parent_t::argument_t argument_t;
+
+public:
+  SelfCollisionConstr(PGData<Type>* pgdata, const std::vector<SelfCollision>& cols)
+    : parent_t(pgdata->pbSize(), int(cols.size()), "EnvCollision")
+    , pgdata_(pgdata)
+  {
+    cols_.reserve(cols.size());
+    for(const SelfCollision& sc: cols)
+    {
+      cols_.push_back({pgdata_->multibody().bodyIndexById(sc.body1Id),
+                       sc.body1T,
+                       pgdata_->multibody().bodyIndexById(sc.body2Id),
+                       sc.body2T,
+                       new SCD::CD_Pair(sc.body1Hull, sc.body2Hull)});
+    }
+  }
+  ~SelfCollisionConstr() throw()
+  {
+    /// @todo try to use unique_ptr instead
+    for(auto& cd: cols_)
+    {
+      delete cd.pair;
+    }
+  }
+
+
+  void impl_compute(result_ad_t& res, const argument_t& x) const
+  {
+    pgdata_->x(x);
+    const FK<scalar_t>& fk = pgdata_->fk();
+    int i = 0;
+    for(const CollisionData& cd: cols_)
+    {
+      const sva::PTransform<scalar_t>& obj1Pos = fk.bodyPosW()[cd.body1Index];
+      const sva::PTransform<scalar_t>& obj2Pos = fk.bodyPosW()[cd.body2Index];
+      sva::PTransformd obj1Posd(toValue(obj1Pos.rotation()), toValue(obj1Pos.translation()));
+      sva::PTransformd obj2Posd(toValue(obj2Pos.rotation()), toValue(obj2Pos.translation()));
+
+      cd.pair->operator[](0)->setTransformation(toSCD(cd.body1T*obj1Posd));
+      cd.pair->operator[](1)->setTransformation(toSCD(cd.body2T*obj2Posd));
+
+      res(i) = computeDist(cd.pair,
+                           obj1Pos, obj2Pos,
+                           obj1Posd, obj2Posd);
+      ++i;
+    }
+  }
+
+private:
+  struct CollisionData
+  {
+    int body1Index;
+    sva::PTransformd body1T;
+    int body2Index;
+    sva::PTransformd body2T;
     SCD::CD_Pair* pair;
   };
 

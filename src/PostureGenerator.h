@@ -59,6 +59,7 @@ public:
   const std::vector<ForceContact>& forceContacts();
 
   void envCollisions(std::vector<EnvCollision> cols);
+  void selfCollisions(std::vector<SelfCollision> cols);
 
   void bodyPositionTargets(std::vector<BodyPositionTarget> targets);
   void bodyOrientationTargets(std::vector<BodyOrientationTarget> targets);
@@ -92,6 +93,7 @@ private:
   std::vector<GripperContact> gripperContacts_;
   std::vector<ForceContact> forceContacts_;
   std::vector<EnvCollision> envCollisions_;
+  std::vector<SelfCollision> selfCollisions_;
   std::vector<BodyPositionTarget> bodyPosTargets_;
   std::vector<BodyOrientationTarget> bodyOriTargets_;
   Eigen::VectorXd ql_, qu_;
@@ -208,6 +210,13 @@ template<typename Type>
 void PostureGenerator<Type>::envCollisions(std::vector<EnvCollision> cols)
 {
   envCollisions_ = std::move(cols);
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::selfCollisions(std::vector<SelfCollision> cols)
+{
+  selfCollisions_ = std::move(cols);
 }
 
 
@@ -433,6 +442,19 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
     }
     typename solver_t::problem_t::scales_t scalCol(ec->outputSize(), 1.);
     problem.addConstraint(ec, limCol, scalCol);
+  }
+
+  if(!selfCollisions_.empty())
+  {
+    boost::shared_ptr<SelfCollisionConstr<Type>> sc(
+        new SelfCollisionConstr<Type>(&pgdata_, selfCollisions_));
+    typename EnvCollisionConstr<Type>::intervals_t limCol(sc->outputSize());
+    for(std::size_t i = 0; i < limCol.size(); ++i)
+    {
+      limCol[i] = {std::pow(selfCollisions_[i].minDist, 2), std::numeric_limits<double>::infinity()};
+    }
+    typename solver_t::problem_t::scales_t scalCol(sc->outputSize(), 1.);
+    problem.addConstraint(sc, limCol, scalCol);
   }
 
   if(isTorque_)

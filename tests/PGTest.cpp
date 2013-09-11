@@ -498,6 +498,9 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   }
 
 
+  /*
+   *                      Environment collision avoidance
+   */
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
@@ -519,11 +522,11 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
 
     pgPb.param("ipopt.tol", 1e-1);
     pgPb.param("ipopt.dual_inf_tol", 1e-1);
-    SCD::S_Sphere* boxBody = new SCD::S_Sphere(0.5);
-    SCD::S_Sphere* envBody = new SCD::S_Sphere(0.5);
-    envBody->setTransformation(pg::toSCD(sva::PTransformd::Identity()));
+    SCD::S_Sphere hullBody(0.5);
+    SCD::S_Sphere hullEnv(0.5);
+    hullEnv.setTransformation(pg::toSCD(sva::PTransformd::Identity()));
 
-    pgPb.envCollisions({{id, boxBody, sva::PTransformd::Identity(), envBody, 0.1}});
+    pgPb.envCollisions({{id, &hullBody, sva::PTransformd::Identity(), &hullEnv, 0.1}});
     // we check that we couldn't go in collision
     BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
 
@@ -541,5 +544,64 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_GT((mbcWork.bodyPosW[index].translation() - target).norm(), 1. + 0.1);
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12EnvCol2.py");
+  }
+
+
+  /*
+   *                      Self collision avoidance
+   */
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
+    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "ma27");
+
+    Vector3d target(0., 0., 0.);
+    int id1 = 12;
+    int index1 = mb.bodyIndexById(id1);
+    int id2 = 6;
+    int index2 = mb.bodyIndexById(id2);
+    pgPb.bodyPositionTargets({{id1, target, 0.1}, {id2, target, 0.1}});
+
+    // first we try to go to origin
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+
+    auto qOrigin = pgPb.q();
+    mbcWork.q = qOrigin;
+    forwardKinematics(mb, mbcWork);
+    double bodyDist = (mbcWork.bodyPosW[index1].translation() -
+                       mbcWork.bodyPosW[index2].translation()).norm();
+    BOOST_CHECK_SMALL(bodyDist, 1e-5);
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12SelfCol0.py");
+
+    pgPb.param("ipopt.tol", 1e-1);
+    pgPb.param("ipopt.dual_inf_tol", 1e-1);
+    SCD::S_Sphere hullBody1(0.5);
+    SCD::S_Sphere hullBody2(0.5);
+
+    pgPb.selfCollisions({{id1, &hullBody1, sva::PTransformd::Identity(),
+                          id2, &hullBody2, sva::PTransformd::Identity(),
+                          0.1}});
+
+    // we check that we couldn't go in collision
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    bodyDist = (mbcWork.bodyPosW[index1].translation() -
+                mbcWork.bodyPosW[index2].translation()).norm();
+    BOOST_CHECK_GT(bodyDist, 1. + 0.1);
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12SelfCol1.py");
+
+
+    pgPb.bodyPositionTargets({});
+    // same check but we start in constraint violation
+    BOOST_REQUIRE(pgPb.run(qOrigin, {}, mbcInit.q, 0., 0., 0.));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    bodyDist = (mbcWork.bodyPosW[index1].translation() -
+                mbcWork.bodyPosW[index2].translation()).norm();
+    BOOST_CHECK_GT(bodyDist, 1. + 0.1);
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12SelfCol2.py");
   }
 }

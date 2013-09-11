@@ -145,6 +145,31 @@ struct EnvCollision
 };
 
 
+struct SelfCollision
+{
+  SelfCollision() {}
+  SelfCollision(int b1Id, SCD::S_Object* b1Hull, const sva::PTransformd& b1T,
+                int b2Id, SCD::S_Object* b2Hull, const sva::PTransformd& b2T,
+                double md)
+    : body1Id(b1Id)
+    , body1Hull(b1Hull)
+    , body1T(b1T)
+    , body2Id(b2Id)
+    , body2Hull(b2Hull)
+    , body2T(b2T)
+    , minDist(md)
+  {}
+
+  int body1Id;
+  SCD::S_Object* body1Hull;
+  sva::PTransformd body1T;
+  int body2Id;
+  SCD::S_Object* body2Hull;
+  sva::PTransformd body2T;
+  double minDist;
+};
+
+
 struct BodyPositionTarget
 {
   BodyPositionTarget() {}
