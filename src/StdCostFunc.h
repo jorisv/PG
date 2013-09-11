@@ -35,7 +35,7 @@ public:
 
 public:
   StdCostFunc(PGData<Type>* pgdata, std::vector<std::vector<double>> q,
-              double postureScale, double torqueScale,
+              double postureScale, double torqueScale, double forceScale,
               const std::vector<BodyPositionTarget>& bodyPosTargets,
               const std::vector<BodyOrientationTarget>& bodyOriTargets)
     : parent_t(pgdata->pbSize(), 1, "StdCostFunc")
@@ -43,6 +43,7 @@ public:
     , tq_(std::move(q))
     , postureScale_(postureScale)
     , torqueScale_(torqueScale)
+    , forceScale_(forceScale)
     , bodyPosTargets_(bodyPosTargets.size())
     , bodyOriTargets_(bodyOriTargets.size())
   {
@@ -93,6 +94,19 @@ public:
       }
     }
 
+    // compute force task
+    scalar_t force = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    if(forceScale_ > 0.)
+    {
+      for(const auto& fd: pgdata_->forceDatas())
+      {
+        for(const sva::ForceVec<scalar_t>& fv: fd.forces)
+        {
+          force += fv.force().squaredNorm();
+        }
+      }
+    }
+
     const FK<scalar_t>& fk = pgdata_->fk();
     scalar_t pos = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
     for(const BodyPositionTargetData& bp: bodyPosTargets_)
@@ -109,7 +123,8 @@ public:
           bo.scale;
     }
 
-    res(0) = posture*postureScale_ + torque*torqueScale_ + pos + ori;
+    res(0) = posture*postureScale_ + torque*torqueScale_ + force*forceScale_ +
+        pos + ori;
   }
 
 private:
@@ -132,6 +147,7 @@ private:
   std::vector<std::vector<double>> tq_;
   double postureScale_;
   double torqueScale_;
+  double forceScale_;
   std::vector<BodyPositionTargetData> bodyPosTargets_;
   std::vector<BodyOrientationTargetData> bodyOriTargets_;
 };

@@ -70,8 +70,9 @@ public:
   void param(const std::string& name, int value);
 
   bool run(const std::vector<std::vector<double> >& initQ,
+           const std::vector<sva::ForceVecd>& initForces,
            const std::vector<std::vector<double> >& targetQ,
-           double postureScale, double torqueScale);
+           double postureScale, double torqueScale, double forceScale);
 
   std::vector<std::vector<double>> q() const;
   std::vector<sva::ForceVecd> forces() const;
@@ -255,33 +256,50 @@ void PostureGenerator<Type>::param(const std::string& name, int value)
 
 template<typename Type>
 bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
+                                 const std::vector<sva::ForceVecd>& initForces,
                                  const std::vector<std::vector<double> >& targetQ,
-                                 double postureScale, double torqueScale)
+                                 double postureScale, double torqueScale, double forceScale)
 {
   pgdata_.update();
 
-  StdCostFunc<Type> cost(&pgdata_, targetQ, postureScale, torqueScale, bodyPosTargets_, bodyOriTargets_);
+  StdCostFunc<Type> cost(&pgdata_, targetQ, postureScale, torqueScale, forceScale,
+                         bodyPosTargets_, bodyOriTargets_);
 
   solver_t::problem_t problem(cost);
   problem.startingPoint() = Eigen::VectorXd::Zero(pgdata_.pbSize());
   problem.startingPoint()->head(pgdata_.multibody().nrParams()) =
       rbd::paramToVector(pgdata_.multibody(), initQ);
 
-  // compute initial force value
-  // this is not really smart but work well
-  // for contacts with N vector against gravity vector
-  double robotMass = 0.;
-  for(const rbd::Body& b: pgdata_.multibody().bodies())
+  // if init force is not well sized we compute it
+  if(int(initForces.size()) != pgdata_.nrForcePoints())
   {
-    robotMass += b.inertia().mass();
-  }
+    // compute initial force value
+    // this is not really smart but work well
+    // for contacts with N vector against gravity vector
+    double robotMass = 0.;
+    for(const rbd::Body& b: pgdata_.multibody().bodies())
+    {
+      robotMass += b.inertia().mass();
+    }
 
-  double initialForce = (pgdata_.gravity().norm()*robotMass)/pgdata_.nrForcePoints();
-  int pos = pgdata_.multibody().nrParams();
-  for(int i = 0; i < pgdata_.nrForcePoints(); ++i)
+    double initialForce = (pgdata_.gravity().norm()*robotMass)/pgdata_.nrForcePoints();
+    int pos = pgdata_.multibody().nrParams();
+    for(int i = 0; i < pgdata_.nrForcePoints(); ++i)
+    {
+      (*problem.startingPoint())[pos + 2] = initialForce;
+      pos += 3;
+    }
+  }
+  else
   {
-    (*problem.startingPoint())[pos + 2] = initialForce;
-    pos += 3;
+    int pos = pgdata_.multibody().nrParams();
+    for(int i = 0; i < pgdata_.nrForcePoints(); ++i)
+    {
+      (*problem.startingPoint())[pos + 0] = initForces[i].force()[0];
+      (*problem.startingPoint())[pos + 1] = initForces[i].force()[1];
+      (*problem.startingPoint())[pos + 2] = initForces[i].force()[2];
+      pos += 3;
+    }
   }
 
   for(int i = 0; i < pgdata_.multibody().nrParams(); ++i)

@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE(PGTest)
     Vector3d target(0., 0.5, 0.5);
     pgPb.fixedPositionContacts({{3, target, sva::PTransformd::Identity()}});
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, mbcInit.q, 0., 0.));
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(PGTest)
     Matrix3d target(Quaterniond(AngleAxisd(-cst::pi<double>()/2., Vector3d::UnitX())));
     pgPb.fixedOrientationContacts({{3, target, sva::PTransformd::Identity()}});
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, mbcInit.q, 0., 0.));
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -334,7 +334,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
     pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, mbcInit.q, 0., 0.));
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -358,7 +358,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.forceContacts({{0, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
                              sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.}});
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, mbcInit.q, 0., 0.));
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -385,7 +385,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
                         {id, {sva::PTransformd(frameEnd, Vector3d(0.01, 0., 0.)),
                               sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}});
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, mbcInit.q, 0., 0.));
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -409,7 +409,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     pgPb.planarContacts({{id, targetSurface, targetPoints, bodySurface, surfPoints}});
     pgPb.bodyPositionTargets({{id, Vector3d(2., 1., 0.), 10.}});
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, mbcInit.q, 0., 0.));
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -455,7 +455,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     }
     pgPb.torqueBounds(ql, qu);
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, mbcInit.q, 0., 0.));
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
 
     std::vector<sva::ForceVecd> forces = pgPb.forces();
     std::vector<std::vector<double>> torque = pgPb.torque();

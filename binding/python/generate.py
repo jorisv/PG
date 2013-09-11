@@ -89,9 +89,11 @@ def build_pg(pg):
   pgSolver.add_method('param', None, [param('const std::string&', 'name'), param('double', 'value')])
 
   pgSolver.add_method('run', retval('bool'), [param('std::vector<std::vector<double> >', 'initQ'),
+                                              param('std::vector<sva::ForceVecd>', 'initForces'),
                                               param('std::vector<std::vector<double> >', 'targetQ'),
                                               param('double', 'postureScale'),
-                                              param('double', 'torqueScale')])
+                                              param('double', 'torqueScale'),
+                                              param('double', 'forceScale')])
 
   pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [])
   pgSolver.add_method('forces', retval('std::vector<sva::ForceVecd>'), [])
