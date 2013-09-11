@@ -25,4 +25,5 @@
 #include "FrictionConeConstr.h"
 #include "PlanarSurfaceConstr.h"
 #include "TorqueConstr.h"
+#include "CollisionConstr.h"
 #include "PostureGenerator.h"

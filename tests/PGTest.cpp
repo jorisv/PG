@@ -25,6 +25,9 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/math/constants/constants.hpp>
 
+// SCD
+#include <SCD/S_Object/S_Sphere.h>
+
 #include "EigenAutoDiffScalar.h"
 // RBDyn
 #include <RBDyn/FK.h>
@@ -492,5 +495,51 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     }
 
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Torque.py");
+  }
+
+
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
+    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "ma27");
+
+    Vector3d target(0., 0., 0.);
+    int id = 12;
+    int index = mb.bodyIndexById(id);
+    pgPb.bodyPositionTargets({{id, target, 0.1}});
+
+    // first we try to go to origin
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+
+    auto qOrigin = pgPb.q();
+    mbcWork.q = qOrigin;
+    forwardKinematics(mb, mbcWork);
+    BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12EnvCol0.py");
+
+    pgPb.param("ipopt.tol", 1e-1);
+    pgPb.param("ipopt.dual_inf_tol", 1e-1);
+    SCD::S_Sphere* boxBody = new SCD::S_Sphere(0.5);
+    SCD::S_Sphere* envBody = new SCD::S_Sphere(0.5);
+    envBody->setTransformation(pg::toSCD(sva::PTransformd::Identity()));
+
+    pgPb.envCollisions({{id, boxBody, sva::PTransformd::Identity(), envBody, 0.1}});
+    // we check that we couldn't go in collision
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    BOOST_CHECK_GT((mbcWork.bodyPosW[index].translation() - target).norm(), 1. + 0.1);
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12EnvCol1.py");
+
+
+    pgPb.bodyPositionTargets({});
+    // same check but we start in constraint violation
+    BOOST_REQUIRE(pgPb.run(qOrigin, {}, mbcInit.q, 0., 0., 0.));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    BOOST_CHECK_GT((mbcWork.bodyPosW[index].translation() - target).norm(), 1. + 0.1);
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12EnvCol2.py");
   }
 }

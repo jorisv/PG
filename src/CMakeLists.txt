@@ -6,6 +6,7 @@ set(HEADERS FK.h ID.h
             FixedContactConstr.h StaticStabilityConstr.h
             PositiveForceConstr.h FrictionConeConstr.h
             PlanarSurfaceConstr.h TorqueConstr.h
+            CollisionConstr.h
             PostureGenerator.h)
 
 # !!! PG is an empty library !!!
@@ -14,6 +15,7 @@ set(HEADERS FK.h ID.h
 add_library(PG SHARED ${SOURCES} ${HEADERS})
 
 
+PKG_CONFIG_USE_DEPENDENCY(PG scd)
 PKG_CONFIG_USE_DEPENDENCY(PG SpaceVecAlg)
 PKG_CONFIG_USE_DEPENDENCY(PG RBDyn)
 PKG_CONFIG_USE_DEPENDENCY(PG roboptim-core)

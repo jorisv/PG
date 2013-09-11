@@ -8,6 +8,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 add_executable(PGTest PGTest.cpp)
 target_link_libraries(PGTest ${Boost_LIBRARIES})
+PKG_CONFIG_USE_DEPENDENCY(PGTest scd)
 PKG_CONFIG_USE_DEPENDENCY(PGTest SpaceVecAlg)
 PKG_CONFIG_USE_DEPENDENCY(PGTest RBDyn)
 PKG_CONFIG_USE_DEPENDENCY(PGTest roboptim-core)

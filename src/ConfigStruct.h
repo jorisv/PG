@@ -25,6 +25,13 @@
 // SpaceVecAlg
 #include <SpaceVecAlg/SpaceVecAlg>
 
+
+// forward declaration
+namespace SCD
+{
+class S_Object;
+}
+
 namespace pg
 {
 
@@ -114,6 +121,27 @@ struct ForceContact
   int bodyId;
   std::vector<sva::PTransformd> points;
   double mu;
+};
+
+
+struct EnvCollision
+{
+  EnvCollision() {}
+  EnvCollision(int bId, SCD::S_Object* bHull, const sva::PTransformd& bT,
+               SCD::S_Object* eHull,
+               double md)
+    : bodyId(bId)
+    , bodyHull(bHull)
+    , bodyT(bT)
+    , envHull(eHull)
+    , minDist(md)
+  {}
+
+  int bodyId;
+  SCD::S_Object* bodyHull;
+  sva::PTransformd bodyT;
+  SCD::S_Object* envHull;
+  double minDist;
 };
 
 

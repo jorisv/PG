@@ -34,6 +34,7 @@
 #include "FrictionConeConstr.h"
 #include "TorqueConstr.h"
 #include "PlanarSurfaceConstr.h"
+#include "CollisionConstr.h"
 #include "ConfigStruct.h"
 
 namespace pg
@@ -56,6 +57,8 @@ public:
 
   void forceContacts(std::vector<ForceContact> contacts);
   const std::vector<ForceContact>& forceContacts();
+
+  void envCollisions(std::vector<EnvCollision> cols);
 
   void bodyPositionTargets(std::vector<BodyPositionTarget> targets);
   void bodyOrientationTargets(std::vector<BodyOrientationTarget> targets);
@@ -88,6 +91,7 @@ private:
   std::vector<PlanarContact> planarContacts_;
   std::vector<GripperContact> gripperContacts_;
   std::vector<ForceContact> forceContacts_;
+  std::vector<EnvCollision> envCollisions_;
   std::vector<BodyPositionTarget> bodyPosTargets_;
   std::vector<BodyOrientationTarget> bodyOriTargets_;
   Eigen::VectorXd ql_, qu_;
@@ -198,6 +202,14 @@ const std::vector<ForceContact>& PostureGenerator<Type>::forceContacts()
 {
   return forceContacts_;
 }
+
+
+template<typename Type>
+void PostureGenerator<Type>::envCollisions(std::vector<EnvCollision> cols)
+{
+  envCollisions_ = std::move(cols);
+}
+
 
 
 template<typename Type>
@@ -408,6 +420,19 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
           pgdata_.nrForcePoints(), {-std::numeric_limits<double>::infinity(), 0.});
     typename solver_t::problem_t::scales_t scalFriction(pgdata_.nrForcePoints(), 1.);
     problem.addConstraint(frictionCone, limFriction, scalFriction);
+  }
+
+  if(!envCollisions_.empty())
+  {
+    boost::shared_ptr<EnvCollisionConstr<Type>> ec(
+        new EnvCollisionConstr<Type>(&pgdata_, envCollisions_));
+    typename EnvCollisionConstr<Type>::intervals_t limCol(ec->outputSize());
+    for(std::size_t i = 0; i < limCol.size(); ++i)
+    {
+      limCol[i] = {std::pow(envCollisions_[i].minDist, 2), std::numeric_limits<double>::infinity()};
+    }
+    typename solver_t::problem_t::scales_t scalCol(ec->outputSize(), 1.);
+    problem.addConstraint(ec, limCol, scalCol);
   }
 
   if(isTorque_)
