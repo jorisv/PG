@@ -17,6 +17,11 @@ from pybindgen import *
 import sys
 
 
+def import_SCD_types(mod):
+  mod.add_class('S_Object', foreign_cpp_namespace='SCD', import_from_module='scd')
+  mod.add_class('CD_Pair', foreign_cpp_namespace='SCD', import_from_module='scd')
+
+
 def import_rbd_types(mod):
   mod.add_class('MultiBody', foreign_cpp_namespace='rbd', import_from_module='rbdyn')
 
@@ -53,6 +58,8 @@ def build_pg(pg):
   planarContact = pg.add_struct('PlanarContact')
   gripperContact = pg.add_struct('GripperContact')
   forceContact = pg.add_struct('ForceContact')
+  envCollision = pg.add_struct('EnvCollision')
+  selfCollision = pg.add_struct('SelfCollision')
   bodyPosTarget = pg.add_struct('BodyPositionTarget')
   bodyOriTarget = pg.add_struct('BodyOrientationTarget')
 
@@ -62,6 +69,8 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::PlanarContact>', 'pg::PlanarContact', 'vector')
   pg.add_container('std::vector<pg::GripperContact>', 'pg::GripperContact', 'vector')
   pg.add_container('std::vector<pg::ForceContact>', 'pg::ForceContact', 'vector')
+  pg.add_container('std::vector<pg::EnvCollision>', 'pg::EnvCollision', 'vector')
+  pg.add_container('std::vector<pg::SelfCollision>', 'pg::SelfCollision', 'vector')
   pg.add_container('std::vector<pg::BodyPositionTarget>', 'pg::BodyPositionTarget', 'vector')
   pg.add_container('std::vector<pg::BodyOrientationTarget>', 'pg::BodyOrientationTarget', 'vector')
 
@@ -74,6 +83,8 @@ def build_pg(pg):
   pgSolver.add_method('gripperContacts', None, [param('std::vector<pg::GripperContact>', 'contacts')])
   pgSolver.add_method('forceContacts', None, [param('std::vector<pg::ForceContact>', 'contacts')])
   pgSolver.add_method('forceContacts', retval('std::vector<pg::ForceContact>'), [])
+  pgSolver.add_method('envCollisions', None, [param('std::vector<pg::EnvCollision>', 'cols')])
+  pgSolver.add_method('selfCollisions', None, [param('std::vector<pg::SelfCollision>', 'cols')])
   pgSolver.add_method('bodyPositionTargets', None, [param('std::vector<pg::BodyPositionTarget>', 'targets')])
   pgSolver.add_method('bodyOrientationTargets', None, [param('std::vector<pg::BodyOrientationTarget>', 'targets')])
   pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
@@ -153,6 +164,40 @@ def build_pg(pg):
   forceContact.add_instance_attribute('points', 'std::vector<sva::PTransformd>')
   forceContact.add_instance_attribute('mu', 'double')
 
+  # EnvCollision
+  envCollision.add_constructor([])
+  envCollision.add_constructor([param('int', 'bodyId'),
+                                param('SCD::S_Object*', 'bodyHull', transfer_ownership=False),
+                                param('const sva::PTransformd&', 'bodyT'),
+                                param('SCD::S_Object*', 'envHull', transfer_ownership=False),
+                                param('double', 'minDist')])
+
+  envCollision.add_instance_attribute('bodyId', 'int')
+  # pybindgen have some issue with ptr return
+  # envCollision.add_instance_attribute('bodyHull', retval('SCD::S_Object*',caller_owns_return=False))
+  envCollision.add_instance_attribute('bodyT', 'sva::PTransformd')
+  # envCollision.add_instance_attribute('envHull', retval('SCD::S_Object*',caller_owns_return=False))
+  envCollision.add_instance_attribute('minDist', 'double')
+
+  # SelfCollision
+  selfCollision.add_constructor([])
+  selfCollision.add_constructor([param('int', 'body1Id'),
+                                 param('SCD::S_Object*', 'body1Hull', transfer_ownership=False),
+                                 param('const sva::PTransformd&', 'body1T'),
+                                 param('int', 'body2Id'),
+                                 param('SCD::S_Object*', 'body2Hull', transfer_ownership=False),
+                                 param('const sva::PTransformd&', 'body2T'),
+                                 param('double', 'minDist')])
+
+  selfCollision.add_instance_attribute('body1Id', 'int')
+  # pybindgen have some issue with ptr return
+  # selfCollision.add_instance_attribute('body2Hull', retval('SCD::S_Object*',caller_owns_return=False))
+  selfCollision.add_instance_attribute('body1T', 'sva::PTransformd')
+  selfCollision.add_instance_attribute('body2Id', 'int')
+  # selfCollision.add_instance_attribute('body1Hull', retval('SCD::S_Object*',caller_owns_return=False))
+  selfCollision.add_instance_attribute('body2T', 'sva::PTransformd')
+  selfCollision.add_instance_attribute('minDist', 'double')
+
   # BodyPositionTarget
   bodyPosTarget.add_constructor([])
   bodyPosTarget.add_constructor([param('int', 'bodyId'),
@@ -183,6 +228,9 @@ if __name__ == '__main__':
   pg.add_include('<EigenAutoDiffScalar.h>')
   pg.add_include('<PostureGenerator.h>')
 
+  pg.add_include('<SCD/S_Object/S_Object.h>')
+  pg.add_include('<SCD/CD/CD_Pair.h>')
+
   dom_ex = pg.add_exception('std::domain_error', foreign_cpp_namespace=' ',
                                message_rvalue='%(EXC)s.what()')
   out_ex = pg.add_exception('std::out_of_range', foreign_cpp_namespace=' ',
@@ -192,6 +240,7 @@ if __name__ == '__main__':
   import_eigen3_types(pg)
   import_sva_types(pg)
   import_rbd_types(pg)
+  import_SCD_types(pg)
 
   # build list type
   pg.add_container('std::vector<double>', 'double', 'vector')
