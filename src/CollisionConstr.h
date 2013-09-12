@@ -70,7 +70,7 @@ T computeDist(SCD::CD_Pair* pair,
   Vector3<T> pb1((sva::PTransform<T>(Vector3<T>(pb1Local.cast<T>()))*obj1).translation());
   Vector3<T> pb2((sva::PTransform<T>(Vector3<T>(pb2Local.cast<T>()))*obj2).translation());
 
-  return sign*(pb2 - pb1).squaredNorm();
+  return sign*(pb2 - pb1).norm();
 }
 
 

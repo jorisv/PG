@@ -438,7 +438,7 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
     typename EnvCollisionConstr<Type>::intervals_t limCol(ec->outputSize());
     for(std::size_t i = 0; i < limCol.size(); ++i)
     {
-      limCol[i] = {std::pow(envCollisions_[i].minDist, 2), std::numeric_limits<double>::infinity()};
+      limCol[i] = {envCollisions_[i].minDist, std::numeric_limits<double>::infinity()};
     }
     typename solver_t::problem_t::scales_t scalCol(ec->outputSize(), 1.);
     problem.addConstraint(ec, limCol, scalCol);
@@ -451,7 +451,7 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
     typename EnvCollisionConstr<Type>::intervals_t limCol(sc->outputSize());
     for(std::size_t i = 0; i < limCol.size(); ++i)
     {
-      limCol[i] = {std::pow(selfCollisions_[i].minDist, 2), std::numeric_limits<double>::infinity()};
+      limCol[i] = {selfCollisions_[i].minDist, std::numeric_limits<double>::infinity()};
     }
     typename solver_t::problem_t::scales_t scalCol(sc->outputSize(), 1.);
     problem.addConstraint(sc, limCol, scalCol);
