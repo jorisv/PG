@@ -110,6 +110,11 @@ def build_pg(pg):
   pgSolver.add_method('forces', retval('std::vector<sva::ForceVecd>'), [])
   pgSolver.add_method('torque', retval('std::vector<std::vector<double> >'), [])
 
+  pgSolver.add_method('nrIters', retval('int'), [])
+  pgSolver.add_method('qIter', retval('std::vector<std::vector<double> >'), [param('int', 'iter')])
+  pgSolver.add_method('forcesIter', retval('std::vector<sva::ForceVecd>'), [param('int', 'iter')])
+  pgSolver.add_method('torqueIter', retval('std::vector<std::vector<double> >'), [param('int', 'iter')])
+
   # FixedPositionContact
   fixedPositionContact.add_constructor([])
   fixedPositionContact.add_constructor([param('int', 'bodyId'),

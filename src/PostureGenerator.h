@@ -36,6 +36,7 @@
 #include "PlanarSurfaceConstr.h"
 #include "CollisionConstr.h"
 #include "ConfigStruct.h"
+#include "IpoptIntermediateCallback.h"
 
 namespace pg
 {
@@ -82,6 +83,17 @@ public:
   std::vector<sva::ForceVecd> forces() const;
   std::vector<std::vector<double>> torque();
 
+  int nrIters() const;
+  std::vector<std::vector<double>> qIter(int i) const;
+  std::vector<sva::ForceVecd> forcesIter(int i) const;
+  std::vector<std::vector<double>> torqueIter(int i);
+
+private:
+  std::vector<std::vector<double>> q(const Eigen::VectorXd& x) const;
+  std::vector<sva::ForceVecd> forces(const Eigen::VectorXd& x) const;
+  std::vector<std::vector<double>> torque(const Eigen::VectorXd& x);
+
+
 private:
   PGData<Type> pgdata_;
 
@@ -101,6 +113,7 @@ private:
   bool isTorque_;
 
   Eigen::VectorXd x_;
+  boost::shared_ptr<IpoptIntermediateCallback> iters_;
 };
 
 
@@ -139,6 +152,7 @@ PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb,
   , tl_(mb.nrDof())
   , tu_(mb.nrDof())
   , isTorque_(false)
+  , iters_(new IpoptIntermediateCallback)
 {
   ql_.setConstant(-std::numeric_limits<double>::infinity());
   qu_.setConstant(std::numeric_limits<double>::infinity());
@@ -472,6 +486,8 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
   }
 
   roboptim::IpoptSolver solver(problem);
+  iters_->datas.clear();
+  solver.userIntermediateCallback() = iters_;
 
   for(const auto& p: params_)
   {
@@ -497,7 +513,56 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
 template<typename Type>
 std::vector<std::vector<double> > PostureGenerator<Type>::q() const
 {
-  Eigen::VectorXd eigenQ = x_.head(pgdata_.multibody().nrParams());
+  return q(x_);
+}
+
+
+template<typename Type>
+std::vector<sva::ForceVecd> PostureGenerator<Type>::forces() const
+{
+  return forces(x_);
+}
+
+
+template<typename Type>
+std::vector<std::vector<double> > PostureGenerator<Type>::torque()
+{
+  return torque(x_);
+}
+
+
+template<typename Type>
+int PostureGenerator<Type>::nrIters() const
+{
+  return iters_->datas.size();
+}
+
+
+template<typename Type>
+std::vector<std::vector<double> > PostureGenerator<Type>::qIter(int i) const
+{
+  return q(iters_->datas.at(i).x);
+}
+
+
+template<typename Type>
+std::vector<sva::ForceVecd> PostureGenerator<Type>::forcesIter(int i) const
+{
+  return forces(iters_->datas.at(i).x);
+}
+
+
+template<typename Type>
+std::vector<std::vector<double> > PostureGenerator<Type>::torqueIter(int i)
+{
+  return torque(iters_->datas.at(i).x);
+}
+
+
+template<typename Type>
+std::vector<std::vector<double> > PostureGenerator<Type>::q(const Eigen::VectorXd& x) const
+{
+  Eigen::VectorXd eigenQ(x.head(pgdata_.multibody().nrParams()));
   if(pgdata_.multibody().joint(0).type() == rbd::Joint::Free)
   {
     eigenQ.head(4) /= eigenQ.head(4).norm();
@@ -508,13 +573,13 @@ std::vector<std::vector<double> > PostureGenerator<Type>::q() const
 
 
 template<typename Type>
-std::vector<sva::ForceVecd> PostureGenerator<Type>::forces() const
+std::vector<sva::ForceVecd> PostureGenerator<Type>::forces(const Eigen::VectorXd& x) const
 {
   std::vector<sva::ForceVecd> res(pgdata_.nrForcePoints());
   int pos = pgdata_.multibody().nrParams();
   for(int i = 0; i < int(res.size()); ++i)
   {
-    res[i] = sva::ForceVecd(Eigen::Vector3d::Zero(), x_.segment<3>(pos));
+    res[i] = sva::ForceVecd(Eigen::Vector3d::Zero(), x.segment<3>(pos));
     pos += 3;
   }
 
@@ -523,9 +588,9 @@ std::vector<sva::ForceVecd> PostureGenerator<Type>::forces() const
 
 
 template<typename Type>
-std::vector<std::vector<double> > PostureGenerator<Type>::torque()
+std::vector<std::vector<double> > PostureGenerator<Type>::torque(const Eigen::VectorXd& x)
 {
-  pgdata_.x(x_);
+  pgdata_.x(x);
   const auto& torque  = pgdata_.id().torque();
   std::vector<std::vector<double>> res(pgdata_.multibody().nrJoints());
   for(std::size_t i = 0; i < res.size(); ++i)

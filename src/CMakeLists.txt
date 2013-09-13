@@ -7,6 +7,7 @@ set(HEADERS FK.h ID.h
             PositiveForceConstr.h FrictionConeConstr.h
             PlanarSurfaceConstr.h TorqueConstr.h
             CollisionConstr.h
+            IpoptIntermediateCallback.h
             PostureGenerator.h)
 
 # !!! PG is an empty library !!!

@@ -26,4 +26,5 @@
 #include "PlanarSurfaceConstr.h"
 #include "TorqueConstr.h"
 #include "CollisionConstr.h"
+#include "IpoptIntermediateCallback.h"
 #include "PostureGenerator.h"
