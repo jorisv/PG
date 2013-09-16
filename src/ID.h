@@ -115,9 +115,8 @@ void ID<T>::run(const rbd::MultiBody& mb,
   for(int i = mb.nrBodies() - 1; i > 0; --i)
   {
     int parent = parents[i];
-    /// @todo replace inv().dualMul() by transMul() ?
-    Ic_[parent] = Ic_[parent] + parentToSon[i].inv().dualMul(Ic_[i]);
-    bodySupFor_[parent] = bodySupFor_[parent] + parentToSon[i].inv().dualMul(bodySupFor_[i]);
+    Ic_[parent] = Ic_[parent] + parentToSon[i].transMul(Ic_[i]);
+    bodySupFor_[parent] = bodySupFor_[parent] + parentToSon[i].transMul(bodySupFor_[i]);
   }
 
   bodyAcc_[0] = sva::MotionVec<T>(-(Ic_[0].matrix().ldlt().solve(bodySupFor_[0].vector())));

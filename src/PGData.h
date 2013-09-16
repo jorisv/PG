@@ -210,7 +210,7 @@ void PGData<Type>::update()
       construct_f()(int(x_.size()), xPos + 1, x_[xPos + 1], forceAd(1));
       construct_f()(int(x_.size()), xPos + 2, x_[xPos + 2], forceAd(2));
       fv = sva::ForceVec<scalar_t>(zeroVec3, forceAd);
-      forcesB_[fd.bodyIndex] = forcesB_[fd.bodyIndex] + pt.inv().dualMul(fv);
+      forcesB_[fd.bodyIndex] = forcesB_[fd.bodyIndex] + pt.transMul(fv);
       xPos += 3;
     }
   }

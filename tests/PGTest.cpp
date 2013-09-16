@@ -476,7 +476,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
       for(const sva::PTransformd& p: f.points)
       {
         mbcWork.force[index] = mbcWork.force[index] +
-            mbcWork.bodyPosW[index].inv().dualMul(p.inv().dualMul(forces[forceIndex]));
+            mbcWork.bodyPosW[index].transMul(p.transMul(forces[forceIndex]));
         ++forceIndex;
       }
     }
