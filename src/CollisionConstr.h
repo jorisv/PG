@@ -86,7 +86,7 @@ public:
 
 public:
   EnvCollisionConstr(PGData<Type>* pgdata, const std::vector<EnvCollision>& cols)
-    : parent_t(pgdata->pbSize(), int(cols.size()), "EnvCollision")
+    : parent_t(pgdata, pgdata->pbSize(), int(cols.size()), "EnvCollision")
     , pgdata_(pgdata)
   {
     cols_.reserve(cols.size());
@@ -106,9 +106,8 @@ public:
   }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    pgdata_->x(x);
     const FK<scalar_t>& fk = pgdata_->fk();
     int i = 0;
     for(const CollisionData& cd: cols_)
@@ -151,7 +150,7 @@ public:
 
 public:
   SelfCollisionConstr(PGData<Type>* pgdata, const std::vector<SelfCollision>& cols)
-    : parent_t(pgdata->pbSize(), int(cols.size()), "EnvCollision")
+    : parent_t(pgdata, pgdata->pbSize(), int(cols.size()), "EnvCollision")
     , pgdata_(pgdata)
   {
     cols_.reserve(cols.size());
@@ -174,9 +173,8 @@ public:
   }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    pgdata_->x(x);
     const FK<scalar_t>& fk = pgdata_->fk();
     int i = 0;
     for(const CollisionData& cd: cols_)

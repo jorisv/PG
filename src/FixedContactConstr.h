@@ -36,7 +36,7 @@ public:
   FixedPositionContactConstr(PGData<Type>* pgdata, int bodyId,
       const Eigen::Vector3d& target,
       const sva::PTransformd& surfaceFrame)
-    : parent_t(pgdata->pbSize(), 3, "FixedPositionContact")
+    : parent_t(pgdata, pgdata->pbSize(), 3, "FixedPositionContact")
     , pgdata_(pgdata)
     , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
     , target_(target.cast<scalar_t>())
@@ -46,9 +46,8 @@ public:
   { }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    pgdata_->x(x);
     sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
     res = target_ - pos.translation();
   }
@@ -76,7 +75,7 @@ public:
   FixedOrientationContactConstr(PGData<Type>* pgdata, int bodyId,
       const Eigen::Matrix3d& target,
       const sva::PTransformd& surfaceFrame)
-    : parent_t(pgdata->pbSize(), 3, "FixedOrientationContact")
+    : parent_t(pgdata, pgdata->pbSize(), 3, "FixedOrientationContact")
     , pgdata_(pgdata)
     , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
     , target_(target.cast<scalar_t>())
@@ -86,9 +85,8 @@ public:
   { }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    pgdata_->x(x);
     sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
     res(0) = pos.rotation().row(0).dot(target_.row(0));
     res(1) = pos.rotation().row(1).dot(target_.row(1));

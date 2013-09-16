@@ -97,6 +97,11 @@ public:
     return gravity_;
   }
 
+  std::size_t xStamp() const
+  {
+    return xStamp_;
+  }
+
 private:
   rbd::MultiBody mb_;
   Eigen::Vector3d gravity_;
@@ -110,6 +115,8 @@ private:
 
   FK<scalar_t> fk_;
   ID<scalar_t> id_;
+
+  std::size_t xStamp_;
 };
 
 
@@ -126,6 +133,7 @@ PGData<Type>::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
   , forcesB_(mb.nrBodies())
   , fk_(mb)
   , id_(mb, gravity)
+  , xStamp_(1)
 {
   x_.setZero();
   for(int i = 0; i < mb.nrJoints(); ++i)
@@ -153,6 +161,7 @@ void PGData<Type>::x(const Eigen::VectorXd& x)
   if(x_ != xNorm)
   {
     x_ = xNorm;
+    ++xStamp_;
     update();
   }
 }
@@ -169,6 +178,7 @@ void PGData<Type>::forces(std::vector<ForceData> fd)
   }
 
   x_.setZero(pbSize());
+  ++xStamp_;
 }
 
 

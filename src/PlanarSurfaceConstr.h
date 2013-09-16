@@ -37,7 +37,7 @@ public:
   PlanarPositionContactConstr(PGData<Type>* pgdata, int bodyId,
       const sva::PTransformd& targetFrame,
       const sva::PTransformd& surfaceFrame)
-    : parent_t(pgdata->pbSize(), 1, "PlanarPositionContact")
+    : parent_t(pgdata, pgdata->pbSize(), 1, "PlanarPositionContact")
     , pgdata_(pgdata)
     , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
     , targetFrame_(targetFrame.cast<scalar_t>())
@@ -47,9 +47,8 @@ public:
   { }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    pgdata_->x(x);
     sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
 
     res(0) = (pos.translation() - targetFrame_.translation()).dot(targetFrame_.rotation().row(2));
@@ -79,7 +78,7 @@ public:
       const sva::PTransformd& targetFrame,
       const sva::PTransformd& surfaceFrame,
       int axis)
-    : parent_t(pgdata->pbSize(), 1, "PlanarPositionContact")
+    : parent_t(pgdata, pgdata->pbSize(), 1, "PlanarPositionContact")
     , pgdata_(pgdata)
     , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
     , targetFrame_(targetFrame.cast<scalar_t>())
@@ -90,9 +89,8 @@ public:
   { }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    pgdata_->x(x);
     sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
 
     res(0) = (pos.rotation().row(axis_)).dot(targetFrame_.rotation().row(axis_));
@@ -124,7 +122,7 @@ public:
       const std::vector<Eigen::Vector2d>& targetPoints,
       const sva::PTransformd& surfaceFrame,
       const std::vector<Eigen::Vector2d>& surfacePoints)
-    : parent_t(pgdata->pbSize(), int(surfacePoints.size()*targetPoints.size()), "PlanarInclusionContact")
+    : parent_t(pgdata, pgdata->pbSize(), int(surfacePoints.size()*targetPoints.size()), "PlanarInclusionContact")
     , pgdata_(pgdata)
     , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
     , targetFrame_(targetFrame.cast<scalar_t>())
@@ -151,9 +149,8 @@ public:
   { }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    pgdata_->x(x);
     int resIndex = 0;
     for(const sva::PTransform<scalar_t>& sp: surfacePoints_)
     {

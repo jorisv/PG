@@ -19,6 +19,9 @@
 // roboptim
 #include <roboptim/core/differentiable-function.hh>
 
+// PG
+#include "PGData.h"
+
 namespace pg
 {
 
@@ -30,8 +33,10 @@ public:
   typedef Eigen::Matrix<scalar_t, Size, 1> result_ad_t;
 
 public:
-  AutoDiffFunction(int pbSize, int size, const std::string& name)
+  AutoDiffFunction(PGData<Type>* pgdata, int pbSize, int size, const std::string& name)
     : roboptim::DifferentiableFunction(pbSize, size, name)
+    , pgdata_(pgdata)
+    , xStamp_(0)
     , res_(size)
   {
     res_.fill(scalar_t(0., Eigen::VectorXd::Zero(pbSize)));
@@ -41,10 +46,9 @@ public:
 
   virtual void impl_compute(result_ad_t& res, const argument_t& x) const = 0;
 
-
   void impl_compute(result_t& res, const argument_t& x) const throw()
   {
-    impl_compute(res_, x);
+    impl_compute_stamped(x);
 
     for(int i = 0; i < outputSize(); ++i)
     {
@@ -56,7 +60,7 @@ public:
 
   void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
   {
-    impl_compute(res_, x);
+    impl_compute_stamped(x);
 
     for(int i = 0; i < outputSize(); ++i)
     {
@@ -69,12 +73,27 @@ public:
   void impl_gradient(gradient_t& gradient,
       const argument_t& x, size_type functionId) const throw()
   {
-    impl_compute(res_, x);
+    impl_compute_stamped(x);
 
     gradient = res_[functionId].derivatives().transpose();
   }
 
 private:
+  void impl_compute_stamped(const argument_t& x) const
+  {
+    pgdata_->x(x);
+    if(xStamp_ != pgdata_->xStamp())
+    {
+      impl_compute(res_, x);
+      xStamp_ = pgdata_->xStamp();
+    }
+  }
+
+private:
+  PGData<Type>* pgdata_;
+  // yeah ! every thing have to be mutable since all impl_something are const.
+  mutable std::size_t xStamp_;
+
   mutable result_ad_t res_;
 };
 

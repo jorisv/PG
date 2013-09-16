@@ -38,7 +38,7 @@ public:
               double postureScale, double torqueScale, double forceScale,
               const std::vector<BodyPositionTarget>& bodyPosTargets,
               const std::vector<BodyOrientationTarget>& bodyOriTargets)
-    : parent_t(pgdata->pbSize(), 1, "StdCostFunc")
+    : parent_t(pgdata, pgdata->pbSize(), 1, "StdCostFunc")
     , pgdata_(pgdata)
     , tq_(std::move(q))
     , postureScale_(postureScale)
@@ -62,10 +62,8 @@ public:
   }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const throw()
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const throw()
   {
-    pgdata_->x(x);
-
     // compute posture task
     scalar_t posture = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
     if(postureScale_ > 0.)

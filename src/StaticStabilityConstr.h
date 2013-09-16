@@ -34,16 +34,15 @@ public:
 
 public:
   StaticStabilityConstr(PGData<Type>* pgdata)
-    : parent_t(pgdata->pbSize(), 6, "StaticStability")
+    : parent_t(pgdata, pgdata->pbSize(), 6, "StaticStability")
     , pgdata_(pgdata)
   {}
   ~StaticStabilityConstr() throw()
   { }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    pgdata_->x(x);
     res = pgdata_->id().bodyAcc()[0].vector();
   }
 

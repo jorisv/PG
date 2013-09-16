@@ -34,16 +34,15 @@ public:
 
 public:
   FrictionConeConstr(PGData<Type>* pgdata)
-    : parent_t(pgdata->pbSize(), pgdata->nrForcePoints(), "FrictionConeConstr")
+    : parent_t(pgdata, pgdata->pbSize(), pgdata->nrForcePoints(), "FrictionConeConstr")
     , pgdata_(pgdata)
   {}
   ~FrictionConeConstr() throw()
   { }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    pgdata_->x(x);
     int i = 0;
     for(const auto& fd: pgdata_->forceDatas())
     {

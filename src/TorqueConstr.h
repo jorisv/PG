@@ -33,16 +33,15 @@ public:
 
 public:
   TorqueConstr(PGData<Type>* pgdata)
-    : parent_t(pgdata->pbSize(), pgdata->multibody().nrDof(), "Torque")
+    : parent_t(pgdata, pgdata->pbSize(), pgdata->multibody().nrDof(), "Torque")
     , pgdata_(pgdata)
   {}
   ~TorqueConstr() throw()
   { }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    pgdata_->x(x);
     int i = 0;
     const ID<scalar_t>& id = pgdata_->id();
     for(const auto& t: id.torque())
