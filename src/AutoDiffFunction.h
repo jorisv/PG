@@ -32,6 +32,11 @@ public:
 public:
   AutoDiffFunction(int pbSize, int size, const std::string& name)
     : roboptim::DifferentiableFunction(pbSize, size, name)
+    , res_(size)
+  {
+    res_.fill(scalar_t(0., Eigen::VectorXd::Zero(pbSize)));
+  }
+  ~AutoDiffFunction() throw()
   {}
 
   virtual void impl_compute(result_ad_t& res, const argument_t& x) const = 0;
@@ -39,26 +44,24 @@ public:
 
   void impl_compute(result_t& res, const argument_t& x) const throw()
   {
-    result_ad_t resAd(outputSize());
-    impl_compute(resAd, x);
+    impl_compute(res_, x);
 
     for(int i = 0; i < outputSize(); ++i)
     {
       /// @todo Put in Type some function to extract value
-      res[i] = resAd[i].value();
+      res[i] = res_[i].value();
     }
   }
 
 
   void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
   {
-    result_ad_t resAd(outputSize());
-    impl_compute(resAd, x);
+    impl_compute(res_, x);
 
     for(int i = 0; i < outputSize(); ++i)
     {
       /// @todo Put in Type some function to extract derivatives
-      jac.row(i) = resAd[i].derivatives().transpose();
+      jac.row(i) = res_[i].derivatives().transpose();
     }
   }
 
@@ -66,11 +69,13 @@ public:
   void impl_gradient(gradient_t& gradient,
       const argument_t& x, size_type functionId) const throw()
   {
-    result_ad_t resAd(outputSize());
-    impl_compute(resAd, x);
+    impl_compute(res_, x);
 
-    gradient = resAd[functionId].derivatives().transpose();
+    gradient = res_[functionId].derivatives().transpose();
   }
+
+private:
+  mutable result_ad_t res_;
 };
 
 } // namespace pg
