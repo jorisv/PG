@@ -66,9 +66,9 @@ struct IpoptIntermediateCallback : public roboptim::UserIntermediateCallback
 
     d.x = Eigen::Map<const Eigen::VectorXd>(x->Values(), x->Dim());
     d.obj = ip_cq->curr_f();
-    d.dual_inf = ip_cq->curr_dual_infeasibility(Ipopt::NORM_MAX);
-    d.constr_viol = ip_cq->curr_nlp_constraint_violation(Ipopt::NORM_MAX);
-    d.complem = ip_cq->curr_complementarity(mu, Ipopt::NORM_MAX);
+    d.dual_inf = ip_cq->unscaled_curr_dual_infeasibility(Ipopt::NORM_MAX);
+    d.constr_viol = ip_cq->unscaled_curr_nlp_constraint_violation(Ipopt::NORM_MAX);
+    d.complem = ip_cq->unscaled_curr_complementarity(mu, Ipopt::NORM_MAX);
     d.overallError = ip_cq->curr_nlp_error();
 
     datas.push_back(d);
