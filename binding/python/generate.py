@@ -62,6 +62,7 @@ def build_pg(pg):
   selfCollision = pg.add_struct('SelfCollision')
   bodyPosTarget = pg.add_struct('BodyPositionTarget')
   bodyOriTarget = pg.add_struct('BodyOrientationTarget')
+  iterateQuantities = pg.add_struct('IterateQuantities')
 
   # build list type
   pg.add_container('std::vector<pg::FixedPositionContact>', 'pg::FixedPositionContact', 'vector')
@@ -114,6 +115,7 @@ def build_pg(pg):
   pgSolver.add_method('qIter', retval('std::vector<std::vector<double> >'), [param('int', 'iter')])
   pgSolver.add_method('forcesIter', retval('std::vector<sva::ForceVecd>'), [param('int', 'iter')])
   pgSolver.add_method('torqueIter', retval('std::vector<std::vector<double> >'), [param('int', 'iter')])
+  pgSolver.add_method('quantitiesIter', retval('pg::IterateQuantities'), [param('int', 'iter')])
 
   # FixedPositionContact
   fixedPositionContact.add_constructor([])
@@ -222,6 +224,13 @@ def build_pg(pg):
   bodyOriTarget.add_instance_attribute('bodyId', 'int')
   bodyOriTarget.add_instance_attribute('target', 'Eigen::Matrix3d')
   bodyOriTarget.add_instance_attribute('scale', 'double')
+
+  # IterateQuantities
+  iterateQuantities.add_instance_attribute('obj', 'double')
+  iterateQuantities.add_instance_attribute('dual_inf', 'double')
+  iterateQuantities.add_instance_attribute('constr_viol', 'double')
+  iterateQuantities.add_instance_attribute('complem', 'double')
+  iterateQuantities.add_instance_attribute('overallError', 'double')
 
 
 

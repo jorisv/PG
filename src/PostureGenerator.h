@@ -87,6 +87,7 @@ public:
   std::vector<std::vector<double>> qIter(int i) const;
   std::vector<sva::ForceVecd> forcesIter(int i) const;
   std::vector<std::vector<double>> torqueIter(int i);
+  IterateQuantities quantitiesIter(int i) const;
 
 private:
   std::vector<std::vector<double>> q(const Eigen::VectorXd& x) const;
@@ -534,7 +535,7 @@ std::vector<std::vector<double> > PostureGenerator<Type>::torque()
 template<typename Type>
 int PostureGenerator<Type>::nrIters() const
 {
-  return iters_->datas.size();
+  return int(iters_->datas.size());
 }
 
 
@@ -556,6 +557,14 @@ template<typename Type>
 std::vector<std::vector<double> > PostureGenerator<Type>::torqueIter(int i)
 {
   return torque(iters_->datas.at(i).x);
+}
+
+
+template<typename Type>
+IterateQuantities PostureGenerator<Type>::quantitiesIter(int i) const
+{
+  const IpoptIntermediateCallback::Data& d = iters_->datas.at(i);
+  return IterateQuantities{d.obj, d.dual_inf, d.constr_viol, d.complem, d.overallError};
 }
 
 

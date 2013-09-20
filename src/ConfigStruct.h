@@ -199,4 +199,10 @@ struct BodyOrientationTarget
   double scale;
 };
 
+
+struct IterateQuantities
+{
+  double obj, dual_inf, constr_viol, complem, overallError;
+};
+
 } // namespace pg
