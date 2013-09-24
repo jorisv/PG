@@ -49,29 +49,23 @@ struct IpoptIntermediateCallback : public roboptim::UserIntermediateCallback
 
     const Ipopt::DenseVector* x;
 
+    // we only store iteration data in regular mode
+    // because some quantities don't have the same meaning
+    // in other mode
     if(mode == Ipopt::RegularMode)
     {
       x = dynamic_cast<const Ipopt::DenseVector*>(
         GetRawPtr(ip_data->curr()->x()));
-    }
-    else
-    {
-      // in RestorationPhaseMode x vector is a CompoundVector
-      // the first composant is the x parameter vector
-      const Ipopt::CompoundVector* compX =
-        dynamic_cast<const Ipopt::CompoundVector*>(GetRawPtr(ip_data->curr()->x()));
-      x = dynamic_cast<const Ipopt::DenseVector*>(
-        GetRawPtr(compX->GetComp(0)));
+
+      d.x = Eigen::Map<const Eigen::VectorXd>(x->Values(), x->Dim());
+      d.obj = ip_cq->curr_f();
+      d.dual_inf = ip_cq->unscaled_curr_dual_infeasibility(Ipopt::NORM_MAX);
+      d.constr_viol = ip_cq->unscaled_curr_nlp_constraint_violation(Ipopt::NORM_MAX);
+      d.complem = ip_cq->unscaled_curr_complementarity(mu, Ipopt::NORM_MAX);
+      d.overallError = ip_cq->curr_nlp_error();
+      datas.push_back(d);
     }
 
-    d.x = Eigen::Map<const Eigen::VectorXd>(x->Values(), x->Dim());
-    d.obj = ip_cq->curr_f();
-    d.dual_inf = ip_cq->unscaled_curr_dual_infeasibility(Ipopt::NORM_MAX);
-    d.constr_viol = ip_cq->unscaled_curr_nlp_constraint_violation(Ipopt::NORM_MAX);
-    d.complem = ip_cq->unscaled_curr_complementarity(mu, Ipopt::NORM_MAX);
-    d.overallError = ip_cq->curr_nlp_error();
-
-    datas.push_back(d);
     return true;
   }
 
