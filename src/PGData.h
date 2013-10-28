@@ -194,6 +194,7 @@ void PGData<Type>::update()
       ++xPos;
     }
   }
+  fk_.init(pbSize());
   fk_.run(mb_, q_);
 
   scalar_t zero(0., Eigen::VectorXd::Zero(x_.size()));

@@ -31,6 +31,7 @@ class FK
 public:
   FK(const rbd::MultiBody& mb);
 
+  void init(int nrVars);
   void run(const rbd::MultiBody& mb, const std::vector<std::vector<T>>& q);
 
   const std::vector<sva::PTransform<T>>& bodyPosW() const
@@ -63,6 +64,23 @@ FK<T>::FK(const rbd::MultiBody& mb)
   for(const sva::PTransformd& Xt: mb.transforms())
   {
     Xt_.push_back(Xt.cast<T>());
+  }
+}
+
+
+template<typename T>
+void FK<T>::init(int nrVars)
+{
+  for(sva::PTransform<T>& Xt: Xt_)
+  {
+    for(int i = 0; i < 3; ++i)
+    {
+      for(int j = 0; j < 3; ++j)
+      {
+        Xt.rotation()(i,j).derivatives().setZero(nrVars);
+      }
+      Xt.translation()(i).derivatives().setZero(nrVars);
+    }
   }
 }
 
