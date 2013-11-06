@@ -37,7 +37,9 @@ public:
   StdCostFunc(PGData<Type>* pgdata, std::vector<std::vector<double>> q,
               double postureScale, double torqueScale, double forceScale,
               const std::vector<BodyPositionTarget>& bodyPosTargets,
-              const std::vector<BodyOrientationTarget>& bodyOriTargets)
+              const std::vector<BodyOrientationTarget>& bodyOriTargets,
+              const std::vector<ForceContact>& forceContacts,
+              const std::vector<ForceContactMinimization>& forceContactsMin)
     : parent_t(pgdata, pgdata->pbSize(), 1, "StdCostFunc")
     , pgdata_(pgdata)
     , tq_(std::move(q))
@@ -46,6 +48,7 @@ public:
     , forceScale_(forceScale)
     , bodyPosTargets_(bodyPosTargets.size())
     , bodyOriTargets_(bodyOriTargets.size())
+    , forceContactsMin_()
   {
     for(std::size_t i = 0; i < bodyPosTargets_.size(); ++i)
     {
@@ -53,11 +56,24 @@ public:
                             bodyPosTargets[i].target.cast<scalar_t>(),
                             bodyPosTargets[i].scale};
     }
+
     for(std::size_t i = 0; i < bodyOriTargets_.size(); ++i)
     {
       bodyOriTargets_[i] = {pgdata->multibody().bodyIndexById(bodyOriTargets[i].bodyId),
                             bodyOriTargets[i].target.cast<scalar_t>(),
                             bodyOriTargets[i].scale};
+    }
+
+    for(std::size_t i = 0; i < forceContactsMin.size(); ++i)
+    {
+      for(std::size_t j = 0; j < forceContacts.size(); ++j)
+      {
+        // we don't break scine it could be many contact on the same body
+        if(forceContactsMin[i].bodyId == forceContacts[j].bodyId)
+        {
+          forceContactsMin_.push_back({j, forceContactsMin[i].scale});
+        }
+      }
     }
   }
 
@@ -121,8 +137,18 @@ public:
           bo.scale;
     }
 
+    scalar_t forceMin = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    for(const ForceContactMinimizationData& fcmd: forceContactsMin_)
+    {
+      const auto& forceData = pgdata_->forceDatas()[fcmd.forcePos];
+      for(const sva::ForceVec<scalar_t>& fv: forceData.forces)
+      {
+        forceMin += fv.force().squaredNorm()*fcmd.scale;
+      }
+    }
+
     res(0) = posture*postureScale_ + torque*torqueScale_ + force*forceScale_ +
-        pos + ori;
+        pos + ori + forceMin;
   }
 
 private:
@@ -140,6 +166,12 @@ private:
     double scale;
   };
 
+  struct ForceContactMinimizationData
+  {
+    std::size_t forcePos;
+    double scale;
+  };
+
 private:
   PGData<Type>* pgdata_;
   std::vector<std::vector<double>> tq_;
@@ -148,6 +180,7 @@ private:
   double forceScale_;
   std::vector<BodyPositionTargetData> bodyPosTargets_;
   std::vector<BodyOrientationTargetData> bodyOriTargets_;
+  std::vector<ForceContactMinimizationData> forceContactsMin_;
 };
 
 } // namespace pg

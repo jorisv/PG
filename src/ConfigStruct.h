@@ -200,6 +200,19 @@ struct BodyOrientationTarget
 };
 
 
+struct ForceContactMinimization
+{
+  ForceContactMinimization() {}
+  ForceContactMinimization(int bId, double s)
+    : bodyId(bId)
+    , scale(s)
+  {}
+
+  int bodyId;
+  double scale;
+};
+
+
 struct IterateQuantities
 {
   double obj, dual_inf, constr_viol, complem, overallError;

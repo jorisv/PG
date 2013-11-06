@@ -62,6 +62,7 @@ def build_pg(pg):
   selfCollision = pg.add_struct('SelfCollision')
   bodyPosTarget = pg.add_struct('BodyPositionTarget')
   bodyOriTarget = pg.add_struct('BodyOrientationTarget')
+  forceContactMin = pg.add_struct('ForceContactMinimization')
   iterateQuantities = pg.add_struct('IterateQuantities')
 
   # build list type
@@ -74,6 +75,7 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::SelfCollision>', 'pg::SelfCollision', 'vector')
   pg.add_container('std::vector<pg::BodyPositionTarget>', 'pg::BodyPositionTarget', 'vector')
   pg.add_container('std::vector<pg::BodyOrientationTarget>', 'pg::BodyOrientationTarget', 'vector')
+  pg.add_container('std::vector<pg::ForceContactMinimization>', 'pg::ForceContactMinimization', 'vector')
 
   # PostureGenerator
   pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb'), param('const Eigen::Vector3d&', 'gravity')])
@@ -88,6 +90,7 @@ def build_pg(pg):
   pgSolver.add_method('selfCollisions', None, [param('std::vector<pg::SelfCollision>', 'cols')])
   pgSolver.add_method('bodyPositionTargets', None, [param('std::vector<pg::BodyPositionTarget>', 'targets')])
   pgSolver.add_method('bodyOrientationTargets', None, [param('std::vector<pg::BodyOrientationTarget>', 'targets')])
+  pgSolver.add_method('forceContactsMinimization', None, [param('std::vector<pg::ForceContactMinimization>', 'min')])
   pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
                                         param('std::vector<std::vector<double> >', 'uq')])
   pgSolver.add_method('torqueBounds', None, [param('std::vector<std::vector<double> >', 'lt'),
@@ -228,6 +231,14 @@ def build_pg(pg):
   bodyOriTarget.add_instance_attribute('bodyId', 'int')
   bodyOriTarget.add_instance_attribute('target', 'Eigen::Matrix3d')
   bodyOriTarget.add_instance_attribute('scale', 'double')
+
+  # ForceContactMinimization
+  forceContactMin.add_constructor([])
+  forceContactMin.add_constructor([param('int', 'bodyId'),
+                                   param('double', 'scale')])
+
+  forceContactMin.add_instance_attribute('bodyId', 'int')
+  forceContactMin.add_instance_attribute('scale', 'double')
 
   # IterateQuantities
   iterateQuantities.add_instance_attribute('obj', 'double')

@@ -65,6 +65,8 @@ public:
   void bodyPositionTargets(std::vector<BodyPositionTarget> targets);
   void bodyOrientationTargets(std::vector<BodyOrientationTarget> targets);
 
+  void forceContactsMinimization(std::vector<ForceContactMinimization> min);
+
   void qBounds(const std::vector<std::vector<double>>& lq,
                const std::vector<std::vector<double>>& uq);
   void torqueBounds(const std::vector<std::vector<double>>& lt,
@@ -109,6 +111,7 @@ private:
   std::vector<SelfCollision> selfCollisions_;
   std::vector<BodyPositionTarget> bodyPosTargets_;
   std::vector<BodyOrientationTarget> bodyOriTargets_;
+  std::vector<ForceContactMinimization> forceContactsMin_;
   Eigen::VectorXd ql_, qu_;
   Eigen::VectorXd tl_, tu_;
   bool isTorque_;
@@ -251,6 +254,13 @@ void PostureGenerator<Type>::bodyOrientationTargets(std::vector<BodyOrientationT
 
 
 template<typename Type>
+void PostureGenerator<Type>::forceContactsMinimization(std::vector<ForceContactMinimization> min)
+{
+  forceContactsMin_ = std::move(min);
+}
+
+
+template<typename Type>
 void PostureGenerator<Type>::qBounds(const std::vector<std::vector<double>>& ql,
     const std::vector<std::vector<double>>& qu)
 {
@@ -299,7 +309,8 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
   pgdata_.update();
 
   StdCostFunc<Type> cost(&pgdata_, targetQ, postureScale, torqueScale, forceScale,
-                         bodyPosTargets_, bodyOriTargets_);
+                         bodyPosTargets_, bodyOriTargets_,
+                         forceContacts_, forceContactsMin_);
 
   solver_t::problem_t problem(cost);
   problem.startingPoint() = Eigen::VectorXd::Zero(pgdata_.pbSize());
