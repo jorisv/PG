@@ -109,15 +109,18 @@ public:
     }
 
     // compute force task
-    scalar_t force = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    scalar_t force(0., Eigen::VectorXd::Zero(this->inputSize()));
+    Eigen::Vector3<scalar_t> forceTmp(force, force, force);
     if(forceScale_ > 0.)
     {
       for(const auto& fd: pgdata_->forceDatas())
       {
+        forceTmp.setZero();
         for(const sva::ForceVec<scalar_t>& fv: fd.forces)
         {
-          force += fv.force().squaredNorm();
+          forceTmp += fv.force();
         }
+        force += forceTmp.squaredNorm()*forceScale_;
       }
     }
 
@@ -141,13 +144,15 @@ public:
     for(const ForceContactMinimizationData& fcmd: forceContactsMin_)
     {
       const auto& forceData = pgdata_->forceDatas()[fcmd.forcePos];
+      forceTmp.setZero();
       for(const sva::ForceVec<scalar_t>& fv: forceData.forces)
       {
-        forceMin += fv.force().squaredNorm()*fcmd.scale;
+        forceTmp += fv.force();
       }
+      forceMin += forceTmp.squaredNorm()*fcmd.scale;
     }
 
-    res(0) = posture*postureScale_ + torque*torqueScale_ + force*forceScale_ +
+    res(0) = posture*postureScale_ + torque*torqueScale_ + force +
         pos + ori + forceMin;
   }
 
