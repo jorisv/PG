@@ -76,6 +76,8 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::BodyPositionTarget>', 'pg::BodyPositionTarget', 'vector')
   pg.add_container('std::vector<pg::BodyOrientationTarget>', 'pg::BodyOrientationTarget', 'vector')
   pg.add_container('std::vector<pg::ForceContactMinimization>', 'pg::ForceContactMinimization', 'vector')
+  pg.add_container('std::vector<Eigen::VectorXd>', 'Eigen::VectorXd', 'vector')
+  pg.add_container('std::vector<std::vector<Eigen::VectorXd> >', 'std::vector<Eigen::VectorXd>', 'vector')
 
   # PostureGenerator
   pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb'), param('const Eigen::Vector3d&', 'gravity')])
@@ -95,6 +97,8 @@ def build_pg(pg):
                                         param('std::vector<std::vector<double> >', 'uq')])
   pgSolver.add_method('torqueBounds', None, [param('std::vector<std::vector<double> >', 'lt'),
                                              param('std::vector<std::vector<double> >', 'ut')])
+  pgSolver.add_method('torqueBoundsPoly', None, [param('std::vector<std::vector<Eigen::VectorXd> >', 'lt'),
+                                                 param('std::vector<std::vector<Eigen::VectorXd> >', 'ut')])
 
 
   # Don't change the order. We must try to convert in int before convert in double

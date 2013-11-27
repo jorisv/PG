@@ -16,6 +16,10 @@
 #pragma once
 
 // include
+// Eigen
+#include <unsupported/Eigen/Polynomials>
+
+// PG
 #include "AutoDiffFunction.h"
 #include "PGData.h"
 
@@ -33,7 +37,9 @@ public:
 
 public:
   TorqueConstr(PGData<Type>* pgdata)
-    : parent_t(pgdata, pgdata->pbSize(), pgdata->multibody().nrDof(), "Torque")
+    : parent_t(pgdata, pgdata->pbSize(),
+               pgdata->multibody().nrDof() - pgdata->multibody().joint(0).dof(),
+               "Torque")
     , pgdata_(pgdata)
   {}
   ~TorqueConstr() throw()
@@ -53,6 +59,54 @@ public:
 
 private:
   PGData<Type>* pgdata_;
+};
+
+
+template<typename Type>
+class TorquePolyBoundsConstr : public AutoDiffFunction<Type, Eigen::Dynamic>
+{
+public:
+  typedef AutoDiffFunction<Type, Eigen::Dynamic> parent_t;
+  typedef typename parent_t::scalar_t scalar_t;
+  typedef typename parent_t::result_ad_t result_ad_t;
+  typedef typename parent_t::argument_t argument_t;
+
+public:
+  TorquePolyBoundsConstr(PGData<Type>* pgdata,
+                         std::vector<std::vector<Eigen::VectorXd>> tl,
+                         std::vector<std::vector<Eigen::VectorXd>> tu)
+    : parent_t(pgdata, pgdata->pbSize(),
+               (pgdata->multibody().nrDof() - pgdata->multibody().joint(0).dof())*2,
+               "TorquePolyBounds")
+    , pgdata_(pgdata)
+    , tl_(std::move(tl))
+    , tu_(std::move(tu))
+  {}
+  ~TorquePolyBoundsConstr() throw()
+  { }
+
+
+  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
+  {
+    const ID<scalar_t>& id = pgdata_->id();
+    const std::vector<std::vector<scalar_t>>&q = pgdata_->q();
+    int vecPos = 0;
+    int dof = (pgdata_->multibody().nrDof() - pgdata_->multibody().joint(0).dof());
+    for(std::size_t i = 1; i < q.size(); ++i)
+    {
+      for(std::size_t j = 0; j < q[i].size(); ++j)
+      {
+        res(vecPos) = id.torque()[i][j] - Eigen::poly_eval(tl_[i][j], q[i][j]);
+        res(vecPos + dof) = id.torque()[i][j] - Eigen::poly_eval(tu_[i][j], q[i][j]);
+        ++vecPos;
+      }
+    }
+  }
+
+private:
+  PGData<Type>* pgdata_;
+  std::vector<std::vector<Eigen::VectorXd>> tl_;
+  std::vector<std::vector<Eigen::VectorXd>> tu_;
 };
 
 } // namespace pg

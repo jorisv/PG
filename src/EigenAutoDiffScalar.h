@@ -63,6 +63,12 @@ pg::eigen_ad::scalar_t pow(const pg::eigen_ad::scalar_t& v, int p)
   return Eigen::pow(v, p);
 }
 
+// Eigen::poly_eval need this function definition.
+pg::eigen_ad::scalar_t pow(const pg::eigen_ad::scalar_t& v, const pg::eigen_ad::scalar_t& p)
+{
+  return Eigen::pow(v, p.value());
+}
+
 pg::eigen_ad::scalar_t sqrt(const pg::eigen_ad::scalar_t& v)
 {
   return Eigen::sqrt(v);

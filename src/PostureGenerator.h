@@ -69,8 +69,10 @@ public:
 
   void qBounds(const std::vector<std::vector<double>>& lq,
                const std::vector<std::vector<double>>& uq);
-  void torqueBounds(const std::vector<std::vector<double>>& lt,
-                    const std::vector<std::vector<double>>& ut);
+  void torqueBounds(std::vector<std::vector<double>> lt,
+                    std::vector<std::vector<double>> ut);
+  void torqueBoundsPoly(std::vector<std::vector<Eigen::VectorXd>> lt,
+                        std::vector<std::vector<Eigen::VectorXd>> ut);
 
   void param(const std::string& name, const std::string& value);
   void param(const std::string& name, double value);
@@ -114,6 +116,7 @@ private:
   std::vector<ForceContactMinimization> forceContactsMin_;
   Eigen::VectorXd ql_, qu_;
   Eigen::VectorXd tl_, tu_;
+  std::vector<std::vector<Eigen::VectorXd>> tlPoly_, tuPoly_;
   bool isTorque_;
 
   Eigen::VectorXd x_;
@@ -270,11 +273,25 @@ void PostureGenerator<Type>::qBounds(const std::vector<std::vector<double>>& ql,
 
 
 template<typename Type>
-void PostureGenerator<Type>::torqueBounds(const std::vector<std::vector<double>>& tl,
-    const std::vector<std::vector<double>>& tu)
+void PostureGenerator<Type>::torqueBounds(std::vector<std::vector<double>> tl,
+    std::vector<std::vector<double>> tu)
 {
+  tl[0] = {};
+  tu[0] = {};
   tl_ = rbd::dofToVector(pgdata_.multibody(), tl);
   tu_ = rbd::dofToVector(pgdata_.multibody(), tu);
+  isTorque_ = true;
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::torqueBoundsPoly(std::vector<std::vector<Eigen::VectorXd>> tl,
+    std::vector<std::vector<Eigen::VectorXd>> tu)
+{
+  tl[0] = {};
+  tu[0] = {};
+  tlPoly_ = std::move(tl);
+  tuPoly_ = std::move(tu);
   isTorque_ = true;
 }
 
@@ -485,16 +502,36 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
 
   if(isTorque_)
   {
-    boost::shared_ptr<TorqueConstr<Type>> torque(
-        new TorqueConstr<Type>(&pgdata_));
-    typename TorqueConstr<Type>::intervals_t limTorque(torque->outputSize());
-    for(std::size_t i = 0; i < limTorque.size(); ++i)
+    // if polynome constraint not set we use the static torque constraint
+    if(tlPoly_.size() == 0)
     {
-      limTorque[i] = {tl_[i], tu_[i]};
-    }
+      boost::shared_ptr<TorqueConstr<Type>> torque(
+          new TorqueConstr<Type>(&pgdata_));
+      typename TorqueConstr<Type>::intervals_t limTorque(torque->outputSize());
+      for(std::size_t i = 0; i < limTorque.size(); ++i)
+      {
+        limTorque[i] = {tl_[i], tu_[i]};
+      }
 
-    typename solver_t::problem_t::scales_t scalTorque(torque->outputSize(), 1.);
-    problem.addConstraint(torque, limTorque, scalTorque);
+      typename solver_t::problem_t::scales_t scalTorque(torque->outputSize(), 1.);
+      problem.addConstraint(torque, limTorque, scalTorque);
+    }
+    else
+    {
+      boost::shared_ptr<TorquePolyBoundsConstr<Type>> torque(
+          new TorquePolyBoundsConstr<Type>(&pgdata_, tlPoly_, tuPoly_));
+      typename TorquePolyBoundsConstr<Type>::intervals_t limTorque(torque->outputSize());
+      for(std::size_t i = 0; i < limTorque.size()/2; ++i)
+      {
+        // 0 <= torque(q, f) - torqueMin(q)
+        limTorque[i] = {0., std::numeric_limits<double>::infinity()};
+        // torque(q, f) - torqueMax(q) <= 0
+        limTorque[i + limTorque.size()/2] = {-std::numeric_limits<double>::infinity(), 0.};
+      }
+
+      typename solver_t::problem_t::scales_t scalTorque(torque->outputSize(), 1.);
+      problem.addConstraint(torque, limTorque, scalTorque);
+    }
   }
 
   roboptim::IpoptSolver solver(problem);
