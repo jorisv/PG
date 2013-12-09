@@ -28,3 +28,4 @@
 #include "CollisionConstr.h"
 #include "IpoptIntermediateCallback.h"
 #include "PostureGenerator.h"
+#include "EllipseContactConstr.h"

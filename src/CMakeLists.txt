@@ -6,7 +6,7 @@ set(HEADERS FK.h ID.h
             FixedContactConstr.h StaticStabilityConstr.h
             PositiveForceConstr.h FrictionConeConstr.h
             PlanarSurfaceConstr.h TorqueConstr.h
-            CollisionConstr.h
+            CollisionConstr.h EllipseContactConstr.h
             IpoptIntermediateCallback.h
             PostureGenerator.h)
 
