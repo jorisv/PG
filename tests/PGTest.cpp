@@ -439,7 +439,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     sva::PTransformd bodySurface(frame);
     std::vector<Eigen::Vector2d> targetPoints = {{0.0, 0.0}, {4.0, 0.0}, {4.0, 1.0}, {0.0, 1.0}};
     std::vector<Eigen::Vector2d> surfPoints = {{0.2, -0.3}, {0.4, -0.5}, {1.0, 0.5}, {0.8, 1.7}};
-    pgPb.ellipseContacts({{id, double(0.04), targetSurface, targetPoints, bodySurface, surfPoints}});
+    pgPb.ellipseContacts({{id, double(0.1), targetSurface, targetPoints, bodySurface, surfPoints}});
     pgPb.bodyPositionTargets({{id, Vector3d(2., 1., 0.), 10.}});
 
     BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));

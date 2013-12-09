@@ -73,6 +73,7 @@ public:
         sva::PTransformd p(Eigen::Vector3d(targetPoints[i].x(), targetPoints[i].y(), 0.));
         targetPointsW[i] = (p*targetFrame).cast<scalar_t>();
       }
+
       listTargetPointsW_[contactIndex] = targetPointsW;
       ++contactIndex;
     }
@@ -91,7 +92,7 @@ public:
     {
       int bodyIndex = ellipseContacts_[contactIndex].bodyId;
       const std::vector<sva::PTransform<scalar_t> >& targetPointsW = 
-                                                    listTargetPointsW_[contactIndex];
+                                    listTargetPointsW_[contactIndex];
       const sva::PTransformd& surfaceFrame = ellipseContacts_[contactIndex].surfaceFrame;
       const std::vector<Eigen::Vector2d>& surfacePoints = 
                                     ellipseContacts_[contactIndex].surfacePoints;
@@ -119,30 +120,34 @@ public:
                             pow(ed.r1*(-s*segX+c*segY), 2))) + (segX*pY-segY*pX);
         ++resIndex;
       }
-      //std::cout << printPolygon(std::string("robot"), surfacePoints);
+      std::cout << printPolygon(std::string("robot"), surfacePoints);
 
-      //Projection of the points of the target on the surface of the robot
       //Transformations 
-      sva::PTransform<scalar_t> transfWtoB = (pgdata_->fk().bodyPosW()[bodyIndex]).inv();
-      sva::PTransform<scalar_t> transfBtoS = surfaceFrame.inv();
-      //Transformation from Target to world
-      std::vector<sva::PTransform<scalar_t> > targetPointsB(targetPointsW.size());
-      std::vector<sva::PTransform<scalar_t> > targetPointsS(targetPointsW.size());
+      const sva::PTransform<scalar_t>& transfBtoW = pgdata_->fk().bodyPosW()[bodyIndex];
+      const sva::PTransform<scalar_t>& transfStoB = surfaceFrame;
+      sva::PTransform<scalar_t> transfStoW = transfStoB*transfBtoW;
+
+      //For print purpose
+      std::vector<Eigen::Vector2d> targetPointS2d(targetPointsW.size());
+
+      //Adding the constraint for the target surfaces of the environment
       for(std::size_t i = 0; i < targetPointsW.size(); ++i)
       {
-        targetPointsB[i] = targetPointsW[i]*transfWtoB;
-        targetPointsS[i] = targetPointsB[i]*transfBtoS;
-      }
+        Eigen::Vector3<scalar_t> SurfToTargetPoint = 
+                       targetPointsW[i].translation() - transfStoW.translation(); 
+        scalar_t T = transfStoW.rotation().row(0).dot(SurfToTargetPoint);
+        scalar_t B = transfStoW.rotation().row(1).dot(SurfToTargetPoint);
+        const Eigen::Vector3<scalar_t> P1(T, B, 0);
 
-      std::vector<Eigen::Vector2d> targetPointS2d(targetPointsS.size());
-      //Adding the constraint for the target surfaces of the environment
-      for(std::size_t i = 0; i < targetPointsS.size(); ++i)
-      {
-        targetPointS2d[i].x() = targetPointsS[i].translation().x().value();
-        targetPointS2d[i].y() = targetPointsS[i].translation().y().value();
-        const Eigen::Vector3<scalar_t>& P1 = targetPointsS[i].translation();
-        const Eigen::Vector3<scalar_t>& P2 = 
-                targetPointsS[(i + 1) % targetPointsS.size()].translation();
+        SurfToTargetPoint = targetPointsW[(i + 1) % 
+                 targetPointsW.size()].translation() - transfStoW.translation(); 
+        T = transfStoW.rotation().row(0).dot(SurfToTargetPoint);
+        B = transfStoW.rotation().row(1).dot(SurfToTargetPoint);
+        const Eigen::Vector3<scalar_t> P2(T, B, 0);
+
+        targetPointS2d[i].x() = P1.x().value();
+        targetPointS2d[i].y() = P1.y().value();
+
         //segX and segY are the coordinates of the segment in the ellipse's frame
         scalar_t segX = P2.x()-P1.x();
         scalar_t segY = P2.y()-P1.y();
@@ -159,8 +164,8 @@ public:
                             pow(ed.r1*(-s*segX+c*segY), 2))) + (segX*pY-segY*pX);
         ++resIndex;
       }
-      //std::cout << printPolygon(std::string("projEnv"), targetPointS2d);
-      //std::cout << printEllipse(std::string("contactIndex"), ed);
+      std::cout << printPolygon(std::string("projEnv"), targetPointS2d);
+      std::cout << printEllipse(std::string("contactIndex"), ed);
       ++contactIndex;
     }    
   }
