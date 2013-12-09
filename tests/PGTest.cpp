@@ -435,7 +435,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     int id = 12;
     int index = mb.bodyIndexById(id);
     Matrix3d frame(RotX(-cst::pi<double>()/2.));
-    sva::PTransformd targetSurface(frame, Vector3d(0., 1., 0.));
+    sva::PTransformd targetSurface(frame, Vector3d(0., 3., 0.));
     sva::PTransformd bodySurface(frame);
     std::vector<Eigen::Vector2d> targetPoints = {{0.0, 0.0}, {4.0, 0.0}, {4.0, 1.0}, {0.0, 1.0}};
     std::vector<Eigen::Vector2d> surfPoints = {{0.2, -0.3}, {0.4, -0.5}, {1.0, 0.5}, {0.8, 1.7}};

@@ -152,14 +152,8 @@ public:
       forceMin += forceTmp.squaredNorm()*fcmd.scale;
     }
 
-    scalar_t ellipsesAreas = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
-    for(const typename PGData<Type>::EllipseData& ed: pgdata_->ellipseDatas())
-    {
-      ellipsesAreas += ed.r1 * ed.r2;
-    }
-    
     res(0) = posture*postureScale_ + torque*torqueScale_ + force +
-        pos + ori + forceMin - 1000*ellipsesAreas;
+        pos + ori + forceMin;
   }
 
 private:
