@@ -21,6 +21,7 @@
 #include <tuple>
 
 // boost
+#define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE Algo test
 #include <boost/test/unit_test.hpp>
 #include <boost/math/constants/constants.hpp>
@@ -328,7 +329,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
-    pgPb.param("ipopt.linear_solver", "ma27");
+	pgPb.param("ipopt.linear_solver", "mumps");
 
     Vector3d target(2., 0., 0.);
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
@@ -349,7 +350,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
-    pgPb.param("ipopt.linear_solver", "ma27");
+    pgPb.param("ipopt.linear_solver", "mumps");
 
     Vector3d target(2., 0., 0.);
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
@@ -373,7 +374,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
-    pgPb.param("ipopt.linear_solver", "ma27");
+    pgPb.param("ipopt.linear_solver", "mumps");
 
     Vector3d target(1.5, 0., 0.);
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
@@ -400,7 +401,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
-    pgPb.param("ipopt.linear_solver", "ma27");
+    pgPb.param("ipopt.linear_solver", "mumps");
 
     int id = 12;
     int index = mb.bodyIndexById(id);
@@ -425,10 +426,39 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Planar.py");
   }
 
+  //Test for Ellipse Constraints
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
+    pgPb.param("ipopt.print_level", 5);
+    pgPb.param("ipopt.linear_solver", "mumps");
+
+    int id = 12;
+    int index = mb.bodyIndexById(id);
+    Matrix3d frame(RotX(-cst::pi<double>()/2.));
+    sva::PTransformd targetSurface(frame, Vector3d(0., 1., 0.));
+    sva::PTransformd bodySurface(frame);
+    std::vector<Eigen::Vector2d> targetPoints = {{0.0, 0.0}, {4.0, 0.0}, {4.0, 1.0}, {0.0, 1.0}};
+    std::vector<Eigen::Vector2d> surfPoints = {{0.2, -0.3}, {0.4, -0.5}, {1.0, 0.5}, {0.8, 1.7}};
+    pgPb.ellipseContacts({{id, double(0.04), targetSurface, targetPoints, bodySurface, surfPoints}});
+    pgPb.bodyPositionTargets({{id, Vector3d(2., 1., 0.), 10.}});
+
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    sva::PTransformd surfPos = bodySurface*mbcWork.bodyPosW[index];
+    double posErr = (surfPos.translation() -
+        targetSurface.translation()).dot(targetSurface.rotation().row(2));
+    double oriErr = surfPos.rotation().row(2).dot(targetSurface.rotation().row(2)) - 1.;
+    BOOST_CHECK_SMALL(posErr, 1e-5);
+    BOOST_CHECK_SMALL(oriErr, 1e-5);
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Ellipse.py");
+  }
+
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
-    pgPb.param("ipopt.linear_solver", "ma27");
+    pgPb.param("ipopt.linear_solver", "mumps");
 
     Vector3d target(1.5, 0., 0.);
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
@@ -504,7 +534,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
-    pgPb.param("ipopt.linear_solver", "ma27");
+    pgPb.param("ipopt.linear_solver", "mumps");
 
     Vector3d target(0., 0., 0.);
     int id = 12;
@@ -553,7 +583,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
-    pgPb.param("ipopt.linear_solver", "ma27");
+    pgPb.param("ipopt.linear_solver", "mumps");
 
     Vector3d target(0., 0., 0.);
     int id1 = 12;

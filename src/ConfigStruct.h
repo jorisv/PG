@@ -87,6 +87,27 @@ struct PlanarContact
   std::vector<Eigen::Vector2d> surfacePoints; ///< Body surface points in surface coordinate.
 };
 
+struct EllipseContact
+{
+  EllipseContact() {}
+  EllipseContact(int bId, float rMin,
+                 const sva::PTransformd& tf, std::vector<Eigen::Vector2d> tp,
+                 const sva::PTransformd& sf, std::vector<Eigen::Vector2d> sp)
+    : bodyId(bId)
+    , radiusMin(rMin)
+    , targetFrame(tf)
+    , targetPoints(std::move(tp))
+    , surfaceFrame(sf)
+    , surfacePoints(std::move(sp))
+  {}
+
+  int bodyId;
+  double radiusMin;
+  sva::PTransformd targetFrame; ///< Target frame in world coordinate.
+  std::vector<Eigen::Vector2d> targetPoints; ///< Target surface points in surface coordinate.
+  sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
+  std::vector<Eigen::Vector2d> surfacePoints; ///< Body surface points in surface coordinate.
+};
 
 struct GripperContact
 {

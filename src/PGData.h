@@ -49,12 +49,23 @@ public:
     double mu;
   };
 
+  struct EllipseData
+  {
+    int bodyIndex;  //Each ellipse is defined relatively to a Surface of a Body
+    scalar_t x;     //x coord of the center
+    scalar_t y;     //y coord of the center
+    scalar_t theta; //Angle between the x-axis and the first axis of the ellipse
+    scalar_t r1;    //First radius
+    scalar_t r2;    //Second radius
+  };
+
 public:
   PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity);
 
   void x(const Eigen::VectorXd& x);
 
   void forces(std::vector<ForceData> fd);
+  void ellipses(std::vector<EllipseData> ed);
   void update();
 
   const std::vector<std::vector<scalar_t> >& q()
@@ -79,6 +90,16 @@ public:
 
   int pbSize() const
   {
+    return mb_.nrParams() + nrForcePoints_*3 + int(ellipseDatas_.size())*5;
+  }
+
+  int forceParamsBegin() const
+  {
+    return mb_.nrParams();
+  }
+
+  int ellipseParamsBegin() const
+  {
     return mb_.nrParams() + nrForcePoints_*3;
   }
 
@@ -91,6 +112,12 @@ public:
   {
     return forceDatas_;
   }
+
+  const std::vector<EllipseData>& ellipseDatas() const
+  {
+    return ellipseDatas_;
+  }
+
 
   const Eigen::Vector3d& gravity() const
   {
@@ -112,6 +139,8 @@ private:
   std::vector<ForceData> forceDatas_;
   int nrForcePoints_;
   std::vector<sva::ForceVec<scalar_t>> forcesB_;
+
+  std::vector<EllipseData> ellipseDatas_;
 
   FK<scalar_t> fk_;
   ID<scalar_t> id_;
@@ -181,6 +210,14 @@ void PGData<Type>::forces(std::vector<ForceData> fd)
   ++xStamp_;
 }
 
+template<typename Type>
+void PGData<Type>::ellipses(std::vector<EllipseData> ed)
+{
+  ellipseDatas_ = std::move(ed);
+  x_.setZero(pbSize());
+  ++xStamp_;
+}
+
 
 template<typename Type>
 void PGData<Type>::update()
@@ -214,6 +251,16 @@ void PGData<Type>::update()
       forcesB_[fd.bodyIndex] = forcesB_[fd.bodyIndex] + pt.transMul(fv);
       xPos += 3;
     }
+  }
+
+  for(EllipseData& ed: ellipseDatas_)
+  {
+    construct_f()(int(x_.size()), xPos + 0, x_[xPos + 0], ed.x);
+    construct_f()(int(x_.size()), xPos + 1, x_[xPos + 1], ed.y);
+    construct_f()(int(x_.size()), xPos + 2, x_[xPos + 2], ed.theta);
+    construct_f()(int(x_.size()), xPos + 3, x_[xPos + 3], ed.r1);
+    construct_f()(int(x_.size()), xPos + 4, x_[xPos + 4], ed.r2);
+    xPos += 5;
   }
 
   id_.run(mb_, fk_.bodyPosW(), fk_.parentToSon(), forcesB_);

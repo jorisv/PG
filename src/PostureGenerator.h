@@ -16,6 +16,8 @@
 #pragma once
 
 // include
+#include <boost/math/constants/constants.hpp>
+
 // roboptim
 #include <roboptim/core/solver.hh>
 #include <roboptim/core/solver-factory.hh>
@@ -34,6 +36,7 @@
 #include "FrictionConeConstr.h"
 #include "TorqueConstr.h"
 #include "PlanarSurfaceConstr.h"
+#include "EllipseContactConstr.h"
 #include "CollisionConstr.h"
 #include "ConfigStruct.h"
 #include "IpoptIntermediateCallback.h"
@@ -54,6 +57,7 @@ public:
   void fixedPositionContacts(std::vector<FixedPositionContact> contacts);
   void fixedOrientationContacts(std::vector<FixedOrientationContact> contacts);
   void planarContacts(std::vector<PlanarContact> contacts);
+  void ellipseContacts(std::vector<EllipseContact> contacts);
   void gripperContacts(std::vector<GripperContact> contacts);
 
   void forceContacts(std::vector<ForceContact> contacts);
@@ -107,6 +111,7 @@ private:
   std::vector<FixedPositionContact> fixedPosContacts_;
   std::vector<FixedOrientationContact> fixedOriContacts_;
   std::vector<PlanarContact> planarContacts_;
+  std::vector<EllipseContact> ellipseContacts_;
   std::vector<GripperContact> gripperContacts_;
   std::vector<ForceContact> forceContacts_;
   std::vector<EnvCollision> envCollisions_;
@@ -188,6 +193,21 @@ void PostureGenerator<Type>::planarContacts(std::vector<PlanarContact> contacts)
   planarContacts_ = std::move(contacts);
 }
 
+template<typename Type>
+void PostureGenerator<Type>::ellipseContacts(std::vector<EllipseContact> contacts)
+{
+  typedef PGData<Type> pgdata_t;
+  typedef typename pgdata_t::EllipseData ellipsedata_t;
+
+  ellipseContacts_ = std::move(contacts);
+  std::vector<ellipsedata_t> ellipseDatas;
+  ellipseDatas.reserve(ellipseContacts_.size());
+  for(const EllipseContact& ec: ellipseContacts_)
+  {
+    ellipseDatas.push_back({pgdata_.multibody().bodyIndexById(ec.bodyId), 0., 0., 0., 0., 0.});
+  }
+  pgdata_.ellipses(ellipseDatas);
+}
 
 template<typename Type>
 void PostureGenerator<Type>::gripperContacts(std::vector<GripperContact> contacts)
@@ -408,6 +428,41 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
           pic->outputSize(), {0., std::numeric_limits<double>::infinity()});
     typename solver_t::problem_t::scales_t scalInc(pic->outputSize(), 1.);
     problem.addConstraint(pic, limInc, scalInc);
+  }
+
+  for(const EllipseContact& ec: ellipseContacts_)
+  {
+    int ellipseIndex = 0;
+    boost::shared_ptr<PlanarPositionContactConstr<Type>> ppc(
+        new PlanarPositionContactConstr<Type>(&pgdata_, ec.bodyId, ec.targetFrame, ec.surfaceFrame));
+    problem.addConstraint(ppc, {{0., 0.}}, {{1.}});
+
+    // N axis must be aligned between target and surface frame.
+    boost::shared_ptr<PlanarOrientationContactConstr<Type>> poc(
+        new PlanarOrientationContactConstr<Type>(&pgdata_, ec.bodyId,
+                                                 ec.targetFrame, ec.surfaceFrame,
+                                                 2));
+    problem.addConstraint(poc, {{1., 1.}}, {{1.}});
+
+    namespace cst = boost::math::constants;
+    double inf = std::numeric_limits<double>::infinity();
+    int pos = pgdata_.ellipseParamsBegin() + 5*ellipseIndex;
+    problem.argumentBounds()[pos + 2] = {-2*cst::pi<double>(),
+                                          2*cst::pi<double>()};
+    problem.argumentBounds()[pos + 3] = {ec.radiusMin, inf};
+    problem.argumentBounds()[pos + 4] = {ec.radiusMin, inf};
+
+    ++ellipseIndex;
+  }
+
+  if(!ellipseContacts_.empty())
+  {
+    boost::shared_ptr<EllipseContactConstr<Type>> ecc(
+        new EllipseContactConstr<Type>(&pgdata_, ellipseContacts_));
+    typename EllipseContactConstr<Type>::intervals_t limInc(
+          ecc->outputSize(), {0., std::numeric_limits<double>::infinity()});
+    typename solver_t::problem_t::scales_t scalInc(ecc->outputSize(), 1.);
+    problem.addConstraint(ecc, limInc, scalInc);
   }
 
   for(const GripperContact& gc: gripperContacts_)
