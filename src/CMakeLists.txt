@@ -1,3 +1,5 @@
+INCLUDE_DIRECTORIES(BEFORE ${Boost_INCLUDE_DIR})
+
 set(SOURCES lib.cpp)
 set(HEADERS FK.h ID.h
             PGData.h EigenAutoDiffScalar.h AutoDiffFunction.h
