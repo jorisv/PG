@@ -27,7 +27,6 @@ PKG_CONFIG_USE_DEPENDENCY(_pg scd)
 PKG_CONFIG_USE_DEPENDENCY(_pg SpaceVecAlg)
 PKG_CONFIG_USE_DEPENDENCY(_pg RBDyn)
 PKG_CONFIG_USE_DEPENDENCY(_pg roboptim-core)
-PKG_CONFIG_USE_DEPENDENCY(_pg roboptim-core-plugin-ipopt)
 
 set_target_properties(_pg PROPERTIES PREFIX "")
 set_target_properties(_pg PROPERTIES INSTALL_RPATH

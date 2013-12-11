@@ -28,7 +28,6 @@ ADD_REQUIRED_DEPENDENCY("scd")
 ADD_REQUIRED_DEPENDENCY("SpaceVecAlg")
 ADD_REQUIRED_DEPENDENCY("RBDyn")
 ADD_REQUIRED_DEPENDENCY("roboptim-core > 2.0")
-ADD_REQUIRED_DEPENDENCY("roboptim-core-plugin-ipopt > 2.0")
 
 #########################
 # 
