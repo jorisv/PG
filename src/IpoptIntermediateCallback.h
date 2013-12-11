@@ -14,59 +14,35 @@
 
 #pragma once
 
-// include
-// roboptim
-#include <roboptim/core/plugin/ipopt.hh>
-
-// Ipopt
-#include <IpIpoptData.hpp>
-#include <IpIteratesVector.hpp>
-#include <IpDenseVector.hpp>
-#include <IpIpoptCalculatedQuantities.hpp>
+#include <Eigen/Dense>
 
 namespace pg
 {
 
-struct IpoptIntermediateCallback : public roboptim::UserIntermediateCallback
+template <class problem_t, class solverState_t>
+struct IpoptIntermediateCallback
 {
+
   struct Data
   {
     Eigen::VectorXd x;
     double obj, dual_inf, constr_viol, complem, overallError;
   };
 
-  bool operator()(Ipopt::AlgorithmMode mode,
-    int /* iter */, double /* obj_value */,
-    double /* inf_pr */, double /* inf_du */,
-    double mu, double /* d_norm */,
-    double /* regularization_size */,
-    double /* alpha_du */, double /* alpha_pr */,
-    int /* ls_trials */,
-    const Ipopt::IpoptData* ip_data,
-    Ipopt::IpoptCalculatedQuantities* ip_cq)
+  void record(const problem_t& /*problem*/, const solverState_t& state)
   {
     Data d;
 
-    const Ipopt::DenseVector* x;
-
-    // we only store iteration data in regular mode
+    // TODO: we only store iteration data in regular mode
     // because some quantities don't have the same meaning
     // in other mode
-    if(mode == Ipopt::RegularMode)
+    //if(state.template getParameter<std::string>("mode") == "RegularMode")
     {
-      x = dynamic_cast<const Ipopt::DenseVector*>(
-        GetRawPtr(ip_data->curr()->x()));
-
-      d.x = Eigen::Map<const Eigen::VectorXd>(x->Values(), x->Dim());
-      d.obj = ip_cq->curr_f();
-      d.dual_inf = ip_cq->unscaled_curr_dual_infeasibility(Ipopt::NORM_MAX);
-      d.constr_viol = ip_cq->unscaled_curr_nlp_constraint_violation(Ipopt::NORM_MAX);
-      d.complem = ip_cq->unscaled_curr_complementarity(mu, Ipopt::NORM_MAX);
-      d.overallError = ip_cq->curr_nlp_error();
+      d.x = state.x();
+      d.obj = state.cost().get();
+      d.constr_viol = state.constraintViolation().get();
       datas.push_back(d);
     }
-
-    return true;
   }
 
   std::vector<Data> datas;
