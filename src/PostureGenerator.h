@@ -17,11 +17,11 @@
 
 // include
 #include <boost/math/constants/constants.hpp>
+#include <boost/bind.hpp>
 
 // roboptim
 #include <roboptim/core/solver.hh>
 #include <roboptim/core/solver-factory.hh>
-#include <roboptim/core/plugin/ipopt.hh>
 
 // RBDyn
 #include <RBDyn/MultiBody.h>
@@ -39,7 +39,7 @@
 #include "EllipseContactConstr.h"
 #include "CollisionConstr.h"
 #include "ConfigStruct.h"
-#include "IpoptIntermediateCallback.h"
+#include "IterationCallback.h"
 
 namespace pg
 {
@@ -49,7 +49,27 @@ class PostureGenerator
 {
 public:
   typedef typename Type::scalar_t scalar_t;
-  typedef roboptim::IpoptSolver::solver_t solver_t;
+
+  typedef roboptim::EigenMatrixDense functionType_t;
+
+  //TODO: this could be written in a cleaner way
+  typedef boost::mpl::push_back<
+    boost::mpl::vector< >,
+    roboptim::GenericLinearFunction<functionType_t> >::type
+    constraints1_t;
+  typedef boost::mpl::push_back<
+    constraints1_t,
+    roboptim::GenericDifferentiableFunction<functionType_t> >::type
+    constraints_t;
+
+  //define the solver
+  typedef ::roboptim::Solver<
+      ::roboptim::GenericDifferentiableFunction<functionType_t>,
+      constraints_t
+      > solver_t;
+
+  typedef IterationCallback < solver_t::problem_t,
+    solver_t::solverState_t > iteration_callback_t;
 
 public:
   PostureGenerator(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity);
@@ -125,7 +145,7 @@ private:
   bool isTorque_;
 
   Eigen::VectorXd x_;
-  boost::shared_ptr<IpoptIntermediateCallback> iters_;
+  boost::shared_ptr<iteration_callback_t> iters_;
 };
 
 
@@ -164,7 +184,7 @@ PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb,
   , tl_(mb.nrDof())
   , tu_(mb.nrDof())
   , isTorque_(false)
-  , iters_(new IpoptIntermediateCallback)
+  , iters_(new iteration_callback_t)
 {
   ql_.setConstant(-std::numeric_limits<double>::infinity());
   qu_.setConstant(std::numeric_limits<double>::infinity());
@@ -589,9 +609,11 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
     }
   }
 
-  roboptim::IpoptSolver solver(problem);
+  roboptim::SolverFactory<solver_t> factory ("ipopt", problem);
+  solver_t& solver = factory ();
+
   iters_->datas.clear();
-  solver.userIntermediateCallback() = iters_;
+  solver.setIterationCallback(boost::ref(*iters_));
 
   for(const auto& p: params_)
   {
@@ -666,7 +688,7 @@ std::vector<std::vector<double> > PostureGenerator<Type>::torqueIter(int i)
 template<typename Type>
 IterateQuantities PostureGenerator<Type>::quantitiesIter(int i) const
 {
-  const IpoptIntermediateCallback::Data& d = iters_->datas.at(i);
+  const iteration_callback_t::Data& d = iters_->datas.at(i);
   return IterateQuantities{d.obj, d.dual_inf, d.constr_viol, d.complem, d.overallError};
 }
 

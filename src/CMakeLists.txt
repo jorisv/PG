@@ -9,7 +9,7 @@ set(HEADERS FK.h ID.h
             PositiveForceConstr.h FrictionConeConstr.h
             PlanarSurfaceConstr.h TorqueConstr.h
             CollisionConstr.h EllipseContactConstr.h
-            IpoptIntermediateCallback.h
+            IterationCallback.h
             PostureGenerator.h)
 
 # !!! PG is an empty library !!!
@@ -22,7 +22,6 @@ PKG_CONFIG_USE_DEPENDENCY(PG scd)
 PKG_CONFIG_USE_DEPENDENCY(PG SpaceVecAlg)
 PKG_CONFIG_USE_DEPENDENCY(PG RBDyn)
 PKG_CONFIG_USE_DEPENDENCY(PG roboptim-core)
-PKG_CONFIG_USE_DEPENDENCY(PG roboptim-core-plugin-ipopt)
 
 
 set(INSTALL_PATH include/PG)
