@@ -20,16 +20,15 @@ namespace pg
 {
 
 template <class problem_t, class solverState_t>
-struct IpoptIntermediateCallback
+struct IterationCallback
 {
-
   struct Data
   {
     Eigen::VectorXd x;
     double obj, dual_inf, constr_viol, complem, overallError;
   };
 
-  void record(const problem_t& /*problem*/, const solverState_t& state)
+  void operator()(const problem_t& /*problem*/, const solverState_t& state)
   {
     Data d;
 

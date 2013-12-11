@@ -39,7 +39,7 @@
 #include "EllipseContactConstr.h"
 #include "CollisionConstr.h"
 #include "ConfigStruct.h"
-#include "IpoptIntermediateCallback.h"
+#include "IterationCallback.h"
 
 namespace pg
 {
@@ -67,6 +67,9 @@ public:
       ::roboptim::GenericDifferentiableFunction<functionType_t>,
       constraints_t
       > solver_t;
+
+  typedef IterationCallback < solver_t::problem_t,
+    solver_t::solverState_t > iteration_callback_t;
 
 public:
   PostureGenerator(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity);
@@ -142,9 +145,7 @@ private:
   bool isTorque_;
 
   Eigen::VectorXd x_;
-  typedef IpoptIntermediateCallback < solver_t::problem_t,
-    solver_t::solverState_t > ipopt_callback_t;
-  boost::shared_ptr< ipopt_callback_t > iters_;
+  boost::shared_ptr<iteration_callback_t> iters_;
 };
 
 
@@ -183,7 +184,7 @@ PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb,
   , tl_(mb.nrDof())
   , tu_(mb.nrDof())
   , isTorque_(false)
-  , iters_(new ipopt_callback_t)
+  , iters_(new iteration_callback_t)
 {
   ql_.setConstant(-std::numeric_limits<double>::infinity());
   qu_.setConstant(std::numeric_limits<double>::infinity());
@@ -611,12 +612,8 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
   roboptim::SolverFactory<solver_t> factory ("ipopt", problem);
   solver_t& solver = factory ();
 
-  ipopt_callback_t pgc;
-  pgc.datas.clear();
-
-  solver_t::callback_t myCall= boost::bind(
-        &ipopt_callback_t::record,&pgc, _1, _2);
-  solver.setIterationCallback(myCall);
+  iters_->datas.clear();
+  solver.setIterationCallback(boost::ref(*iters_));
 
   for(const auto& p: params_)
   {
@@ -691,7 +688,7 @@ std::vector<std::vector<double> > PostureGenerator<Type>::torqueIter(int i)
 template<typename Type>
 IterateQuantities PostureGenerator<Type>::quantitiesIter(int i) const
 {
-  const ipopt_callback_t::Data& d = iters_->datas.at(i);
+  const iteration_callback_t::Data& d = iters_->datas.at(i);
   return IterateQuantities{d.obj, d.dual_inf, d.constr_viol, d.complem, d.overallError};
 }
 
