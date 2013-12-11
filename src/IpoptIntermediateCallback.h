@@ -33,10 +33,16 @@ struct IpoptIntermediateCallback
   {
     Data d;
 
-    // TODO: we only store iteration data in regular mode
+    // we only store iteration data in regular mode
     // because some quantities don't have the same meaning
     // in other mode
-    //if(state.template getParameter<std::string>("mode") == "RegularMode")
+    std::string mode("");
+    try {
+      mode = state.template getParameter<std::string>("ipopt.mode");
+    }
+    catch(std::out_of_range & e){ std::cerr << e.what() << std::endl;}
+
+    if(mode == "RegularMode")
     {
       d.x = state.x();
       d.obj = state.cost().get();
