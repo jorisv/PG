@@ -238,7 +238,7 @@ struct ForceContactMinimization
 
 struct IterateQuantities
 {
-  double obj, dual_inf, constr_viol, complem, overallError;
+  double obj, constr_viol;
 };
 
 } // namespace pg

@@ -262,10 +262,7 @@ def build_pg(pg):
 
   # IterateQuantities
   iterateQuantities.add_instance_attribute('obj', 'double')
-  iterateQuantities.add_instance_attribute('dual_inf', 'double')
   iterateQuantities.add_instance_attribute('constr_viol', 'double')
-  iterateQuantities.add_instance_attribute('complem', 'double')
-  iterateQuantities.add_instance_attribute('overallError', 'double')
 
 
 

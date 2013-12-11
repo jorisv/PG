@@ -689,7 +689,7 @@ template<typename Type>
 IterateQuantities PostureGenerator<Type>::quantitiesIter(int i) const
 {
   const iteration_callback_t::Data& d = iters_->datas.at(i);
-  return IterateQuantities{d.obj, d.dual_inf, d.constr_viol, d.complem, d.overallError};
+  return IterateQuantities{d.obj,  d.constr_viol};
 }
 
 

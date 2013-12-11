@@ -25,7 +25,7 @@ struct IterationCallback
   struct Data
   {
     Eigen::VectorXd x;
-    double obj, dual_inf, constr_viol, complem, overallError;
+    double obj, constr_viol;
   };
 
   void operator()(const problem_t& /*problem*/, const solverState_t& state)
