@@ -101,7 +101,7 @@ void ID<T>::run(const rbd::MultiBody& mb,
 {
   const std::vector<int>& parents = mb.parents();
 
-  bodyAcc_[0] = gravity_;
+  bodyAcc_[0] = parentToSon[0]*gravity_;
   for(int i = 1; i < mb.nrBodies(); ++i)
   {
     bodyAcc_[i] = parentToSon[i]*bodyAcc_[parents[i]];
