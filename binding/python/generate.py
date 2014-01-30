@@ -65,6 +65,7 @@ def build_pg(pg):
   bodyOriTarget = pg.add_struct('BodyOrientationTarget')
   forceContactMin = pg.add_struct('ForceContactMinimization')
   iterateQuantities = pg.add_struct('IterateQuantities')
+  ellipseResult = pg.add_struct('EllipseResult')
 
   # build list type
   pg.add_container('std::vector<pg::FixedPositionContact>', 'pg::FixedPositionContact', 'vector')
@@ -80,6 +81,7 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::ForceContactMinimization>', 'pg::ForceContactMinimization', 'vector')
   pg.add_container('std::vector<Eigen::VectorXd>', 'Eigen::VectorXd', 'vector')
   pg.add_container('std::vector<std::vector<Eigen::VectorXd> >', 'std::vector<Eigen::VectorXd>', 'vector')
+  pg.add_container('std::vector<pg::EllipseResult>', 'pg::EllipseResult', 'vector')
 
   # PostureGenerator
   pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb'), param('const Eigen::Vector3d&', 'gravity')])
@@ -120,6 +122,7 @@ def build_pg(pg):
   pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [])
   pgSolver.add_method('forces', retval('std::vector<sva::ForceVecd>'), [])
   pgSolver.add_method('torque', retval('std::vector<std::vector<double> >'), [])
+  pgSolver.add_method('ellipses', retval('std::vector<pg::EllipseResult>'), [])
 
   pgSolver.add_method('nrIters', retval('int'), [])
   pgSolver.add_method('qIter', retval('std::vector<std::vector<double> >'),
@@ -130,6 +133,7 @@ def build_pg(pg):
                       [param('int', 'iter')], throw=[out_ex])
   pgSolver.add_method('quantitiesIter', retval('pg::IterateQuantities'),
                       [param('int', 'iter')], throw=[out_ex])
+  pgSolver.add_method('ellipsesIter', retval('std::vector<pg::EllipseResult>'), [param('int', 'iter')], throw=[out_ex])
 
   # FixedPositionContact
   fixedPositionContact.add_constructor([])
@@ -264,6 +268,13 @@ def build_pg(pg):
   iterateQuantities.add_instance_attribute('obj', 'double')
   iterateQuantities.add_instance_attribute('constr_viol', 'double')
 
+  # EllipseResult
+  ellipseResult.add_instance_attribute('bodyIndex', 'int')
+  ellipseResult.add_instance_attribute('x', 'double')
+  ellipseResult.add_instance_attribute('y', 'double')
+  ellipseResult.add_instance_attribute('theta', 'double')
+  ellipseResult.add_instance_attribute('r1', 'double')
+  ellipseResult.add_instance_attribute('r2', 'double')
 
 
 if __name__ == '__main__':
