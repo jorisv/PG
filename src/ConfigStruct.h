@@ -235,6 +235,22 @@ struct ForceContactMinimization
   double scale;
 };
 
+struct EllipseResult
+{
+  int bodyIndex;  //Each ellipse is defined relatively to a Surface of a Body
+  double x;     //x coord of the center
+  double y;     //y coord of the center
+  double theta; //Angle between the x-axis and the first axis of the ellipse
+  double r1;    //First radius
+  double r2;    //Second radius
+  std::string print()
+  {
+    std::stringstream result;
+	  result << "ellipse = Ellipse((" << this->x << ", " << this->y << "), ";
+	  result << 2*this->r1 << ", " << 2*this->r2 << ", " << 180*this->theta/boost::math::constants::pi<double>() << ")\n";
+	  return result.str();
+  }
+};
 
 struct IterateQuantities
 {

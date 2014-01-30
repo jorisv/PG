@@ -110,20 +110,20 @@ public:
   std::vector<std::vector<double>> q() const;
   std::vector<sva::ForceVecd> forces() const;
   std::vector<std::vector<double>> torque();
-  std::vector<typename PGData<Type>::EllipseData> ellipses() const;
+  std::vector<EllipseResult> ellipses() const;
 
   int nrIters() const;
   std::vector<std::vector<double>> qIter(int i) const;
   std::vector<sva::ForceVecd> forcesIter(int i) const;
   std::vector<std::vector<double>> torqueIter(int i);
-  std::vector<typename PGData<Type>::EllipseData> ellipsesIter(int i) const;
+  std::vector<EllipseResult> ellipsesIter(int i) const;
   IterateQuantities quantitiesIter(int i) const;
 
 private:
   std::vector<std::vector<double>> q(const Eigen::VectorXd& x) const;
   std::vector<sva::ForceVecd> forces(const Eigen::VectorXd& x) const;
   std::vector<std::vector<double>> torque(const Eigen::VectorXd& x);
-  std::vector<typename PGData<Type>::EllipseData> ellipses(const Eigen::VectorXd& x) const;
+  std::vector<EllipseResult> ellipses(const Eigen::VectorXd& x) const;
 
 private:
   PGData<Type> pgdata_;
@@ -658,7 +658,7 @@ std::vector<std::vector<double> > PostureGenerator<Type>::torque()
 }
 
 template<typename Type>
-std::vector<typename PGData<Type>::EllipseData> PostureGenerator<Type>::ellipses() const
+std::vector<EllipseResult> PostureGenerator<Type>::ellipses() const
 {
   return ellipses(x_);
 }
@@ -691,7 +691,7 @@ std::vector<std::vector<double> > PostureGenerator<Type>::torqueIter(int i)
 }
 
 template<typename Type>
-std::vector<typename PGData<Type>::EllipseData> PostureGenerator<Type>::ellipsesIter(int i) const
+std::vector<EllipseResult> PostureGenerator<Type>::ellipsesIter(int i) const
 {
   return ellipses(iters_->datas.at(i).x);
 }
@@ -751,10 +751,9 @@ std::vector<std::vector<double> > PostureGenerator<Type>::torque(const Eigen::Ve
 }
 
 template<typename Type>
-std::vector<typename PGData<Type>::EllipseData> PostureGenerator<Type>::ellipses(const Eigen::VectorXd& x) const
+std::vector<EllipseResult> PostureGenerator<Type>::ellipses(const Eigen::VectorXd& x) const
 {
-  typedef typename PGData<Type>::EllipseData EllipseData_t;
-  std::vector<EllipseData_t> res(pgdata_.ellipseDatas().size());
+  std::vector<EllipseResult> res(pgdata_.ellipseDatas().size());
   int pos = pgdata_.ellipseParamsBegin();
   int ellipseIndex = 0;
 
