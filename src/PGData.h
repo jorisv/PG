@@ -20,6 +20,9 @@
 #include <cassert>
 #include <vector>
 
+// boost
+#include <boost/math/constants/constants.hpp>
+
 // Eigen
 #include <Eigen/Core>
 
@@ -57,6 +60,13 @@ public:
     scalar_t theta; //Angle between the x-axis and the first axis of the ellipse
     scalar_t r1;    //First radius
     scalar_t r2;    //Second radius
+    std::string print()
+    {
+      std::stringstream result;
+		  result << "ellipse = Ellipse((" << this->x << ", " << this->y << "), ";
+		  result << 2*this->r1 << ", " << 2*this->r2 << ", " << 180*this->theta/boost::math::constants::pi<double>() << ")\n";
+		  return result.str();
+    }
   };
 
 public:
