@@ -117,9 +117,9 @@ struct EllipseContact
   {
     assert( (rMin1 < 0 && rMin2 < 0) && "rMin1 and rMin2 can't be both negative");
     if (rMin2 < 0 && rMin1 >= 0)
-      rMin2 = rMin1;
+      radiusMin2 = rMin1;
     else if (rMin1 < 0 && rMin2 >= 0)
-      rMin1 = rMin2;
+      radiusMin1 = rMin2;
   }
 
   int bodyId;
