@@ -760,7 +760,7 @@ std::vector<EllipseResult> PostureGenerator<Type>::ellipses(const Eigen::VectorX
   for(const EllipseContact& ec: ellipseContacts_)
   {
     pos = pgdata_.ellipseParamsBegin() + 5*ellipseIndex;
-    res[ellipseIndex].bodyIndex = pgdata_.multibody().bodyIndexById(ec.bodyId);
+    res[ellipseIndex].bodyIndex = ec.bodyId;
     res[ellipseIndex].x = x[pos];
     res[ellipseIndex].y = x[pos + 1];
     res[ellipseIndex].theta = x[pos + 2];
