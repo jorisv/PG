@@ -95,15 +95,36 @@ struct EllipseContact
                  const sva::PTransformd& tf, std::vector<Eigen::Vector2d> tp,
                  const sva::PTransformd& sf, std::vector<Eigen::Vector2d> sp)
     : bodyId(bId)
-    , radiusMin(rMin)
+    , radiusMin1(rMin)
+    , radiusMin2(rMin)
     , targetFrame(tf)
     , targetPoints(std::move(tp))
     , surfaceFrame(sf)
     , surfacePoints(std::move(sp))
-  {}
+  {
+    assert( rMin < 0 && "rMin can't be negative");
+  }
+  EllipseContact(int bId, double rMin1, double rMin2,
+                 const sva::PTransformd& tf, std::vector<Eigen::Vector2d> tp,
+                 const sva::PTransformd& sf, std::vector<Eigen::Vector2d> sp)
+    : bodyId(bId)
+    , radiusMin1(rMin1)
+    , radiusMin2(rMin2)
+    , targetFrame(tf)
+    , targetPoints(std::move(tp))
+    , surfaceFrame(sf)
+    , surfacePoints(std::move(sp))
+  {
+    assert( (rMin1 < 0 && rMin2 < 0) && "rMin1 and rMin2 can't be both negative");
+    if (rMin2 < 0 && rMin1 >= 0)
+      rMin2 = rMin1;
+    else if (rMin1 < 0 && rMin2 >= 0)
+      rMin1 = rMin2;
+  }
 
   int bodyId;
-  double radiusMin;
+  double radiusMin1;
+  double radiusMin2;
   sva::PTransformd targetFrame; ///< Target frame in world coordinate.
   std::vector<Eigen::Vector2d> targetPoints; ///< Target surface points in surface coordinate.
   sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.

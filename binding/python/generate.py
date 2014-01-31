@@ -169,12 +169,23 @@ def build_pg(pg):
 
   # EllipseContact
   ellipseContact.add_constructor([])
-  ellipseContact.add_constructor([param('int', 'bodyId'), param('double', 'radiusMin'),
-                                  param('const sva::PTransformd&', 'tf'), param('std::vector<Eigen::Vector2d>', 'tp'),
-                                  param('const sva::PTransformd&', 'sf'), param('std::vector<Eigen::Vector2d>', 'sp')])
+  ellipseContact.add_constructor([param('int', 'bodyId'), 
+                                  param('double', 'radiusMin1'),
+                                  param('double', 'radiusMin2'),
+                                  param('const sva::PTransformd&', 'tf'), 
+                                  param('std::vector<Eigen::Vector2d>', 'tp'),
+                                  param('const sva::PTransformd&', 'sf'), 
+                                  param('std::vector<Eigen::Vector2d>', 'sp')])
+  ellipseContact.add_constructor([param('int', 'bodyId'), 
+                                  param('double', 'radiusMin1'),
+                                  param('const sva::PTransformd&', 'tf'), 
+                                  param('std::vector<Eigen::Vector2d>', 'tp'),
+                                  param('const sva::PTransformd&', 'sf'), 
+                                  param('std::vector<Eigen::Vector2d>', 'sp')])
 
   ellipseContact.add_instance_attribute('bodyId', 'int')
-  ellipseContact.add_instance_attribute('radiusMin', 'double')
+  ellipseContact.add_instance_attribute('radiusMin1', 'double')
+  ellipseContact.add_instance_attribute('radiusMin2', 'double')
   ellipseContact.add_instance_attribute('targetFrame', 'sva::PTransformd')
   ellipseContact.add_instance_attribute('targetPoints', 'std::vector<Eigen::Vector2d>')
   ellipseContact.add_instance_attribute('surfaceFrame', 'sva::PTransformd')

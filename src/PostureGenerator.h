@@ -470,8 +470,8 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
     int pos = pgdata_.ellipseParamsBegin() + 5*ellipseIndex;
     problem.argumentBounds()[pos + 2] = {-2*cst::pi<double>(),
                                           2*cst::pi<double>()};
-    problem.argumentBounds()[pos + 3] = {ec.radiusMin, inf};
-    problem.argumentBounds()[pos + 4] = {ec.radiusMin, inf};
+    problem.argumentBounds()[pos + 3] = {ec.radiusMin1, inf};
+    problem.argumentBounds()[pos + 4] = {ec.radiusMin2, inf};
 
     ++ellipseIndex;
   }
