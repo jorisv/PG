@@ -90,6 +90,7 @@ public:
   void bodyOrientationTargets(std::vector<BodyOrientationTarget> targets);
 
   void forceContactsMinimization(std::vector<ForceContactMinimization> min);
+  void ellipseCostScale(double ellipseScale);
 
   void qBounds(const std::vector<std::vector<double>>& lq,
                const std::vector<std::vector<double>>& uq);
@@ -133,6 +134,7 @@ private:
   std::vector<FixedOrientationContact> fixedOriContacts_;
   std::vector<PlanarContact> planarContacts_;
   std::vector<EllipseContact> ellipseContacts_;
+  double ellipseCostScale_;
   std::vector<GripperContact> gripperContacts_;
   std::vector<ForceContact> forceContacts_;
   std::vector<EnvCollision> envCollisions_;
@@ -180,6 +182,7 @@ template<typename Type>
 PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb,
                                          const Eigen::Vector3d& gravity)
   : pgdata_(mb, gravity)
+  , ellipseCostScale_(0.0)
   , ql_(mb.nrParams())
   , qu_(mb.nrParams())
   , tl_(mb.nrDof())
@@ -212,6 +215,12 @@ template<typename Type>
 void PostureGenerator<Type>::planarContacts(std::vector<PlanarContact> contacts)
 {
   planarContacts_ = std::move(contacts);
+}
+
+template<typename Type>
+void PostureGenerator<Type>::ellipseCostScale(double ellipseScale)
+{
+  ellipseCostScale_ = ellipseScale;
 }
 
 template<typename Type>
@@ -366,7 +375,8 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
 {
   pgdata_.update();
 
-  StdCostFunc<Type> cost(&pgdata_, targetQ, postureScale, torqueScale, forceScale,
+  StdCostFunc<Type> cost(&pgdata_, targetQ, postureScale, torqueScale, forceScale, 
+                         ellipseCostScale_,
                          bodyPosTargets_, bodyOriTargets_,
                          forceContacts_, forceContactsMin_);
 

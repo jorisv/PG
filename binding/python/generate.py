@@ -98,6 +98,7 @@ def build_pg(pg):
   pgSolver.add_method('bodyPositionTargets', None, [param('std::vector<pg::BodyPositionTarget>', 'targets')])
   pgSolver.add_method('bodyOrientationTargets', None, [param('std::vector<pg::BodyOrientationTarget>', 'targets')])
   pgSolver.add_method('forceContactsMinimization', None, [param('std::vector<pg::ForceContactMinimization>', 'min')])
+  pgSolver.add_method('ellipseCostScale', None, [param('double', 'ellipseScale')])
   pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
                                         param('std::vector<std::vector<double> >', 'uq')])
   pgSolver.add_method('torqueBounds', None, [param('std::vector<std::vector<double> >', 'lt'),

@@ -102,7 +102,7 @@ struct EllipseContact
     , surfaceFrame(sf)
     , surfacePoints(std::move(sp))
   {
-    assert( rMin < 0 && "rMin can't be negative");
+    assert( rMin > 0 && "rMin can't be negative");
   }
   EllipseContact(int bId, double rMin1, double rMin2,
                  const sva::PTransformd& tf, std::vector<Eigen::Vector2d> tp,
@@ -115,7 +115,7 @@ struct EllipseContact
     , surfaceFrame(sf)
     , surfacePoints(std::move(sp))
   {
-    assert( (rMin1 < 0 && rMin2 < 0) && "rMin1 and rMin2 can't be both negative");
+    assert( (rMin1 > 0 || rMin2 > 0) && "rMin1 and rMin2 can't be both negative");
     if (rMin2 < 0 && rMin1 >= 0)
       radiusMin2 = rMin1;
     else if (rMin1 < 0 && rMin2 >= 0)

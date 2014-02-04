@@ -16,6 +16,7 @@
 #pragma once
 
 // include
+#include <boost/math/constants/constants.hpp>
 // PG
 #include "AutoDiffFunction.h"
 #include "ConfigStruct.h"
@@ -35,7 +36,8 @@ public:
 
 public:
   StdCostFunc(PGData<Type>* pgdata, std::vector<std::vector<double>> q,
-              double postureScale, double torqueScale, double forceScale,
+              double postureScale, double torqueScale, double forceScale, 
+              double ellipseScale,
               const std::vector<BodyPositionTarget>& bodyPosTargets,
               const std::vector<BodyOrientationTarget>& bodyOriTargets,
               const std::vector<ForceContact>& forceContacts,
@@ -46,6 +48,7 @@ public:
     , postureScale_(postureScale)
     , torqueScale_(torqueScale)
     , forceScale_(forceScale)
+    , ellipseScale_(ellipseScale)
     , bodyPosTargets_(bodyPosTargets.size())
     , bodyOriTargets_(bodyOriTargets.size())
     , forceContactsMin_()
@@ -152,8 +155,19 @@ public:
       forceMin += forceTmp.squaredNorm()*fcmd.scale;
     }
 
+    //Compute ellipse contact cost
+    scalar_t ellipses = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    if(ellipseScale_ > 0.)
+    {
+      for(std::size_t i = 0; i < pgdata_->ellipseDatas().size(); ++i)
+      {
+        ellipses += -boost::math::constants::pi<double>()*pgdata_->ellipseDatas()[i].r1 * pgdata_->ellipseDatas()[i].r2; 
+        std::cout << "ellipses cost: " << ellipses << std::endl;
+      } 
+    }
+
     res(0) = posture*postureScale_ + torque*torqueScale_ + force +
-        pos + ori + forceMin;
+        pos + ori + forceMin + ellipses*ellipseScale_;
   }
 
 private:
@@ -183,6 +197,7 @@ private:
   double postureScale_;
   double torqueScale_;
   double forceScale_;
+  double ellipseScale_;
   std::vector<BodyPositionTargetData> bodyPosTargets_;
   std::vector<BodyOrientationTargetData> bodyOriTargets_;
   std::vector<ForceContactMinimizationData> forceContactsMin_;
