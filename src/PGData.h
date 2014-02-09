@@ -88,8 +88,13 @@ public:
     return fk_;
   }
 
-  const ID<scalar_t>& id() const
+  const ID<scalar_t>& id()
   {
+    if(xStamp_ != idStamp_)
+    {
+      id_.run(mb_, fk_.bodyPosW(), fk_.parentToSon(), forcesB_);
+      idStamp_ = xStamp_;
+    }
     return id_;
   }
 
@@ -156,6 +161,7 @@ private:
   ID<scalar_t> id_;
 
   std::size_t xStamp_;
+  std::size_t idStamp_;
 };
 
 
@@ -173,6 +179,7 @@ PGData<Type>::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
   , fk_(mb)
   , id_(mb, gravity)
   , xStamp_(1)
+  , idStamp_(1)
 {
   x_.setZero();
   for(int i = 0; i < mb.nrJoints(); ++i)
@@ -272,8 +279,6 @@ void PGData<Type>::update()
     construct_f()(int(x_.size()), xPos + 4, x_[xPos + 4], ed.r2);
     xPos += 5;
   }
-
-  id_.run(mb_, fk_.bodyPosW(), fk_.parentToSon(), forcesB_);
 }
 
 } // namespace pg
