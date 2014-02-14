@@ -63,9 +63,9 @@ public:
     std::string print()
     {
       std::stringstream result;
-		  result << "ellipse = Ellipse((" << this->x << ", " << this->y << "), ";
-		  result << 2*this->r1 << ", " << 2*this->r2 << ", " << 180*this->theta/boost::math::constants::pi<double>() << ")\n";
-		  return result.str();
+      result << "ellipse = Ellipse((" << this->x << ", " << this->y << "), ";
+      result << 2*this->r1 << ", " << 2*this->r2 << ", " << 180*this->theta/boost::math::constants::pi<double>() << ")\n";
+      return result.str();
     }
   };
 
@@ -226,6 +226,7 @@ void PGData<Type>::forces(std::vector<ForceData> fd)
   x_.setZero(pbSize());
   ++xStamp_;
 }
+
 
 template<typename Type>
 void PGData<Type>::ellipses(std::vector<EllipseData> ed)

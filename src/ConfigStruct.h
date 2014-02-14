@@ -256,6 +256,7 @@ struct ForceContactMinimization
   double scale;
 };
 
+
 struct EllipseResult
 {
   int bodyIndex;  //Each ellipse is defined relatively to a Surface of a Body
@@ -267,11 +268,12 @@ struct EllipseResult
   std::string print()
   {
     std::stringstream result;
-	  result << "ellipse = Ellipse((" << this->x << ", " << this->y << "), ";
-	  result << 2*this->r1 << ", " << 2*this->r2 << ", " << 180*this->theta/boost::math::constants::pi<double>() << ")\n";
-	  return result.str();
+    result << "ellipse = Ellipse((" << this->x << ", " << this->y << "), ";
+    result << 2*this->r1 << ", " << 2*this->r2 << ", " << 180*this->theta/boost::math::constants::pi<double>() << ")\n";
+    return result.str();
   }
 };
+
 
 struct IterateQuantities
 {
