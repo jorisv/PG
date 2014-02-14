@@ -31,24 +31,22 @@
 #include "PGData.h"
 #include "StdCostFunc.h"
 #include "FixedContactConstr.h"
-#include "StaticStabilityConstr.h"
-#include "PositiveForceConstr.h"
-#include "FrictionConeConstr.h"
-#include "TorqueConstr.h"
-#include "PlanarSurfaceConstr.h"
-#include "EllipseContactConstr.h"
-#include "CollisionConstr.h"
+//#include "StaticStabilityConstr.h"
+//#include "PositiveForceConstr.h"
+//#include "FrictionConeConstr.h"
+//#include "TorqueConstr.h"
+//#include "PlanarSurfaceConstr.h"
+//#include "EllipseContactConstr.h"
+//#include "CollisionConstr.h"
 #include "ConfigStruct.h"
 #include "IterationCallback.h"
 
 namespace pg
 {
 
-template<typename Type>
 class PostureGenerator
 {
 public:
-  typedef typename Type::scalar_t scalar_t;
 
   typedef roboptim::EigenMatrixDense functionType_t;
 
@@ -127,7 +125,7 @@ private:
   std::vector<EllipseResult> ellipses(const Eigen::VectorXd& x) const;
 
 private:
-  PGData<Type> pgdata_;
+  PGData pgdata_;
   solver_t::parameters_t params_;
 
   std::vector<FixedPositionContact> fixedPosContacts_;
@@ -178,8 +176,8 @@ struct ResultVisitor : public boost::static_visitor<>
 };
 
 
-template<typename Type>
-PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb,
+
+PostureGenerator::PostureGenerator(const rbd::MultiBody& mb,
                                          const Eigen::Vector3d& gravity)
   : pgdata_(mb, gravity)
   , ellipseCostScale_(0.0)
@@ -197,36 +195,36 @@ PostureGenerator<Type>::PostureGenerator(const rbd::MultiBody& mb,
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::fixedPositionContacts(std::vector<FixedPositionContact> contacts)
+
+void PostureGenerator::fixedPositionContacts(std::vector<FixedPositionContact> contacts)
 {
   fixedPosContacts_ = std::move(contacts);
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::fixedOrientationContacts(std::vector<FixedOrientationContact> contacts)
+
+void PostureGenerator::fixedOrientationContacts(std::vector<FixedOrientationContact> contacts)
 {
   fixedOriContacts_ = std::move(contacts);
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::planarContacts(std::vector<PlanarContact> contacts)
+
+void PostureGenerator::planarContacts(std::vector<PlanarContact> contacts)
 {
   planarContacts_ = std::move(contacts);
 }
 
-template<typename Type>
-void PostureGenerator<Type>::ellipseCostScale(double ellipseScale)
+
+void PostureGenerator::ellipseCostScale(double ellipseScale)
 {
   ellipseCostScale_ = ellipseScale;
 }
 
-template<typename Type>
-void PostureGenerator<Type>::ellipseContacts(std::vector<EllipseContact> contacts)
+
+void PostureGenerator::ellipseContacts(std::vector<EllipseContact> contacts)
 {
-  typedef PGData<Type> pgdata_t;
+  typedef PGData pgdata_t;
   typedef typename pgdata_t::EllipseData ellipsedata_t;
 
   ellipseContacts_ = std::move(contacts);
@@ -239,17 +237,18 @@ void PostureGenerator<Type>::ellipseContacts(std::vector<EllipseContact> contact
   pgdata_.ellipses(ellipseDatas);
 }
 
-template<typename Type>
-void PostureGenerator<Type>::gripperContacts(std::vector<GripperContact> contacts)
+
+void PostureGenerator::gripperContacts(std::vector<GripperContact> contacts)
 {
   gripperContacts_ = std::move(contacts);
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::forceContacts(std::vector<ForceContact> contacts)
+
+void PostureGenerator::forceContacts(std::vector<ForceContact> contacts)
 {
-  typedef PGData<Type> pgdata_t;
+  /*
+  typedef PGData pgdata_t;
   typedef typename pgdata_t::ForceData forcedata_t;
 
   forceContacts_ = std::move(contacts);
@@ -267,54 +266,55 @@ void PostureGenerator<Type>::forceContacts(std::vector<ForceContact> contacts)
     forceDatas.push_back({pgdata_.multibody().bodyIndexById(fc.bodyId), points, forces, fc.mu});
   }
   pgdata_.forces(forceDatas);
+  */
 }
 
 
-template<typename Type>
-const std::vector<ForceContact>& PostureGenerator<Type>::forceContacts()
+
+const std::vector<ForceContact>& PostureGenerator::forceContacts()
 {
   return forceContacts_;
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::envCollisions(std::vector<EnvCollision> cols)
+
+void PostureGenerator::envCollisions(std::vector<EnvCollision> cols)
 {
   envCollisions_ = std::move(cols);
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::selfCollisions(std::vector<SelfCollision> cols)
+
+void PostureGenerator::selfCollisions(std::vector<SelfCollision> cols)
 {
   selfCollisions_ = std::move(cols);
 }
 
 
 
-template<typename Type>
-void PostureGenerator<Type>::bodyPositionTargets(std::vector<BodyPositionTarget> targets)
+
+void PostureGenerator::bodyPositionTargets(std::vector<BodyPositionTarget> targets)
 {
   bodyPosTargets_ = std::move(targets);
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::bodyOrientationTargets(std::vector<BodyOrientationTarget> targets)
+
+void PostureGenerator::bodyOrientationTargets(std::vector<BodyOrientationTarget> targets)
 {
   bodyOriTargets_ = std::move(targets);
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::forceContactsMinimization(std::vector<ForceContactMinimization> min)
+
+void PostureGenerator::forceContactsMinimization(std::vector<ForceContactMinimization> min)
 {
   forceContactsMin_ = std::move(min);
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::qBounds(const std::vector<std::vector<double>>& ql,
+
+void PostureGenerator::qBounds(const std::vector<std::vector<double>>& ql,
     const std::vector<std::vector<double>>& qu)
 {
   ql_ = rbd::paramToVector(pgdata_.multibody(), ql);
@@ -322,8 +322,8 @@ void PostureGenerator<Type>::qBounds(const std::vector<std::vector<double>>& ql,
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::torqueBounds(std::vector<std::vector<double>> tl,
+
+void PostureGenerator::torqueBounds(std::vector<std::vector<double>> tl,
     std::vector<std::vector<double>> tu)
 {
   tl[0] = {};
@@ -334,8 +334,8 @@ void PostureGenerator<Type>::torqueBounds(std::vector<std::vector<double>> tl,
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::torqueBoundsPoly(std::vector<std::vector<Eigen::VectorXd>> tl,
+
+void PostureGenerator::torqueBoundsPoly(std::vector<std::vector<Eigen::VectorXd>> tl,
     std::vector<std::vector<Eigen::VectorXd>> tu)
 {
   tl[0] = {};
@@ -346,36 +346,36 @@ void PostureGenerator<Type>::torqueBoundsPoly(std::vector<std::vector<Eigen::Vec
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::param(const std::string& name, const std::string& value)
+
+void PostureGenerator::param(const std::string& name, const std::string& value)
 {
   params_[name].value = value;
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::param(const std::string& name, double value)
+
+void PostureGenerator::param(const std::string& name, double value)
 {
   params_[name].value = value;
 }
 
 
-template<typename Type>
-void PostureGenerator<Type>::param(const std::string& name, int value)
+
+void PostureGenerator::param(const std::string& name, int value)
 {
   params_[name].value = value;
 }
 
 
-template<typename Type>
-bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
+
+bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
                                  const std::vector<sva::ForceVecd>& initForces,
                                  const std::vector<std::vector<double> >& targetQ,
                                  double postureScale, double torqueScale, double forceScale)
 {
   pgdata_.update();
 
-  StdCostFunc<Type> cost(&pgdata_, targetQ, postureScale, torqueScale, forceScale, 
+  StdCostFunc cost(&pgdata_, targetQ, postureScale, torqueScale, forceScale,
                          ellipseCostScale_,
                          bodyPosTargets_, bodyOriTargets_,
                          forceContacts_, forceContactsMin_);
@@ -385,6 +385,7 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
   problem.startingPoint()->head(pgdata_.multibody().nrParams()) =
       rbd::paramToVector(pgdata_.multibody(), initQ);
 
+  /*
   // if init force is not well sized we compute it
   if(int(initForces.size()) != pgdata_.nrForcePoints())
   {
@@ -416,61 +417,66 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
       pos += 3;
     }
   }
+  */
 
   for(int i = 0; i < pgdata_.multibody().nrParams(); ++i)
   {
+    std::cout << ql_[i] << " " << qu_[i] << std::endl;
     problem.argumentBounds()[i] = {ql_[i], qu_[i]};
   }
 
   for(const FixedPositionContact& fc: fixedPosContacts_)
   {
-    boost::shared_ptr<FixedPositionContactConstr<Type>> fcc(
-        new FixedPositionContactConstr<Type>(&pgdata_, fc.bodyId, fc.target, fc.surfaceFrame));
+    boost::shared_ptr<FixedPositionContactConstr> fcc(
+        new FixedPositionContactConstr(&pgdata_, fc.bodyId, fc.target, fc.surfaceFrame));
     problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.}},
         {{1.}, {1.}, {1.}});
   }
 
   for(const FixedOrientationContact& fc: fixedOriContacts_)
   {
-    boost::shared_ptr<FixedOrientationContactConstr<Type>> fcc(
-        new FixedOrientationContactConstr<Type>(&pgdata_, fc.bodyId, fc.target, fc.surfaceFrame));
+    boost::shared_ptr<FixedOrientationContactConstr> fcc(
+        new FixedOrientationContactConstr(&pgdata_, fc.bodyId, fc.target, fc.surfaceFrame));
     problem.addConstraint(fcc, {{1., 1.}, {1., 1.}, {1., 1.}},
         {{1e+1}, {1e+1}, {1e+1}});
   }
 
+  /*
   for(const PlanarContact& pc: planarContacts_)
   {
-    boost::shared_ptr<PlanarPositionContactConstr<Type>> ppc(
-        new PlanarPositionContactConstr<Type>(&pgdata_, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
+    boost::shared_ptr<PlanarPositionContactConstr> ppc(
+        new PlanarPositionContactConstr(&pgdata_, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
     problem.addConstraint(ppc, {{0., 0.}}, {{1.}});
 
     // N axis must be aligned between target and surface frame.
-    boost::shared_ptr<PlanarOrientationContactConstr<Type>> poc(
-        new PlanarOrientationContactConstr<Type>(&pgdata_, pc.bodyId,
+    boost::shared_ptr<PlanarOrientationContactConstr> poc(
+        new PlanarOrientationContactConstr(&pgdata_, pc.bodyId,
                                                  pc.targetFrame, pc.surfaceFrame,
                                                  2));
     problem.addConstraint(poc, {{1., 1.}}, {{1.}});
 
-    boost::shared_ptr<PlanarInclusionConstr<Type>> pic(
-        new PlanarInclusionConstr<Type>(&pgdata_, pc.bodyId,
+    boost::shared_ptr<PlanarInclusionConstr> pic(
+        new PlanarInclusionConstr(&pgdata_, pc.bodyId,
                                         pc.targetFrame, pc.targetPoints,
                                         pc.surfaceFrame, pc.surfacePoints));
-    typename PlanarInclusionConstr<Type>::intervals_t limInc(
+    typename PlanarInclusionConstr::intervals_t limInc(
           pic->outputSize(), {0., std::numeric_limits<double>::infinity()});
     typename solver_t::problem_t::scales_t scalInc(pic->outputSize(), 1.);
     problem.addConstraint(pic, limInc, scalInc);
   }
+  */
 
+  /*
   for(const EllipseContact& ec: ellipseContacts_)
   {
     int ellipseIndex = 0;
-    boost::shared_ptr<PlanarPositionContactConstr<Type>> ppc(
-        new PlanarPositionContactConstr<Type>(&pgdata_, ec.bodyId, ec.targetFrame, ec.surfaceFrame));
+    boost::shared_ptr<PlanarPositionContactConstr> ppc(
+        new PlanarPositionContactConstr(&pgdata_, ec.bodyId, ec.targetFrame, ec.surfaceFrame));
     problem.addConstraint(ppc, {{0., 0.}}, {{1.}});
 
     // N axis must be aligned between target and surface frame.
-    boost::shared_ptr<PlanarOrientationContactConstr<Type>> poc(
-        new PlanarOrientationContactConstr<Type>(&pgdata_, ec.bodyId,
+    boost::shared_ptr<PlanarOrientationContactConstr> poc(
+        new PlanarOrientationContactConstr(&pgdata_, ec.bodyId,
                                                  ec.targetFrame, ec.surfaceFrame,
                                                  2));
     problem.addConstraint(poc, {{1., 1.}}, {{1.}});
@@ -485,86 +491,92 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
 
     ++ellipseIndex;
   }
+  */
 
+  /*
   if(!ellipseContacts_.empty())
   {
-    boost::shared_ptr<EllipseContactConstr<Type>> ecc(
-        new EllipseContactConstr<Type>(&pgdata_, ellipseContacts_));
-    typename EllipseContactConstr<Type>::intervals_t limInc(
+    boost::shared_ptr<EllipseContactConstr> ecc(
+        new EllipseContactConstr(&pgdata_, ellipseContacts_));
+    typename EllipseContactConstr::intervals_t limInc(
           ecc->outputSize(), {0., std::numeric_limits<double>::infinity()});
     typename solver_t::problem_t::scales_t scalInc(ecc->outputSize(), 1.);
     problem.addConstraint(ecc, limInc, scalInc);
   }
+  */
 
+  /*
   for(const GripperContact& gc: gripperContacts_)
   {
-    boost::shared_ptr<PlanarPositionContactConstr<Type>> ppc(
-        new PlanarPositionContactConstr<Type>(&pgdata_, gc.bodyId, gc.targetFrame, gc.surfaceFrame));
+    boost::shared_ptr<PlanarPositionContactConstr> ppc(
+        new PlanarPositionContactConstr(&pgdata_, gc.bodyId, gc.targetFrame, gc.surfaceFrame));
     problem.addConstraint(ppc, {{0., 0.}}, {{1.}});
 
     // N axis must be aligned between target and surface frame.
-    boost::shared_ptr<PlanarOrientationContactConstr<Type>> pocN(
-        new PlanarOrientationContactConstr<Type>(&pgdata_, gc.bodyId,
+    boost::shared_ptr<PlanarOrientationContactConstr> pocN(
+        new PlanarOrientationContactConstr(&pgdata_, gc.bodyId,
                                                  gc.targetFrame, gc.surfaceFrame,
                                                  2));
     problem.addConstraint(pocN, {{1., 1.}}, {{1.}});
 
     // T axis must be aligned between target and surface frame.
     // (B could be choose also)
-    boost::shared_ptr<PlanarOrientationContactConstr<Type>> pocT(
-        new PlanarOrientationContactConstr<Type>(&pgdata_, gc.bodyId,
+    boost::shared_ptr<PlanarOrientationContactConstr> pocT(
+        new PlanarOrientationContactConstr(&pgdata_, gc.bodyId,
                                                  gc.targetFrame, gc.surfaceFrame,
                                                  0));
     problem.addConstraint(pocT, {{1., 1.}}, {{1.}});
 
-    boost::shared_ptr<PlanarInclusionConstr<Type>> pic(
-        new PlanarInclusionConstr<Type>(&pgdata_, gc.bodyId,
+    boost::shared_ptr<PlanarInclusionConstr> pic(
+        new PlanarInclusionConstr(&pgdata_, gc.bodyId,
                                         gc.targetFrame, gc.targetPoints,
                                         gc.surfaceFrame, gc.surfacePoints));
-    typename PlanarInclusionConstr<Type>::intervals_t limInc(
+    typename PlanarInclusionConstr::intervals_t limInc(
           pic->outputSize(), {0., std::numeric_limits<double>::infinity()});
     typename solver_t::problem_t::scales_t scalInc(pic->outputSize(), 1.);
     problem.addConstraint(pic, limInc, scalInc);
   }
+  */
 
+  /*
   if(!forceContacts_.empty())
   {
-    boost::shared_ptr<StaticStabilityConstr<Type>> stab(
-        new StaticStabilityConstr<Type>(&pgdata_));
+    boost::shared_ptr<StaticStabilityConstr> stab(
+        new StaticStabilityConstr(&pgdata_));
     problem.addConstraint(stab, {{0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}},
         {{1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}});
 
-    boost::shared_ptr<PositiveForceConstr<Type>> positiveForce(
-        new PositiveForceConstr<Type>(&pgdata_));
-    typename PositiveForceConstr<Type>::intervals_t limPositive(
+    boost::shared_ptr<PositiveForceConstr> positiveForce(
+        new PositiveForceConstr(&pgdata_));
+    typename PositiveForceConstr::intervals_t limPositive(
           pgdata_.nrForcePoints(), {0., std::numeric_limits<double>::infinity()});
     typename solver_t::problem_t::scales_t scalPositive(pgdata_.nrForcePoints(), 1.);
     problem.addConstraint(positiveForce, limPositive, scalPositive);
-    /*
-     * constraint seem to converge more quickly than variable bound.
-     * maybe scale fault ?
-    int pos = pgdata_.multibody().nrParams();
-    for(int i = 0; i < pgdata_.nrForcePoints(); ++i)
-    {
-      double inf = std::numeric_limits<double>::infinity();
-      problem.argumentBounds()[pos + 2] = {0., inf};
-      pos += 3;
-    }
-    */
+    // * constraint seem to converge more quickly than variable bound.
+    // * maybe scale fault ?
+    // int pos = pgdata_.multibody().nrParams();
+    // for(int i = 0; i < pgdata_.nrForcePoints(); ++i)
+    // {
+    //  double inf = std::numeric_limits<double>::infinity();
+    //  problem.argumentBounds()[pos + 2] = {0., inf};
+    //  pos += 3;
+    // }
 
-    boost::shared_ptr<FrictionConeConstr<Type>> frictionCone(
-        new FrictionConeConstr<Type>(&pgdata_));
-    typename FrictionConeConstr<Type>::intervals_t limFriction(
+    boost::shared_ptr<FrictionConeConstr> frictionCone(
+        new FrictionConeConstr(&pgdata_));
+    typename FrictionConeConstr::intervals_t limFriction(
           pgdata_.nrForcePoints(), {-std::numeric_limits<double>::infinity(), 0.});
     typename solver_t::problem_t::scales_t scalFriction(pgdata_.nrForcePoints(), 1.);
     problem.addConstraint(frictionCone, limFriction, scalFriction);
   }
+*/
 
+  /*
   if(!envCollisions_.empty())
   {
-    boost::shared_ptr<EnvCollisionConstr<Type>> ec(
-        new EnvCollisionConstr<Type>(&pgdata_, envCollisions_));
-    typename EnvCollisionConstr<Type>::intervals_t limCol(ec->outputSize());
+    boost::shared_ptr<EnvCollisionConstr> ec(
+        new EnvCollisionConstr(&pgdata_, envCollisions_));
+    typename EnvCollisionConstr::intervals_t limCol(ec->outputSize());
     for(std::size_t i = 0; i < limCol.size(); ++i)
     {
       limCol[i] = {envCollisions_[i].minDist, std::numeric_limits<double>::infinity()};
@@ -575,9 +587,9 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
 
   if(!selfCollisions_.empty())
   {
-    boost::shared_ptr<SelfCollisionConstr<Type>> sc(
-        new SelfCollisionConstr<Type>(&pgdata_, selfCollisions_));
-    typename EnvCollisionConstr<Type>::intervals_t limCol(sc->outputSize());
+    boost::shared_ptr<SelfCollisionConstr> sc(
+        new SelfCollisionConstr(&pgdata_, selfCollisions_));
+    typename EnvCollisionConstr::intervals_t limCol(sc->outputSize());
     for(std::size_t i = 0; i < limCol.size(); ++i)
     {
       limCol[i] = {selfCollisions_[i].minDist, std::numeric_limits<double>::infinity()};
@@ -591,9 +603,9 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
     // if polynome constraint not set we use the static torque constraint
     if(tlPoly_.size() == 0)
     {
-      boost::shared_ptr<TorqueConstr<Type>> torque(
-          new TorqueConstr<Type>(&pgdata_));
-      typename TorqueConstr<Type>::intervals_t limTorque(torque->outputSize());
+      boost::shared_ptr<TorqueConstr> torque(
+          new TorqueConstr(&pgdata_));
+      typename TorqueConstr::intervals_t limTorque(torque->outputSize());
       for(std::size_t i = 0; i < limTorque.size(); ++i)
       {
         limTorque[i] = {tl_[i], tu_[i]};
@@ -604,9 +616,9 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
     }
     else
     {
-      boost::shared_ptr<TorquePolyBoundsConstr<Type>> torque(
-          new TorquePolyBoundsConstr<Type>(&pgdata_, tlPoly_, tuPoly_));
-      typename TorquePolyBoundsConstr<Type>::intervals_t limTorque(torque->outputSize());
+      boost::shared_ptr<TorquePolyBoundsConstr> torque(
+          new TorquePolyBoundsConstr(&pgdata_, tlPoly_, tuPoly_));
+      typename TorquePolyBoundsConstr::intervals_t limTorque(torque->outputSize());
       for(std::size_t i = 0; i < limTorque.size()/2; ++i)
       {
         // 0 <= torque(q, f) - torqueMin(q)
@@ -619,6 +631,7 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
       problem.addConstraint(torque, limTorque, scalTorque);
     }
   }
+  */
 
   roboptim::SolverFactory<solver_t> factory ("ipopt", problem);
   solver_t& solver = factory ();
@@ -647,75 +660,75 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
 }
 
 
-template<typename Type>
-std::vector<std::vector<double> > PostureGenerator<Type>::q() const
+
+std::vector<std::vector<double> > PostureGenerator::q() const
 {
   return q(x_);
 }
 
 
-template<typename Type>
-std::vector<sva::ForceVecd> PostureGenerator<Type>::forces() const
+
+std::vector<sva::ForceVecd> PostureGenerator::forces() const
 {
   return forces(x_);
 }
 
 
-template<typename Type>
-std::vector<std::vector<double> > PostureGenerator<Type>::torque()
+
+std::vector<std::vector<double> > PostureGenerator::torque()
 {
   return torque(x_);
 }
 
-template<typename Type>
-std::vector<EllipseResult> PostureGenerator<Type>::ellipses() const
+
+std::vector<EllipseResult> PostureGenerator::ellipses() const
 {
   return ellipses(x_);
 }
 
-template<typename Type>
-int PostureGenerator<Type>::nrIters() const
+
+int PostureGenerator::nrIters() const
 {
   return int(iters_->datas.size());
 }
 
 
-template<typename Type>
-std::vector<std::vector<double> > PostureGenerator<Type>::qIter(int i) const
+
+std::vector<std::vector<double> > PostureGenerator::qIter(int i) const
 {
   return q(iters_->datas.at(i).x);
 }
 
 
-template<typename Type>
-std::vector<sva::ForceVecd> PostureGenerator<Type>::forcesIter(int i) const
+
+std::vector<sva::ForceVecd> PostureGenerator::forcesIter(int i) const
 {
   return forces(iters_->datas.at(i).x);
 }
 
 
-template<typename Type>
-std::vector<std::vector<double> > PostureGenerator<Type>::torqueIter(int i)
+
+std::vector<std::vector<double> > PostureGenerator::torqueIter(int i)
 {
   return torque(iters_->datas.at(i).x);
 }
 
-template<typename Type>
-std::vector<EllipseResult> PostureGenerator<Type>::ellipsesIter(int i) const
+
+std::vector<EllipseResult> PostureGenerator::ellipsesIter(int i) const
 {
   return ellipses(iters_->datas.at(i).x);
 }
 
-template<typename Type>
-IterateQuantities PostureGenerator<Type>::quantitiesIter(int i) const
+
+IterateQuantities PostureGenerator::quantitiesIter(int i) const
 {
   const iteration_callback_t::Data& d = iters_->datas.at(i);
   return IterateQuantities{d.obj,  d.constr_viol};
 }
 
 
-template<typename Type>
-std::vector<std::vector<double> > PostureGenerator<Type>::q(const Eigen::VectorXd& x) const
+
+std::vector<std::vector<double> > PostureGenerator::q(const Eigen::VectorXd& x) const
 {
   Eigen::VectorXd eigenQ(x.head(pgdata_.multibody().nrParams()));
   if(pgdata_.multibody().joint(0).type() == rbd::Joint::Free)
@@ -727,8 +740,8 @@ std::vector<std::vector<double> > PostureGenerator<Type>::q(const Eigen::VectorX
 }
 
 
-template<typename Type>
-std::vector<sva::ForceVecd> PostureGenerator<Type>::forces(const Eigen::VectorXd& x) const
+
+std::vector<sva::ForceVecd> PostureGenerator::forces(const Eigen::VectorXd& x) const
 {
   std::vector<sva::ForceVecd> res(pgdata_.nrForcePoints());
   int pos = pgdata_.multibody().nrParams();
@@ -742,9 +755,11 @@ std::vector<sva::ForceVecd> PostureGenerator<Type>::forces(const Eigen::VectorXd
 }
 
 
-template<typename Type>
-std::vector<std::vector<double> > PostureGenerator<Type>::torque(const Eigen::VectorXd& x)
+
+std::vector<std::vector<double> > PostureGenerator::torque(const Eigen::VectorXd& x)
 {
+  std::vector<std::vector<double>> res(pgdata_.multibody().nrJoints());
+  /*
   pgdata_.x(x);
   const auto& torque  = pgdata_.id().torque();
   std::vector<std::vector<double>> res(pgdata_.multibody().nrJoints());
@@ -757,11 +772,12 @@ std::vector<std::vector<double> > PostureGenerator<Type>::torque(const Eigen::Ve
     }
   }
 
+  */
   return std::move(res);
 }
 
-template<typename Type>
-std::vector<EllipseResult> PostureGenerator<Type>::ellipses(const Eigen::VectorXd& x) const
+
+std::vector<EllipseResult> PostureGenerator::ellipses(const Eigen::VectorXd& x) const
 {
   std::vector<EllipseResult> res(pgdata_.ellipseDatas().size());
   int pos = pgdata_.ellipseParamsBegin();

@@ -13,19 +13,27 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with PG.  If not, see <http://www.gnu.org/licenses/>.
 
+/*
 #include "FK.h"
 #include "ID.h"
+*/
 #include "PGData.h"
+/*
 #include "EigenAutoDiffScalar.h"
 #include "AutoDiffFunction.h"
+*/
 #include "StdCostFunc.h"
 #include "FixedContactConstr.h"
+/*
 #include "StaticStabilityConstr.h"
 #include "PositiveForceConstr.h"
 #include "FrictionConeConstr.h"
 #include "PlanarSurfaceConstr.h"
 #include "TorqueConstr.h"
 #include "CollisionConstr.h"
+*/
 #include "IterationCallback.h"
 #include "PostureGenerator.h"
+/*
 #include "EllipseContactConstr.h"
+*/

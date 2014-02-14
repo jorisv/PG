@@ -16,33 +16,33 @@
 #pragma once
 
 // include
+// boost
 #include <boost/math/constants/constants.hpp>
+
+// roboptim
+#include <roboptim/core/differentiable-function.hh>
+
 // PG
-#include "AutoDiffFunction.h"
 #include "ConfigStruct.h"
 #include "PGData.h"
 
 namespace pg
 {
 
-template<typename Type>
-class StdCostFunc : public AutoDiffFunction<Type, 1>
+class StdCostFunc : public roboptim::DifferentiableFunction
 {
 public:
-  typedef AutoDiffFunction<Type, 1> parent_t;
-  typedef typename parent_t::scalar_t scalar_t;
-  typedef typename parent_t::result_ad_t result_ad_t;
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  StdCostFunc(PGData<Type>* pgdata, std::vector<std::vector<double>> q,
+  StdCostFunc(PGData* pgdata, std::vector<std::vector<double>> q,
               double postureScale, double torqueScale, double forceScale, 
               double ellipseScale,
               const std::vector<BodyPositionTarget>& bodyPosTargets,
               const std::vector<BodyOrientationTarget>& bodyOriTargets,
               const std::vector<ForceContact>& forceContacts,
               const std::vector<ForceContactMinimization>& forceContactsMin)
-    : parent_t(pgdata, pgdata->pbSize(), 1, "StdCostFunc")
+    : roboptim::DifferentiableFunction(pgdata->pbSize(), 1, "StdCostFunc")
     , pgdata_(pgdata)
     , tq_(std::move(q))
     , postureScale_(postureScale)
@@ -53,6 +53,7 @@ public:
     , bodyOriTargets_(bodyOriTargets.size())
     , forceContactsMin_()
   {
+    /*
     for(std::size_t i = 0; i < bodyPosTargets_.size(); ++i)
     {
       bodyPosTargets_[i] = {pgdata->multibody().bodyIndexById(bodyPosTargets[i].bodyId),
@@ -78,10 +79,12 @@ public:
         }
       }
     }
+    */
   }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& /* x */) const throw()
+   /*
+  void impl_compute(result_ad_t& res, const argument_t& x) const throw()
   {
     // compute posture task
     scalar_t posture = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
@@ -168,20 +171,33 @@ public:
 
     res(0) = posture*postureScale_ + torque*torqueScale_ + force +
         pos + ori + forceMin + ellipses*ellipseScale_;
+    res(0) = 0.;
+  }
+    */
+
+  void impl_compute(result_t& res, const argument_t& x) const throw()
+  {
+    res(0) = 0.;
+  }
+
+  void impl_gradient(gradient_t& gradient,
+      const argument_t& x, size_type functionId) const throw()
+  {
+    gradient.setZero();
   }
 
 private:
   struct BodyPositionTargetData
   {
     int bodyIndex;
-    Eigen::Vector3<scalar_t> target;
+    Eigen::Vector3d target;
     double scale;
   };
 
   struct BodyOrientationTargetData
   {
     int bodyIndex;
-    Eigen::Matrix3<scalar_t> target;
+    Eigen::Matrix3d target;
     double scale;
   };
 
@@ -192,7 +208,7 @@ private:
   };
 
 private:
-  PGData<Type>* pgdata_;
+  PGData* pgdata_;
   std::vector<std::vector<double>> tq_;
   double postureScale_;
   double torqueScale_;

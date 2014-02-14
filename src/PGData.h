@@ -27,39 +27,34 @@
 #include <Eigen/Core>
 
 // RBDyn
+#include <RBDyn/FK.h>
+#include <RBDyn/FV.h>
 #include <RBDyn/MultiBody.h>
+#include <RBDyn/MultiBodyConfig.h>
 
-// PG
-#include "FK.h"
-#include "ID.h"
 
 namespace pg
 {
 
-template<typename Type>
 class PGData
 {
-public:
-  typedef typename Type::scalar_t scalar_t;
-  typedef typename Type::construct_f construct_f;
-
 public:
   struct ForceData
   {
     int bodyIndex;
-    std::vector<sva::PTransform<scalar_t>> points;
-    std::vector<sva::ForceVec<scalar_t>> forces;
+    std::vector<sva::PTransformd> points;
+    std::vector<sva::ForceVecd> forces;
     double mu;
   };
 
   struct EllipseData
   {
     int bodyIndex;  //Each ellipse is defined relatively to a Surface of a Body
-    scalar_t x;     //x coord of the center
-    scalar_t y;     //y coord of the center
-    scalar_t theta; //Angle between the x-axis and the first axis of the ellipse
-    scalar_t r1;    //First radius
-    scalar_t r2;    //Second radius
+    double x;     //x coord of the center
+    double y;     //y coord of the center
+    double theta; //Angle between the x-axis and the first axis of the ellipse
+    double r1;    //First radius
+    double r2;    //Second radius
     std::string print()
     {
       std::stringstream result;
@@ -78,24 +73,9 @@ public:
   void ellipses(std::vector<EllipseData> ed);
   void update();
 
-  const std::vector<std::vector<scalar_t> >& q()
+  const rbd::MultiBodyConfig& mbc() const
   {
-    return q_;
-  }
-
-  const FK<scalar_t>& fk() const
-  {
-    return fk_;
-  }
-
-  const ID<scalar_t>& id()
-  {
-    if(xStamp_ != idStamp_)
-    {
-      id_.run(mb_, fk_.bodyPosW(), fk_.parentToSon(), forcesB_);
-      idStamp_ = xStamp_;
-    }
-    return id_;
+    return mbc_;
   }
 
   const rbd::MultiBody& multibody() const
@@ -133,7 +113,6 @@ public:
     return ellipseDatas_;
   }
 
-
   const Eigen::Vector3d& gravity() const
   {
     return gravity_;
@@ -146,75 +125,61 @@ public:
 
 private:
   rbd::MultiBody mb_;
+  rbd::MultiBodyConfig mbc_;
+
   Eigen::Vector3d gravity_;
 
   Eigen::VectorXd x_;
-  std::vector<std::vector<scalar_t>> q_;
 
   std::vector<ForceData> forceDatas_;
   int nrForcePoints_;
-  std::vector<sva::ForceVec<scalar_t>> forcesB_;
+  std::vector<sva::ForceVec<double>> forcesB_;
 
   std::vector<EllipseData> ellipseDatas_;
 
-  FK<scalar_t> fk_;
-  ID<scalar_t> id_;
-
   std::size_t xStamp_;
-  std::size_t idStamp_;
 };
 
 
 // inline
 
 
-template<typename Type>
-PGData<Type>::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
+PGData::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
   : mb_(mb)
+  , mbc_(mb)
   , gravity_(gravity)
   , x_(mb.nrParams())
-  , q_(mb.nrJoints())
   , nrForcePoints_(0)
   , forcesB_(mb.nrBodies())
-  , fk_(mb)
-  , id_(mb, gravity)
   , xStamp_(1)
-  , idStamp_(1)
 {
   x_.setZero();
-  for(int i = 0; i < mb.nrJoints(); ++i)
-  {
-    q_[i].resize(mb.joint(i).params());
-  }
+  mbc_.zero(mb_);
+  rbd::forwardKinematics(mb_, mbc_);
+  rbd::forwardVelocity(mb_, mbc_);
   for(int i = 0; i < mb.nrBodies(); ++i)
   {
-    forcesB_[i] = sva::ForceVec<scalar_t>(Eigen::Vector6<scalar_t>::Zero());
+    forcesB_[i] = sva::ForceVec<double>(Eigen::Vector6d::Zero());
   }
 }
 
 
-template<typename Type>
-void PGData<Type>::x(const Eigen::VectorXd& x)
+
+void PGData::x(const Eigen::VectorXd& x)
 {
   assert(x.size() == x_.size());
 
-  Eigen::VectorXd xNorm = x;
-  if(mb_.joint(0).type() == rbd::Joint::Free)
+  if(x_ != x)
   {
-    xNorm.head(4) /= xNorm.head(4).norm();
-  }
-
-  if(x_ != xNorm)
-  {
-    x_ = xNorm;
+    x_ = x;
     ++xStamp_;
     update();
   }
 }
 
 
-template<typename Type>
-void PGData<Type>::forces(std::vector<ForceData> fd)
+
+void PGData::forces(std::vector<ForceData> fd)
 {
   forceDatas_ = std::move(fd);
   nrForcePoints_ = 0;
@@ -228,8 +193,8 @@ void PGData<Type>::forces(std::vector<ForceData> fd)
 }
 
 
-template<typename Type>
-void PGData<Type>::ellipses(std::vector<EllipseData> ed)
+
+void PGData::ellipses(std::vector<EllipseData> ed)
 {
   ellipseDatas_ = std::move(ed);
   x_.setZero(pbSize());
@@ -237,40 +202,38 @@ void PGData<Type>::ellipses(std::vector<EllipseData> ed)
 }
 
 
-template<typename Type>
-void PGData<Type>::update()
-{
-  int xPos = 0;
-  for(int i = 0; i < mb_.nrJoints(); ++i)
-  {
-    for(int j = 0; j < mb_.joint(i).params(); ++j)
-    {
-      construct_f()(int(x_.size()), xPos, x_[xPos], q_[i][j]);
-      ++xPos;
-    }
-  }
-  fk_.init(pbSize());
-  fk_.run(mb_, q_);
 
-  scalar_t zero(0., Eigen::VectorXd::Zero(x_.size()));
-  Eigen::Vector3<scalar_t> zeroVec3(zero, zero, zero);
+void PGData::update()
+{
+  /*
+  std::cout << "update" << std::endl;
+  std::cout << x_.transpose() << std::endl;
+  */
+  rbd::vectorToParam(x_, mbc_.q);
+  rbd::forwardKinematics(mb_, mbc_);
+
+  /*
+  double zero(0., Eigen::VectorXd::Zero(x_.size()));
+  Eigen::Vector3<double> zeroVec3(zero, zero, zero);
   for(ForceData& fd: forceDatas_)
   {
-    forcesB_[fd.bodyIndex] = sva::ForceVec<scalar_t>(Eigen::Vector6<scalar_t>::Zero());
+    forcesB_[fd.bodyIndex] = sva::ForceVec<double>(Eigen::Vector6<scalar_t>::Zero());
     for(std::size_t i = 0; i < fd.forces.size(); ++i)
     {
-      sva::ForceVec<scalar_t>& fv = fd.forces[i];
-      const sva::PTransform<scalar_t>& pt = fd.points[i];
-      Eigen::Vector3<scalar_t> forceAd;
+      sva::ForceVec<double>& fv = fd.forces[i];
+      const sva::PTransform<double>& pt = fd.points[i];
+      Eigen::Vector3<double> forceAd;
       construct_f()(int(x_.size()), xPos + 0, x_[xPos + 0], forceAd(0));
       construct_f()(int(x_.size()), xPos + 1, x_[xPos + 1], forceAd(1));
       construct_f()(int(x_.size()), xPos + 2, x_[xPos + 2], forceAd(2));
-      fv = sva::ForceVec<scalar_t>(zeroVec3, forceAd);
+      fv = sva::ForceVec<double>(zeroVec3, forceAd);
       forcesB_[fd.bodyIndex] = forcesB_[fd.bodyIndex] + pt.transMul(fv);
       xPos += 3;
     }
   }
+  */
 
+  /*
   for(EllipseData& ed: ellipseDatas_)
   {
     construct_f()(int(x_.size()), xPos + 0, x_[xPos + 0], ed.x);
@@ -280,6 +243,7 @@ void PGData<Type>::update()
     construct_f()(int(x_.size()), xPos + 4, x_[xPos + 4], ed.r2);
     xPos += 5;
   }
+  */
 }
 
 } // namespace pg
