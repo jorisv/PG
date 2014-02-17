@@ -204,9 +204,7 @@ BOOST_AUTO_TEST_CASE(PGTest)
 
   {
     pg::PostureGenerator pgPb(mb, gravity);
-    pgPb.param("ipopt.print_level", 5);
-    pgPb.param("ipopt.derivative_test", "first-order");
-    pgPb.param("ipopt.linear_solver", "ma27");
+    pgPb.param("ipopt.print_level", 0);
 
     Vector3d target(0., 0.5, 0.5);
     pgPb.fixedPositionContacts({{3, target, sva::PTransformd::Identity()}});
@@ -220,9 +218,7 @@ BOOST_AUTO_TEST_CASE(PGTest)
 
   {
     pg::PostureGenerator pgPb(mb, gravity);
-    pgPb.param("ipopt.print_level", 5);
-    pgPb.param("ipopt.derivative_test", "first-order");
-    pgPb.param("ipopt.linear_solver", "ma27");
+    pgPb.param("ipopt.print_level", 0);
 
     Matrix3d target(Quaterniond(AngleAxisd(-cst::pi<double>()/2., Vector3d::UnitX())));
     pgPb.fixedOrientationContacts({{3, target, sva::PTransformd::Identity()}});
@@ -292,7 +288,6 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   mbcInit.q[3][0] = -0.1;
   mbcWork = mbcInit;
 
-  /*
   {
     pg::PostureGenerator pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
@@ -393,6 +388,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Planar.py");
   }
 
+  /*
   //Test for Ellipse Constraints
   {
     pg::PostureGenerator pgPb(mb, gravity);

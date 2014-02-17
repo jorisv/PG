@@ -13,7 +13,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with PG.  If not, see <http://www.gnu.org/licenses/>.
 
-
 // include
 // std
 #include <tuple>
@@ -30,6 +29,7 @@
 // PG
 #include "PGData.h"
 #include "FixedContactConstr.h"
+#include "PlanarSurfaceConstr.h"
 
 // Arm
 #include "Z12Arm.h"
@@ -97,3 +97,71 @@ BOOST_AUTO_TEST_CASE(FixedContactOriTest)
   }
 }
 
+BOOST_AUTO_TEST_CASE(PlanarPositionContactTest)
+{
+  namespace cst = boost::math::constants;
+
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeZ12Arm();
+
+  pg::PGData pgdata(mb, gravity);
+
+  sva::PTransformd target(Eigen::Vector3d(0., 1., 0.));
+  sva::PTransformd surface(sva::PTransformd::Identity());
+
+  pg::PlanarPositionContactConstr ppp(&pgdata, 12, target, surface);
+
+  for(int i = 0; i < 100; ++i)
+  {
+    Eigen::VectorXd x(Eigen::VectorXd::Random(mb.nrDof()));
+    BOOST_CHECK_SMALL(checkGradient(ppp, x), 1e-4);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(PlanarOrientationContactTest)
+{
+  namespace cst = boost::math::constants;
+
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeZ12Arm();
+
+  pg::PGData pgdata(mb, gravity);
+
+  Eigen::Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
+  sva::PTransformd surface(sva::PTransformd::Identity());
+
+  pg::PlanarOrientationContactConstr pop(&pgdata, 12, oriTarget, surface, 1);
+
+  for(int i = 0; i < 100; ++i)
+  {
+    Eigen::VectorXd x(Eigen::VectorXd::Random(mb.nrDof()));
+    BOOST_CHECK_SMALL(checkGradient(pop, x), 1e-4);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(PlanarInclusionTest)
+{
+  namespace cst = boost::math::constants;
+
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeZ12Arm();
+
+  pg::PGData pgdata(mb, gravity);
+
+  sva::PTransformd targetSurface(sva::RotZ(-cst::pi<double>()), Eigen::Vector3d(0., 1., 0.));
+  sva::PTransformd bodySurface(sva::RotZ(-cst::pi<double>()/2.), Eigen::Vector3d(0., 1., 0.));
+  std::vector<Eigen::Vector2d> targetPoints = {{1., 1.}, {-0., 1.}, {-0., -1.}, {1., -1.}};
+  std::vector<Eigen::Vector2d> surfPoints = {{0.1, 0.1}, {-0.1, 0.1}, {-0.1, -0.1}, {0.1, -0.1}};
+
+  pg::PlanarInclusionConstr pi(&pgdata, 12, targetSurface, targetPoints,
+                               bodySurface, surfPoints);
+
+  for(int i = 0; i < 100; ++i)
+  {
+    Eigen::VectorXd x(Eigen::VectorXd::Random(mb.nrDof()));
+    BOOST_CHECK_SMALL(checkGradient(pi, x), 1e-4);
+  }
+}

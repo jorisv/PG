@@ -35,7 +35,7 @@
 //#include "PositiveForceConstr.h"
 //#include "FrictionConeConstr.h"
 //#include "TorqueConstr.h"
-//#include "PlanarSurfaceConstr.h"
+#include "PlanarSurfaceConstr.h"
 //#include "EllipseContactConstr.h"
 //#include "CollisionConstr.h"
 #include "ConfigStruct.h"
@@ -440,7 +440,6 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
         {{1e+1}, {1e+1}, {1e+1}});
   }
 
-  /*
   for(const PlanarContact& pc: planarContacts_)
   {
     boost::shared_ptr<PlanarPositionContactConstr> ppc(
@@ -463,7 +462,6 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
     typename solver_t::problem_t::scales_t scalInc(pic->outputSize(), 1.);
     problem.addConstraint(pic, limInc, scalInc);
   }
-  */
 
   /*
   for(const EllipseContact& ec: ellipseContacts_)
