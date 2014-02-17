@@ -12,7 +12,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with PG.  If not, see <http://www.gnu.org/licenses/>.
-// boost
+
 
 // include
 // std
@@ -22,7 +22,7 @@
 
 // boost
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE Algo test
+#define BOOST_TEST_MODULE PG test
 #include <boost/test/unit_test.hpp>
 #include <boost/math/constants/constants.hpp>
 
@@ -34,9 +34,6 @@
 #include <RBDyn/FK.h>
 #include <RBDyn/FV.h>
 #include <RBDyn/ID.h>
-#include <RBDyn/MultiBody.h>
-#include <RBDyn/MultiBodyConfig.h>
-#include <RBDyn/MultiBodyGraph.h>
 
 // PG
 /*
@@ -45,6 +42,10 @@
 */
 #include "PGData.h"
 #include "PostureGenerator.h"
+
+
+// Arm
+#include "Z12Arm.h"
 
 const Eigen::Vector3d gravity(0., 9.81, 0.);
 
@@ -93,53 +94,6 @@ std::tuple<rbd::MultiBody, rbd::MultiBodyConfig> makeZXZArm(bool isFixed=true)
   mbg.linkBodies(0, PTransformd::Identity(), 1, from, 0);
   mbg.linkBodies(1, to, 2, from, 1);
   mbg.linkBodies(2, to, 3, from, 2);
-
-  MultiBody mb = mbg.makeMultiBody(0, isFixed);
-
-  MultiBodyConfig mbc(mb);
-  mbc.zero(mb);
-
-  return std::make_tuple(mb, mbc);
-}
-
-
-/// @return An simple Z*12 arm with Y as up axis.
-std::tuple<rbd::MultiBody, rbd::MultiBodyConfig> makeZ12Arm(bool isFixed=true)
-{
-  using namespace Eigen;
-  using namespace sva;
-  using namespace rbd;
-
-  MultiBodyGraph mbg;
-
-  double mass = 1.;
-  Matrix3d I = Matrix3d::Identity();
-  Vector3d h = Vector3d::Zero();
-
-  RBInertiad rbi(mass, h, I);
-
-  for(int i = 0; i < 13; ++i)
-  {
-    std::stringstream ss;
-    ss << "b" << i;
-    mbg.addBody({rbi, i, ss.str()});
-  }
-
-  for(int i = 0; i < 12; ++i)
-  {
-    std::stringstream ss;
-    ss << "j" << i;
-    mbg.addJoint({Joint::RevZ, true, i, ss.str()});
-  }
-
-  PTransformd to(Vector3d(0., 0.5, 0.));
-  PTransformd from(Vector3d(0., 0., 0.));
-
-  mbg.linkBodies(0, PTransformd::Identity(), 1, from, 0);
-  for(int i = 1; i < 12; ++i)
-  {
-    mbg.linkBodies(i, to, i + 1, from, i);
-  }
 
   MultiBody mb = mbg.makeMultiBody(0, isFixed);
 
@@ -250,7 +204,9 @@ BOOST_AUTO_TEST_CASE(PGTest)
 
   {
     pg::PostureGenerator pgPb(mb, gravity);
-    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.print_level", 5);
+    pgPb.param("ipopt.derivative_test", "first-order");
+    pgPb.param("ipopt.linear_solver", "ma27");
 
     Vector3d target(0., 0.5, 0.5);
     pgPb.fixedPositionContacts({{3, target, sva::PTransformd::Identity()}});
@@ -265,6 +221,8 @@ BOOST_AUTO_TEST_CASE(PGTest)
   {
     pg::PostureGenerator pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 5);
+    pgPb.param("ipopt.derivative_test", "first-order");
+    pgPb.param("ipopt.linear_solver", "ma27");
 
     Matrix3d target(Quaterniond(AngleAxisd(-cst::pi<double>()/2., Vector3d::UnitX())));
     pgPb.fixedOrientationContacts({{3, target, sva::PTransformd::Identity()}});

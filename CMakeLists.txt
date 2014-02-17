@@ -30,7 +30,6 @@ ADD_REQUIRED_DEPENDENCY("RBDyn")
 ADD_REQUIRED_DEPENDENCY("roboptim-core > 2.0")
 
 #########################
-# 
 
 add_definitions(-DROBOPTIM_DO_NOT_CHECK_ALLOCATION)
 

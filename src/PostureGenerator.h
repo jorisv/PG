@@ -421,7 +421,6 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
 
   for(int i = 0; i < pgdata_.multibody().nrParams(); ++i)
   {
-    std::cout << ql_[i] << " " << qu_[i] << std::endl;
     problem.argumentBounds()[i] = {ql_[i], qu_[i]};
   }
 
