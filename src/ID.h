@@ -26,6 +26,7 @@
 #include <SpaceVecAlg/SpaceVecAlg>
 
 // RBDyn
+#include <RBDyn/Jacobian.h>
 #include <RBDyn/MultiBody.h>
 
 // PG
@@ -35,44 +36,49 @@
 namespace pg
 {
 
-template<typename T>
 class ID
 {
 public:
   ID(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity);
 
   void run(const rbd::MultiBody& mb,
-           const std::vector<sva::PTransform<T>>& bodyPosW,
-           const std::vector<sva::PTransform<T>>& parentToSon,
-           const std::vector<sva::ForceVec<T>>& forces);
+           const std::vector<sva::PTransformd>& bodyPosW,
+           const std::vector<sva::PTransformd>& parentToSon,
+           const std::vector<sva::ForceVecd>& forces);
 
-  const std::vector<sva::MotionVec<T>>& bodyAcc() const
+  void jacobian(const rbd::MultiBody& mb,
+                const std::vector<sva::PTransformd>& bodyPosW,
+                const std::vector<sva::PTransformd>& parentToSon,
+                const std::vector<sva::ForceVecd>& forces);
+
+  const std::vector<sva::MotionVecd>& bodyAcc() const
   {
     return bodyAcc_;
   }
 
-  const std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>& torque() const
+  const std::vector<Eigen::Matrix<d, Eigen::Dynamic, 1>>& torque() const
   {
     return t_;
   }
 
 private:
-  sva::MotionVec<T> gravity_;
-  std::vector<sva::RBInertia<T>> I_;
+  sva::MotionVecd gravity_;
+  std::vector<sva::RBInertiad> I_;
   std::vector<Eigen::Matrix<double, 6, Eigen::Dynamic>> S_;
-  std::vector<sva::RBInertia<T>> Ic_;
-  std::vector<sva::MotionVec<T>> bodyAcc_;
-  std::vector<sva::ForceVec<T>> bodySupFor_;
-  std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>> t_;
+  std::vector<sva::RBInertiad> Ic_;
+  std::vector<sva::MotionVecd> bodyAcc_;
+  std::vector<sva::ForceVecd> bodySupFor_;
+  std::vector<Eigen::Matrix<double, Eigen::Dynamic, 1>> t_;
+
+  std::vector<rbd::Jacobian> jac_;
 };
 
 
 // inline
 
 
-template<typename T>
-ID<T>::ID(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
-  : gravity_(Eigen::Vector3<T>::Zero(), gravity.cast<T>())
+ID::ID(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
+  : gravity_(Eigen::Vector3d::Zero(), gravity)
   , I_(mb.nrBodies())
   , S_(mb.nrJoints())
   , Ic_(mb.nrBodies())
@@ -82,7 +88,7 @@ ID<T>::ID(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
 {
   for(int i = 0; i < mb.nrBodies(); ++i)
   {
-    I_[i] = mb.body(i).inertia().cast<T>();
+    I_[i] = mb.body(i).inertia();
   }
 
   for(int i = 1; i < mb.nrJoints(); ++i)
@@ -93,11 +99,10 @@ ID<T>::ID(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
 }
 
 
-template<typename T>
-void ID<T>::run(const rbd::MultiBody& mb,
-                const std::vector<sva::PTransform<T>>& /* bodyPosW */,
-                const std::vector<sva::PTransform<T>>& parentToSon,
-                const std::vector<sva::ForceVec<T>>& forces)
+void ID::run(const rbd::MultiBody& mb,
+                const std::vector<sva::PTransformd>& /* bodyPosW */,
+                const std::vector<sva::PTransformd>& parentToSon,
+                const std::vector<sva::ForceVecd>& forces)
 {
   const std::vector<int>& parents = mb.parents();
 
@@ -115,11 +120,11 @@ void ID<T>::run(const rbd::MultiBody& mb,
   for(int i = mb.nrBodies() - 1; i > 0; --i)
   {
     int parent = parents[i];
-    Ic_[parent] = Ic_[parent] + parentToSon[i].transMul(Ic_[i]);
-    bodySupFor_[parent] = bodySupFor_[parent] + parentToSon[i].transMul(bodySupFor_[i]);
+    Ic_[parent] += parentToSon[i].transMul(Ic_[i]);
+    bodySupFor_[parent] += parentToSon[i].transMul(bodySupFor_[i]);
   }
 
-  bodyAcc_[0] = sva::MotionVec<T>(-(Ic_[0].matrix().ldlt().solve(bodySupFor_[0].vector())));
+  bodyAcc_[0] = sva::MotionVec(-(Ic_[0].matrix().ldlt().solve(bodySupFor_[0].vector())));
 
   for(int i = 1; i < mb.nrBodies(); ++i)
   {
