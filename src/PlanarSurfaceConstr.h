@@ -65,10 +65,10 @@ private:
 
 
 template<typename Type>
-class PlanarOrientationContactConstr : public AutoDiffFunction<Type, 1>
+class PlanarOrientationContactConstr : public AutoDiffFunction<Type, 3>
 {
 public:
-  typedef AutoDiffFunction<Type, 1> parent_t;
+  typedef AutoDiffFunction<Type, 3> parent_t;
   typedef typename parent_t::scalar_t scalar_t;
   typedef typename parent_t::result_ad_t result_ad_t;
   typedef typename parent_t::argument_t argument_t;
@@ -78,7 +78,7 @@ public:
       const sva::PTransformd& targetFrame,
       const sva::PTransformd& surfaceFrame,
       int axis)
-    : parent_t(pgdata, pgdata->pbSize(), 1, "PlanarPositionContact")
+    : parent_t(pgdata, pgdata->pbSize(), 3, "PlanarPositionContact")
     , pgdata_(pgdata)
     , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
     , targetFrame_(targetFrame.cast<scalar_t>())
@@ -93,7 +93,9 @@ public:
   {
     sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
 
-    res(0) = (pos.rotation().row(axis_)).dot(targetFrame_.rotation().row(axis_));
+    res(0) = (pos.rotation().row((axis_+1)%3)).dot(targetFrame_.rotation().row(axis_));
+    res(1) = (pos.rotation().row((axis_+2)%3)).dot(targetFrame_.rotation().row(axis_));
+    res(2) = (pos.rotation().row((axis_+3)%3)).dot(targetFrame_.rotation().row(axis_));
   }
 
 private:

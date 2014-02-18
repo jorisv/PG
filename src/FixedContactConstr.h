@@ -63,10 +63,10 @@ private:
 
 
 template<typename Type>
-class FixedOrientationContactConstr : public AutoDiffFunction<Type, 3>
+class FixedOrientationContactConstr : public AutoDiffFunction<Type, 5>
 {
 public:
-  typedef AutoDiffFunction<Type, 3> parent_t;
+  typedef AutoDiffFunction<Type, 5> parent_t;
   typedef typename parent_t::scalar_t scalar_t;
   typedef typename parent_t::result_ad_t result_ad_t;
   typedef typename parent_t::argument_t argument_t;
@@ -75,7 +75,7 @@ public:
   FixedOrientationContactConstr(PGData<Type>* pgdata, int bodyId,
       const Eigen::Matrix3d& target,
       const sva::PTransformd& surfaceFrame)
-    : parent_t(pgdata, pgdata->pbSize(), 3, "FixedOrientationContact")
+    : parent_t(pgdata, pgdata->pbSize(), 5, "FixedOrientationContact")
     , pgdata_(pgdata)
     , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
     , target_(target.cast<scalar_t>())
@@ -88,10 +88,12 @@ public:
   void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
     sva::PTransform<scalar_t> pos = surfaceFrame_*pgdata_->fk().bodyPosW()[bodyIndex_];
-    res(0) = pos.rotation().row(0).dot(target_.row(0));
-    res(1) = pos.rotation().row(1).dot(target_.row(1));
+    res(0) = pos.rotation().row(1).dot(target_.row(0));
+    res(1) = pos.rotation().row(2).dot(target_.row(0));
     // this is redundant, but give better result in some case.
-    res(2) = pos.rotation().row(2).dot(target_.row(2));
+    res(2) = pos.rotation().row(2).dot(target_.row(1));
+    res(3) = pos.rotation().row(0).dot(target_.row(0));
+    res(4) = pos.rotation().row(1).dot(target_.row(1));
   }
 
 private:

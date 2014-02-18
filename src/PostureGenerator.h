@@ -434,8 +434,10 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
   {
     boost::shared_ptr<FixedOrientationContactConstr<Type>> fcc(
         new FixedOrientationContactConstr<Type>(&pgdata_, fc.bodyId, fc.target, fc.surfaceFrame));
-    problem.addConstraint(fcc, {{1., 1.}, {1., 1.}, {1., 1.}},
-        {{1e+1}, {1e+1}, {1e+1}});
+    problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.},
+                                {0., std::numeric_limits<double>::infinity()},
+                                {0., std::numeric_limits<double>::infinity()}},
+        {{1e+1}, {1e+1}, {1e+1}, {1e+1}, {1e+1}});
   }
 
   for(const PlanarContact& pc: planarContacts_)
@@ -449,7 +451,9 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
         new PlanarOrientationContactConstr<Type>(&pgdata_, pc.bodyId,
                                                  pc.targetFrame, pc.surfaceFrame,
                                                  2));
-    problem.addConstraint(poc, {{1., 1.}}, {{1.}});
+    problem.addConstraint(poc, {{0., 0.}, {0., 0.},
+                                {0., std::numeric_limits<double>::infinity()}},
+                               {{1e+1}, {1e+1}, {1e+1}});
 
     boost::shared_ptr<PlanarInclusionConstr<Type>> pic(
         new PlanarInclusionConstr<Type>(&pgdata_, pc.bodyId,
@@ -473,7 +477,9 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
         new PlanarOrientationContactConstr<Type>(&pgdata_, ec.bodyId,
                                                  ec.targetFrame, ec.surfaceFrame,
                                                  2));
-    problem.addConstraint(poc, {{1., 1.}}, {{1.}});
+    problem.addConstraint(poc, {{0., 0.}, {0., 0.},
+                                {0., std::numeric_limits<double>::infinity()}},
+                               {{1.}, {1.}, {1.}});
 
     namespace cst = boost::math::constants;
     double inf = std::numeric_limits<double>::infinity();
@@ -502,20 +508,13 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
         new PlanarPositionContactConstr<Type>(&pgdata_, gc.bodyId, gc.targetFrame, gc.surfaceFrame));
     problem.addConstraint(ppc, {{0., 0.}}, {{1.}});
 
-    // N axis must be aligned between target and surface frame.
-    boost::shared_ptr<PlanarOrientationContactConstr<Type>> pocN(
-        new PlanarOrientationContactConstr<Type>(&pgdata_, gc.bodyId,
-                                                 gc.targetFrame, gc.surfaceFrame,
-                                                 2));
-    problem.addConstraint(pocN, {{1., 1.}}, {{1.}});
-
-    // T axis must be aligned between target and surface frame.
-    // (B could be choose also)
-    boost::shared_ptr<PlanarOrientationContactConstr<Type>> pocT(
-        new PlanarOrientationContactConstr<Type>(&pgdata_, gc.bodyId,
-                                                 gc.targetFrame, gc.surfaceFrame,
-                                                 0));
-    problem.addConstraint(pocT, {{1., 1.}}, {{1.}});
+    boost::shared_ptr<FixedOrientationContactConstr<Type>> fcc(
+        new FixedOrientationContactConstr<Type>(&pgdata_, gc.bodyId, gc.targetFrame.rotation(),
+                                                gc.surfaceFrame));
+    problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.},
+                                {0., std::numeric_limits<double>::infinity()},
+                                {0., std::numeric_limits<double>::infinity()}},
+        {{1e+1}, {1e+1}, {1e+1}, {1e+1}, {1e+1}});
 
     boost::shared_ptr<PlanarInclusionConstr<Type>> pic(
         new PlanarInclusionConstr<Type>(&pgdata_, gc.bodyId,
