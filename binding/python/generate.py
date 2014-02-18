@@ -64,6 +64,7 @@ def build_pg(pg):
   bodyPosTarget = pg.add_struct('BodyPositionTarget')
   bodyOriTarget = pg.add_struct('BodyOrientationTarget')
   forceContactMin = pg.add_struct('ForceContactMinimization')
+  springJoint = pg.add_struct('SpringJoint')
   iterateQuantities = pg.add_struct('IterateQuantities')
   ellipseResult = pg.add_struct('EllipseResult')
 
@@ -79,6 +80,7 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::BodyPositionTarget>', 'pg::BodyPositionTarget', 'vector')
   pg.add_container('std::vector<pg::BodyOrientationTarget>', 'pg::BodyOrientationTarget', 'vector')
   pg.add_container('std::vector<pg::ForceContactMinimization>', 'pg::ForceContactMinimization', 'vector')
+  pg.add_container('std::vector<pg::SpringJoint>', 'pg::SpringJoint', 'vector')
   pg.add_container('std::vector<Eigen::VectorXd>', 'Eigen::VectorXd', 'vector')
   pg.add_container('std::vector<std::vector<Eigen::VectorXd> >', 'std::vector<Eigen::VectorXd>', 'vector')
   pg.add_container('std::vector<pg::EllipseResult>', 'pg::EllipseResult', 'vector')
@@ -98,6 +100,7 @@ def build_pg(pg):
   pgSolver.add_method('bodyPositionTargets', None, [param('std::vector<pg::BodyPositionTarget>', 'targets')])
   pgSolver.add_method('bodyOrientationTargets', None, [param('std::vector<pg::BodyOrientationTarget>', 'targets')])
   pgSolver.add_method('forceContactsMinimization', None, [param('std::vector<pg::ForceContactMinimization>', 'min')])
+  pgSolver.add_method('springJoints', None, [param('std::vector<pg::SpringJoint>', 'springs')])
   pgSolver.add_method('ellipseCostScale', None, [param('double', 'ellipseScale')])
   pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
                                         param('std::vector<std::vector<double> >', 'uq')])
@@ -275,6 +278,16 @@ def build_pg(pg):
 
   forceContactMin.add_instance_attribute('bodyId', 'int')
   forceContactMin.add_instance_attribute('scale', 'double')
+
+  # SpringJoint
+  springJoint.add_constructor([])
+  springJoint.add_constructor([param('int', 'jointId'),
+                               param('double', 'K'),
+                               param('double', 'O')])
+
+  springJoint.add_instance_attribute('jointId', 'int')
+  springJoint.add_instance_attribute('K', 'double')
+  springJoint.add_instance_attribute('O', 'double')
 
   # IterateQuantities
   iterateQuantities.add_instance_attribute('obj', 'double')

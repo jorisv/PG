@@ -98,6 +98,7 @@ public:
                     std::vector<std::vector<double>> ut);
   void torqueBoundsPoly(std::vector<std::vector<Eigen::VectorXd>> lt,
                         std::vector<std::vector<Eigen::VectorXd>> ut);
+  void springJoints(std::vector<SpringJoint> springs);
 
   void param(const std::string& name, const std::string& value);
   void param(const std::string& name, double value);
@@ -145,6 +146,7 @@ private:
   Eigen::VectorXd ql_, qu_;
   Eigen::VectorXd tl_, tu_;
   std::vector<std::vector<Eigen::VectorXd>> tlPoly_, tuPoly_;
+  std::vector<SpringJoint> springs_;
   bool isTorque_;
 
   Eigen::VectorXd x_;
@@ -342,6 +344,14 @@ void PostureGenerator<Type>::torqueBoundsPoly(std::vector<std::vector<Eigen::Vec
   tu[0] = {};
   tlPoly_ = std::move(tl);
   tuPoly_ = std::move(tu);
+  isTorque_ = true;
+}
+
+
+template<typename Type>
+void PostureGenerator<Type>::springJoints(std::vector<SpringJoint> springs)
+{
+  springs_ = std::move(springs);
   isTorque_ = true;
 }
 
@@ -584,15 +594,10 @@ bool PostureGenerator<Type>::run(const std::vector<std::vector<double> >& initQ,
     if(tlPoly_.size() == 0)
     {
       boost::shared_ptr<TorqueConstr<Type>> torque(
-          new TorqueConstr<Type>(&pgdata_));
-      typename TorqueConstr<Type>::intervals_t limTorque(torque->outputSize());
-      for(std::size_t i = 0; i < limTorque.size(); ++i)
-      {
-        limTorque[i] = {tl_[i], tu_[i]};
-      }
+          new TorqueConstr<Type>(&pgdata_, springs_, tl_, tu_));
 
       typename solver_t::problem_t::scales_t scalTorque(torque->outputSize(), 1.);
-      problem.addConstraint(torque, limTorque, scalTorque);
+      problem.addConstraint(torque, torque->bounds(), scalTorque);
     }
     else
     {

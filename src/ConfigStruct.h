@@ -257,6 +257,21 @@ struct ForceContactMinimization
 };
 
 
+struct SpringJoint
+{
+  SpringJoint() {}
+  SpringJoint(int jId, double K, double O)
+    : jointId(jId)
+    , K(K)
+    , O(O)
+  {}
+
+  int jointId;
+  double K;
+  double O;
+};
+
+
 struct EllipseResult
 {
   int bodyIndex;  //Each ellipse is defined relatively to a Surface of a Body

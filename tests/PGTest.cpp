@@ -429,7 +429,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   //Test for Ellipse Constraints
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
-    pgPb.param("ipopt.print_level", 5);
+    pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "mumps");
 
     int id = 12;
@@ -521,6 +521,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
       for(int j = 0; j < mb.joint(i).dof(); ++j)
       {
         BOOST_CHECK_SMALL(mbcWork.jointTorque[i][j] -torque[i][j], 1e-5);
+        BOOST_CHECK_LE(std::abs(torque[i][j]), 100.);
       }
     }
 
@@ -633,5 +634,56 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
                 mbcWork.bodyPosW[index2].translation()).norm();
     BOOST_CHECK_GT(bodyDist, 1. + 0.1);
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12SelfCol2.py");
+  }
+
+  /*
+   *              Spring constraint
+   */
+  {
+    pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
+    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "mumps");
+
+    Matrix3d frame(RotX(-cst::pi<double>()/2.));
+    std::vector<pg::ForceContact> fcVec =
+        {{0 , {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
+               sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.}};
+    pgPb.forceContacts(fcVec);
+
+    std::vector<std::vector<double>> ql(mb.nrJoints());
+    std::vector<std::vector<double>> qu(mb.nrJoints());
+    for(std::size_t i = 0; i < ql.size(); ++i)
+    {
+      ql[i].resize(mb.joint(int(i)).dof());
+      qu[i].resize(mb.joint(int(i)).dof());
+      for(std::size_t j = 0; j < ql[i].size(); ++j)
+      {
+        ql[i][j] = -100.;
+        qu[i][j] = 100.;
+      }
+    }
+    pgPb.torqueBounds(ql, qu);
+    const double springK = 0.1;
+    pgPb.springJoints({{0, springK, 0.}});
+
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+
+    std::vector<sva::ForceVecd> forces = pgPb.forces();
+    std::vector<std::vector<double>> torque = pgPb.torque();
+
+    mbcWork.zero(mb);
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+
+    // checks torque bounds
+    for(int i = 2; i < mb.nrJoints(); ++i)
+    {
+      BOOST_CHECK_LE(torque[i][0], 100.);
+    }
+
+    // check spring
+    BOOST_CHECK_SMALL(torque[1][0] - mbcWork.q[1][0]*springK, 1e-5);
+
+    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Spring0.py");
   }
 }

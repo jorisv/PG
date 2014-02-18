@@ -16,6 +16,9 @@
 #pragma once
 
 // include
+// std
+#include <set>
+
 // Eigen
 #include <unsupported/Eigen/Polynomials>
 
@@ -34,31 +37,91 @@ public:
   typedef typename parent_t::scalar_t scalar_t;
   typedef typename parent_t::result_ad_t result_ad_t;
   typedef typename parent_t::argument_t argument_t;
+  typedef typename parent_t::intervals_t intervals_t;
 
 public:
-  TorqueConstr(PGData<Type>* pgdata)
+  TorqueConstr(PGData<Type>* pgdata, const std::vector<SpringJoint>& springs,
+               const Eigen::VectorXd& tl, const Eigen::VectorXd& tu)
     : parent_t(pgdata, pgdata->pbSize(),
-               pgdata->multibody().nrDof() - pgdata->multibody().joint(0).dof(),
+               (pgdata->multibody().nrDof() - pgdata->multibody().joint(0).dof()),
                "Torque")
     , pgdata_(pgdata)
-  {}
+  {
+    // store spring joint index to avoid to add a torque constraint on them
+    std::set<int> springJoints;
+    for(const SpringJoint& sj: springs)
+    {
+      int index = pgdata->multibody().jointIndexById(sj.jointId);
+      assert(pgdata->multibody().joint(index).dof() == 1);
+      springJ_.push_back({index, sj.K, sj.O});
+      springJoints.insert(index);
+      bounds_.push_back({0., 0.});
+    }
+
+    // don't take the joint 0 (free flyier or fixed joint)
+    for(int i = 1; i < pgdata->multibody().nrJoints(); ++i)
+    {
+      // only add it if it's not a spring
+      if(springJoints.find(i) == springJoints.end())
+      {
+        actJ_.push_back({i});
+        int posInParam = pgdata->multibody().jointPosInDof(i) - pgdata->multibody().joint(0).dof();
+        for(int dof = 0; dof < pgdata->multibody().joint(i).dof(); ++i)
+        {
+          bounds_.push_back({tl[posInParam + dof], tu[posInParam + dof]});
+        }
+      }
+    }
+  }
   ~TorqueConstr() throw()
   { }
 
 
+  intervals_t bounds() const
+  {
+    return bounds_;
+  }
+
+
   void impl_compute(result_ad_t& res, const argument_t& /* x */) const
   {
-    int i = 0;
     const ID<scalar_t>& id = pgdata_->id();
-    for(const auto& t: id.torque())
+
+    int pos = 0;
+    for(const SpringJointData& sj: springJ_)
     {
-      res.segment(i, t.size()) = t;
-      i += int(t.size());
+      const auto& t = id.torque()[sj.index];
+      scalar_t spring = sj.K*pgdata_->q()[sj.index][0] + sj.O;
+      res(pos) = t(0) - spring;
+      ++pos;
+    }
+
+    for(const ActuatedJointData& aj: actJ_)
+    {
+      const auto& t = id.torque()[aj.index];
+      res.segment(pos, t.size()) = t;
+      pos += int(t.size());
     }
   }
 
 private:
+  struct ActuatedJointData
+  {
+    int index;
+  };
+
+  struct SpringJointData
+  {
+    int index;
+    double K;
+    double O;
+  };
+
+private:
   PGData<Type>* pgdata_;
+  std::vector<ActuatedJointData> actJ_;
+  std::vector<SpringJointData> springJ_;
+  intervals_t bounds_;
 };
 
 
