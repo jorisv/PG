@@ -51,6 +51,11 @@ public:
     return bodyAcc_;
   }
 
+  const std::vector<sva::ForceVec<T>>& bodySupFor() const
+  {
+    return bodySupFor_;
+  }
+
   const std::vector<Eigen::Matrix<T, Eigen::Dynamic, 1>>& torque() const
   {
     return t_;
