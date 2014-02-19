@@ -66,7 +66,7 @@ public:
       {
         actJ_.push_back({i});
         int posInParam = pgdata->multibody().jointPosInDof(i) - pgdata->multibody().joint(0).dof();
-        for(int dof = 0; dof < pgdata->multibody().joint(i).dof(); ++i)
+        for(int dof = 0; dof < pgdata->multibody().joint(i).dof(); ++dof)
         {
           bounds_.push_back({tl[posInParam + dof], tu[posInParam + dof]});
         }

@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
-	pgPb.param("ipopt.linear_solver", "mumps");
+    pgPb.param("ipopt.linear_solver", "mumps");
 
     Vector3d target(2., 0., 0.);
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
@@ -520,7 +520,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     {
       for(int j = 0; j < mb.joint(i).dof(); ++j)
       {
-        BOOST_CHECK_SMALL(mbcWork.jointTorque[i][j] -torque[i][j], 1e-5);
+        BOOST_CHECK_SMALL(mbcWork.jointTorque[i][j] - torque[i][j], 1e-5);
         BOOST_CHECK_LE(std::abs(torque[i][j]), 100.);
       }
     }
@@ -641,13 +641,21 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
    */
   {
     pg::PostureGenerator<pg::eigen_ad> pgPb(mb, gravity);
-    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.print_level", 5);
     pgPb.param("ipopt.linear_solver", "mumps");
 
+    Vector3d target(1.5, 0., 0.);
+    Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
+    int id = 12;
+    pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
+    pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
     Matrix3d frame(RotX(-cst::pi<double>()/2.));
+    Matrix3d frameEnd(RotX(cst::pi<double>()/2.));
     std::vector<pg::ForceContact> fcVec =
         {{0 , {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
-               sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.}};
+               sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.},
+         {id, {sva::PTransformd(frameEnd, Vector3d(0.01, 0., 0.)),
+               sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}};
     pgPb.forceContacts(fcVec);
 
     std::vector<std::vector<double>> ql(mb.nrJoints());
@@ -663,7 +671,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
       }
     }
     pgPb.torqueBounds(ql, qu);
-    const double springK = 0.1;
+    const double springK = 10.;
     pgPb.springJoints({{0, springK, 0.}});
 
     BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
