@@ -352,7 +352,14 @@ template<typename Type>
 void PostureGenerator<Type>::springJoints(std::vector<SpringJoint> springs)
 {
   springs_ = std::move(springs);
-  isTorque_ = true;
+  if(springs_.size() == 0)
+  {
+    isTorque_ = false;
+  }
+  else
+  {
+    isTorque_ = true;
+  }
 }
 
 
