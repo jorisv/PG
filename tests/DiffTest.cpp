@@ -27,9 +27,11 @@
 #include <roboptim/core/finite-difference-gradient.hh>
 
 // PG
+#include "ConfigStruct.h"
 #include "PGData.h"
 #include "FixedContactConstr.h"
 #include "PlanarSurfaceConstr.h"
+#include "StaticStabilityConstr.h"
 
 // Arm
 #include "Z12Arm.h"
@@ -52,6 +54,27 @@ double checkGradient(
   fdfunction.jacobian(jacF, x);
 
   return (jac - jacF).norm();
+}
+
+
+template <typename T>
+double checkForceGradient(
+ const roboptim::GenericDifferentiableFunction<T>& function,
+ const typename roboptim::GenericDifferentiableFunction<T>::vector_t& x,
+    const pg::PGData& pgdata)
+{
+  auto rows = std::get<0>(function.jacobianSize());
+  auto cols = std::get<1>(function.jacobianSize());
+  Eigen::MatrixXd jac(rows, cols);
+  Eigen::MatrixXd jacF(rows, cols);
+
+  roboptim::GenericFiniteDifferenceGradient<T> fdfunction(function);
+  function.jacobian(jac, x);
+  fdfunction.jacobian(jacF, x);
+
+  int deb = pgdata.forceParamsBegin();
+  return (jac.block(0, deb, rows, cols - deb) -
+          jacF.block(0, deb, rows, cols - deb)).norm();
 }
 
 
@@ -163,5 +186,34 @@ BOOST_AUTO_TEST_CASE(PlanarInclusionTest)
   {
     Eigen::VectorXd x(Eigen::VectorXd::Random(mb.nrDof()));
     BOOST_CHECK_SMALL(checkGradient(pi, x), 1e-4);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(StaticStabilityTest)
+{
+  using namespace Eigen;
+  namespace cst = boost::math::constants;
+
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeZ12Arm();
+
+  pg::PGData pgdata(mb, gravity);
+
+  sva::PTransformd bodySurface(sva::RotZ(-cst::pi<double>()/2.), Eigen::Vector3d(0., 1., 0.));
+  std::vector<Vector2d> surfPoints = {{0.1, 0.1}, {-0.1, 0.1}, {-0.1, -0.1}, {0.1, -0.1}};
+  std::vector<sva::PTransformd> points(surfPoints.size());
+  for(std::size_t i = 0; i < points.size(); ++i)
+  {
+    points[i] = sva::PTransformd(Vector3d(surfPoints[i][0], surfPoints[i][1], 0.))*bodySurface;
+  }
+  pgdata.forces({pg::ForceContact{12, points, 0.7}, pg::ForceContact{0, points, 0.7}});
+
+  pg::StaticStabilityConstr ss(&pgdata);
+
+  for(int i = 0; i < 100; ++i)
+  {
+    Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize()));
+    BOOST_CHECK_SMALL(checkGradient(ss, x), 1e-4);
   }
 }

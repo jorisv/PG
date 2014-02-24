@@ -122,7 +122,8 @@ public:
       jac_.vectorBodyJacobian(pgdata_->multibody(), pgdata_->mbc(), posRow.transpose());
     dotCache_.noalias() = targetRow*mat.block(3, 0, 3, mat.cols());
     jac_.fullJacobian(pgdata_->multibody(), dotCache_, dotCacheFull_);
-    const_cast< Eigen::MatrixBase<Derived3>&>(jac).noalias() = dotCacheFull_;
+    const_cast< Eigen::MatrixBase<Derived3>&>(jac)\
+        .block(0, 0, 1, pgdata_->mb().nrParams()).noalias() = dotCacheFull_;
   }
 
   void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()

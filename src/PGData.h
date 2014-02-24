@@ -27,6 +27,7 @@
 #include <Eigen/Core>
 
 // RBDyn
+#include <RBDyn/CoM.h>
 #include <RBDyn/FK.h>
 #include <RBDyn/FV.h>
 #include <RBDyn/MultiBody.h>
@@ -42,6 +43,7 @@ public:
   struct ForceData
   {
     int bodyIndex;
+    int bodyId;
     std::vector<sva::PTransformd> points;
     std::vector<sva::ForceVecd> forces;
     double mu;
@@ -69,7 +71,7 @@ public:
 
   void x(const Eigen::VectorXd& x);
 
-  void forces(std::vector<ForceData> fd);
+  void forces(const std::vector<ForceContact>& fd);
   void ellipses(std::vector<EllipseData> ed);
   void update();
 
@@ -81,6 +83,26 @@ public:
   const rbd::MultiBody& multibody() const
   {
     return mb_;
+  }
+
+  const rbd::MultiBody& mb() const
+  {
+    return mb_;
+  }
+
+  double robotMass() const
+  {
+    return robotMass_;
+  }
+
+  const Eigen::Vector3d& com() const
+  {
+    return com_;
+  }
+
+  const Eigen::MatrixXd& comJac() const
+  {
+    return comJacMat_;
   }
 
   int pbSize() const
@@ -126,6 +148,11 @@ public:
 private:
   rbd::MultiBody mb_;
   rbd::MultiBodyConfig mbc_;
+  double robotMass_;
+
+  Eigen::Vector3d com_;
+  rbd::CoMJacobian comJac_;
+  Eigen::MatrixXd comJacMat_;
 
   Eigen::Vector3d gravity_;
 
@@ -133,7 +160,6 @@ private:
 
   std::vector<ForceData> forceDatas_;
   int nrForcePoints_;
-  std::vector<sva::ForceVec<double>> forcesB_;
 
   std::vector<EllipseData> ellipseDatas_;
 
@@ -147,19 +173,23 @@ private:
 PGData::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
   : mb_(mb)
   , mbc_(mb)
+  , robotMass_(0.)
+  , com_()
+  , comJac_(mb)
+  , comJacMat_(3, mb.nrDof())
   , gravity_(gravity)
   , x_(mb.nrParams())
   , nrForcePoints_(0)
-  , forcesB_(mb.nrBodies())
   , xStamp_(1)
 {
   x_.setZero();
   mbc_.zero(mb_);
   rbd::forwardKinematics(mb_, mbc_);
   rbd::forwardVelocity(mb_, mbc_);
-  for(int i = 0; i < mb.nrBodies(); ++i)
+
+  for(const rbd::Body& b: mb_.bodies())
   {
-    forcesB_[i] = sva::ForceVec<double>(Eigen::Vector6d::Zero());
+    robotMass_ += b.inertia().mass();
   }
 }
 
@@ -179,13 +209,23 @@ void PGData::x(const Eigen::VectorXd& x)
 
 
 
-void PGData::forces(std::vector<ForceData> fd)
+void PGData::forces(const std::vector<ForceContact>& forceContacts)
 {
-  forceDatas_ = std::move(fd);
+  forceDatas_.clear();
+  forceDatas_.reserve(forceContacts.size());
   nrForcePoints_ = 0;
-  for(const ForceData& fd: forceDatas_)
+  for(const ForceContact& fc: forceContacts)
   {
-    nrForcePoints_ += int(fd.points.size());
+    std::vector<sva::PTransformd> points(fc.points.size());
+    std::vector<sva::ForceVecd> forces(fc.points.size());
+    for(std::size_t i = 0; i < fc.points.size(); ++i)
+    {
+      points[i] = fc.points[i];
+      forces[i] = sva::ForceVecd(Eigen::Vector6d::Zero());
+      ++nrForcePoints_;
+    }
+    forceDatas_.push_back({mb_.bodyIndexById(fc.bodyId), fc.bodyId,
+                           points, forces, fc.mu});
   }
 
   x_.setZero(pbSize());
@@ -205,33 +245,21 @@ void PGData::ellipses(std::vector<EllipseData> ed)
 
 void PGData::update()
 {
-  /*
-  std::cout << "update" << std::endl;
-  std::cout << x_.transpose() << std::endl;
-  */
-  rbd::vectorToParam(x_, mbc_.q);
+  rbd::vectorToParam(x_.head(mb_.nrParams()), mbc_.q);
   rbd::forwardKinematics(mb_, mbc_);
+  com_ = rbd::computeCoM(mb_, mbc_);
+  comJacMat_ = comJac_.jacobian(mb_, mbc_);
 
-  /*
-  double zero(0., Eigen::VectorXd::Zero(x_.size()));
-  Eigen::Vector3<double> zeroVec3(zero, zero, zero);
+  int xPos = mb_.nrParams();
   for(ForceData& fd: forceDatas_)
   {
-    forcesB_[fd.bodyIndex] = sva::ForceVec<double>(Eigen::Vector6<scalar_t>::Zero());
     for(std::size_t i = 0; i < fd.forces.size(); ++i)
     {
-      sva::ForceVec<double>& fv = fd.forces[i];
-      const sva::PTransform<double>& pt = fd.points[i];
-      Eigen::Vector3<double> forceAd;
-      construct_f()(int(x_.size()), xPos + 0, x_[xPos + 0], forceAd(0));
-      construct_f()(int(x_.size()), xPos + 1, x_[xPos + 1], forceAd(1));
-      construct_f()(int(x_.size()), xPos + 2, x_[xPos + 2], forceAd(2));
-      fv = sva::ForceVec<double>(zeroVec3, forceAd);
-      forcesB_[fd.bodyIndex] = forcesB_[fd.bodyIndex] + pt.transMul(fv);
+      Eigen::Vector3d force(x_[xPos + 0], x_[xPos + 1], x_[xPos + 2]);
+      fd.forces[i] = sva::ForceVecd(Eigen::Vector3d::Zero(), force);
       xPos += 3;
     }
   }
-  */
 
   /*
   for(EllipseData& ed: ellipseDatas_)

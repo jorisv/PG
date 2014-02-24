@@ -63,7 +63,7 @@ public:
     const Eigen::MatrixXd& mat = jac_.jacobian(pgdata_->multibody(), pgdata_->mbc());
     dotCache_.noalias() = targetFrame_.rotation().row(2)*mat.block(3, 0, 3, mat.cols());
     jac_.fullJacobian(pgdata_->multibody(), dotCache_, dotCacheFull_);
-    jac.noalias() = dotCacheFull_;
+    jac.block(0, 0, 1, pgdata_->mb().nrParams()).noalias() = dotCacheFull_;
   }
 
   void impl_gradient(gradient_t& /* gradient */,
@@ -127,7 +127,7 @@ public:
                                                          pos.rotation().row(axis_));
     dotCache_.noalias() = targetFrame_.rotation().row(axis_)*mat.block(3, 0, 3, mat.cols());
     jac_.fullJacobian(pgdata_->multibody(), dotCache_, dotCacheFull_);
-    jac.noalias() = dotCacheFull_;
+    jac.block(0, 0, 1, pgdata_->mb().nrParams()).noalias() = dotCacheFull_;
   }
 
   void impl_gradient(gradient_t& /* gradient */,
@@ -233,7 +233,7 @@ public:
         sumJac_.noalias() = n.x()*tJac_;
         sumJac_.noalias() += n.y()*bJac_;
         jac_.fullJacobian(pgdata_->multibody(), sumJac_, fullJac_);
-        jac.row(resIndex).noalias() = fullJac_;
+        jac.block(resIndex, 0, 1, pgdata_->mb().nrParams()).noalias() = fullJac_;
         ++resIndex;
       }
     }

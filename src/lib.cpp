@@ -17,6 +17,7 @@
 #include "FK.h"
 #include "ID.h"
 */
+#include "PostureGenerator.h"
 #include "PGData.h"
 /*
 #include "EigenAutoDiffScalar.h"
@@ -33,7 +34,6 @@
 #include "CollisionConstr.h"
 */
 #include "IterationCallback.h"
-#include "PostureGenerator.h"
 /*
 #include "EllipseContactConstr.h"
 */

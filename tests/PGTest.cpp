@@ -40,8 +40,8 @@
 #include "FK.h"
 #include "ID.h"
 */
-#include "PGData.h"
 #include "PostureGenerator.h"
+#include "PGData.h"
 
 
 // Arm

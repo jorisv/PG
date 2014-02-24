@@ -17,37 +17,113 @@
 
 // include
 // PG
-#include "AutoDiffFunction.h"
 #include "PGData.h"
 
 namespace pg
 {
 
-template<typename Type>
-class StaticStabilityConstr : public AutoDiffFunction<Type, 6>
+class StaticStabilityConstr : public roboptim::DifferentiableFunction
 {
 public:
-  typedef AutoDiffFunction<Type, 6> parent_t;
-  typedef typename parent_t::scalar_t scalar_t;
-  typedef typename parent_t::result_ad_t result_ad_t;
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  StaticStabilityConstr(PGData<Type>* pgdata)
-    : parent_t(pgdata, pgdata->pbSize(), 6, "StaticStability")
+  StaticStabilityConstr(PGData* pgdata)
+    : roboptim::DifferentiableFunction(pgdata->pbSize(), 6, "StaticStability")
     , pgdata_(pgdata)
-  {}
+    , gravityForce_(-pgdata->robotMass()*pgdata->gravity())
+    , jacPoints_(pgdata->nrForcePoints())
+    , jacFullMat_(3, pgdata->mb().nrParams())
+    , T_com_fi_jac_(3, pgdata->mb().nrParams())
+    , couple_jac_(3, pgdata->mb().nrParams())
+  {
+    std::size_t index = 0;
+    for(const PGData::ForceData& fd: pgdata_->forceDatas())
+    {
+      for(std::size_t i = 0; i < fd.forces.size(); ++i)
+      {
+        jacPoints_[index] = rbd::Jacobian(pgdata_->mb(), fd.bodyId, fd.points[i].translation());
+        ++index;
+      }
+    }
+  }
   ~StaticStabilityConstr() throw()
   { }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
+  void impl_compute(result_t& res, const argument_t& x) const throw()
   {
-    res = pgdata_->id().bodyAcc()[0].vector();
+    pgdata_->x(x);
+
+    res.head<3>().setZero();
+    res.tail<3>() = gravityForce_;
+    for(const PGData::ForceData& fd: pgdata_->forceDatas())
+    {
+      const sva::PTransformd& X_0_b = pgdata_->mbc().bodyPosW[fd.bodyIndex];
+      for(std::size_t i = 0; i < fd.forces.size(); ++i)
+      {
+        sva::PTransformd X_0_pi = fd.points[i]*X_0_b;
+        Eigen::Vector3d T_com_fi(X_0_pi.translation() - pgdata_->com());
+        Eigen::Vector3d fi_world(fd.forces[i].force());
+        res.head<3>() += T_com_fi.cross(fi_world);
+        res.tail<3>() += fi_world;
+      }
+    }
+  }
+
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+  {
+    pgdata_->x(x);
+    jac.setZero();
+    std::size_t index = 0;
+    for(const PGData::ForceData& fd: pgdata_->forceDatas())
+    {
+      const sva::PTransformd& X_0_b = pgdata_->mbc().bodyPosW[fd.bodyIndex];
+      for(std::size_t i = 0; i < fd.forces.size(); ++i)
+      {
+        sva::PTransformd X_0_pi = fd.points[i]*X_0_b;
+        Eigen::Vector3d T_com_fi(X_0_pi.translation() - pgdata_->com());
+
+        // kinematic jacobian
+        const Eigen::MatrixXd& jacP = jacPoints_[index].jacobian(pgdata_->mb(),
+                                                                  pgdata_->mbc());
+
+        jacPoints_[index].fullJacobian(pgdata_->mb(), jacP.block(3, 0, 3, jacP.cols()), jacFullMat_);
+        T_com_fi_jac_.noalias() = jacFullMat_ - pgdata_->comJac();
+        couple_jac_.noalias() = sva::vector3ToCrossMatrix((-fd.forces[i].force()).eval())*T_com_fi_jac_;
+
+        // couple
+        jac.block(0, 0, 3, pgdata_->mb().nrParams()).noalias() += couple_jac_;
+        // force
+        // Zero
+
+
+        // force jacobian
+        // couple
+        jac.block<3,3>(0, pgdata_->forceParamsBegin() + index*3).noalias() =
+            sva::vector3ToCrossMatrix(T_com_fi);
+        // force
+        jac.block<3,3>(3, pgdata_->forceParamsBegin() + index*3).noalias() =
+            Eigen::Matrix3d::Identity();
+        ++index;
+      }
+    }
+  }
+
+  void impl_gradient(gradient_t& /* gradient */,
+      const argument_t& /* x */, size_type /* functionId */) const throw()
+  {
+    throw std::runtime_error("NEVER GO HERE");
   }
 
 private:
-  PGData<Type>* pgdata_;
+  PGData* pgdata_;
+  Eigen::Vector3d gravityForce_;
+
+  mutable std::vector<rbd::Jacobian> jacPoints_;
+  mutable Eigen::MatrixXd jacFullMat_;
+  mutable Eigen::MatrixXd T_com_fi_jac_;
+  mutable Eigen::MatrixXd couple_jac_;
 };
 
 } // namespace pg

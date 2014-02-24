@@ -28,17 +28,17 @@
 #include <RBDyn/MultiBodyConfig.h>
 
 // PG
+#include "ConfigStruct.h"
 #include "PGData.h"
 #include "StdCostFunc.h"
 #include "FixedContactConstr.h"
-//#include "StaticStabilityConstr.h"
+#include "StaticStabilityConstr.h"
 //#include "PositiveForceConstr.h"
 //#include "FrictionConeConstr.h"
 //#include "TorqueConstr.h"
 #include "PlanarSurfaceConstr.h"
 //#include "EllipseContactConstr.h"
 //#include "CollisionConstr.h"
-#include "ConfigStruct.h"
 #include "IterationCallback.h"
 
 namespace pg
@@ -247,26 +247,8 @@ void PostureGenerator::gripperContacts(std::vector<GripperContact> contacts)
 
 void PostureGenerator::forceContacts(std::vector<ForceContact> contacts)
 {
-  /*
-  typedef PGData pgdata_t;
-  typedef typename pgdata_t::ForceData forcedata_t;
-
   forceContacts_ = std::move(contacts);
-  std::vector<forcedata_t> forceDatas;
-  forceDatas.reserve(forceContacts_.size());
-  for(const ForceContact& fc: forceContacts_)
-  {
-    std::vector<sva::PTransform<scalar_t>> points(fc.points.size());
-    std::vector<sva::ForceVec<scalar_t>> forces(fc.points.size());
-    for(std::size_t i = 0; i < fc.points.size(); ++i)
-    {
-      points[i] = fc.points[i].cast<scalar_t>();
-      forces[i] = sva::ForceVec<scalar_t>(Eigen::Vector6<scalar_t>::Zero());
-    }
-    forceDatas.push_back({pgdata_.multibody().bodyIndexById(fc.bodyId), points, forces, fc.mu});
-  }
-  pgdata_.forces(forceDatas);
-  */
+  pgdata_.forces(forceContacts_);
 }
 
 
@@ -385,7 +367,6 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
   problem.startingPoint()->head(pgdata_.multibody().nrParams()) =
       rbd::paramToVector(pgdata_.multibody(), initQ);
 
-  /*
   // if init force is not well sized we compute it
   if(int(initForces.size()) != pgdata_.nrForcePoints())
   {
@@ -417,7 +398,6 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
       pos += 3;
     }
   }
-  */
 
   for(int i = 0; i < pgdata_.multibody().nrParams(); ++i)
   {
@@ -535,7 +515,6 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
   }
   */
 
-  /*
   if(!forceContacts_.empty())
   {
     boost::shared_ptr<StaticStabilityConstr> stab(
@@ -543,6 +522,7 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
     problem.addConstraint(stab, {{0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}},
         {{1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}});
 
+    /*
     boost::shared_ptr<PositiveForceConstr> positiveForce(
         new PositiveForceConstr(&pgdata_));
     typename PositiveForceConstr::intervals_t limPositive(
@@ -565,8 +545,8 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
           pgdata_.nrForcePoints(), {-std::numeric_limits<double>::infinity(), 0.});
     typename solver_t::problem_t::scales_t scalFriction(pgdata_.nrForcePoints(), 1.);
     problem.addConstraint(frictionCone, limFriction, scalFriction);
+    */
   }
-*/
 
   /*
   if(!envCollisions_.empty())
