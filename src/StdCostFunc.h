@@ -138,9 +138,10 @@ public:
     scalar_t ori = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
     for(const BodyOrientationTargetData& bo: bodyOriTargets_)
     {
-      ori += sva::rotationError(
-            fk.bodyPosW()[bo.bodyIndex].rotation(), bo.target, 1e-7).squaredNorm()*
-          bo.scale;
+      const auto& pos = fk.bodyPosW()[bo.bodyIndex];
+      ori += std::pow(pos.rotation().row(0).dot(bo.target.row(1)), 2)*bo.scale;
+      ori += std::pow(pos.rotation().row(1).dot(bo.target.row(2)), 2)*bo.scale;
+      ori += std::pow(pos.rotation().row(2).dot(bo.target.row(0)), 2)*bo.scale;
     }
 
     scalar_t forceMin = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
