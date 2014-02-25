@@ -59,6 +59,7 @@ public:
   void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
   {
     pgdata_->x(x);
+    jac.setZero();
     const Eigen::MatrixXd& jacMat = jac_.jacobian(pgdata_->multibody(), pgdata_->mbc());
     jac_.fullJacobian(pgdata_->multibody(), jacMat.block(3, 0, 3, jacMat.cols()), jac);
   }
@@ -129,6 +130,7 @@ public:
   void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
   {
     pgdata_->x(x);
+    jac.setZero();
     sva::PTransformd pos = surfaceFrame_*pgdata_->mbc().bodyPosW[bodyIndex_];
     dotDerivative(pos.rotation().row(0), target_.row(0), jac.row(0));
     dotDerivative(pos.rotation().row(1), target_.row(1), jac.row(1));

@@ -59,6 +59,7 @@ public:
   void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
   {
     pgdata_->x(x);
+    jac.setZero();
 
     const Eigen::MatrixXd& mat = jac_.jacobian(pgdata_->multibody(), pgdata_->mbc());
     dotCache_.noalias() = targetFrame_.rotation().row(2)*mat.block(3, 0, 3, mat.cols());
@@ -120,6 +121,7 @@ public:
   void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
   {
     pgdata_->x(x);
+    jac.setZero();
 
     sva::PTransformd pos = surfaceFrame_*pgdata_->mbc().bodyPosW[bodyIndex_];
     const Eigen::MatrixXd& mat = jac_.vectorBodyJacobian(pgdata_->multibody(),
@@ -220,6 +222,8 @@ public:
   void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
   {
     pgdata_->x(x);
+    jac.setZero();
+
     const Eigen::MatrixXd& jacMat = jac_.jacobian(pgdata_->multibody(), pgdata_->mbc());
     int resIndex = 0;
     for(const sva::PTransformd& sp: surfacePoints_)
