@@ -522,13 +522,13 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
     problem.addConstraint(stab, {{0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}, {0., 0.}},
         {{1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}, {1e-2}});
 
-    /*
     boost::shared_ptr<PositiveForceConstr> positiveForce(
         new PositiveForceConstr(&pgdata_));
     typename PositiveForceConstr::intervals_t limPositive(
           pgdata_.nrForcePoints(), {0., std::numeric_limits<double>::infinity()});
     typename solver_t::problem_t::scales_t scalPositive(pgdata_.nrForcePoints(), 1.);
     problem.addConstraint(positiveForce, limPositive, scalPositive);
+    /*
     // * constraint seem to converge more quickly than variable bound.
     // * maybe scale fault ?
     // int pos = pgdata_.multibody().nrParams();
