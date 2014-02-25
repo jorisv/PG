@@ -51,7 +51,7 @@ def import_eigen3_types(mod):
 
 
 def build_pg(pg):
-  pgSolver = pg.add_class('PostureGenerator', template_parameters=['pg::eigen_ad'], custom_name='PostureGenerator')
+  pgSolver = pg.add_class('PostureGenerator', custom_name='PostureGenerator')
 
   fixedPositionContact = pg.add_struct('FixedPositionContact')
   fixedOrientationContact = pg.add_struct('FixedOrientationContact')
@@ -294,7 +294,6 @@ if __name__ == '__main__':
     sys.exit(1)
 
   pg = Module('_pg', cpp_namespace='::pg')
-  pg.add_include('<EigenAutoDiffScalar.h>')
   pg.add_include('<PostureGenerator.h>')
 
   pg.add_include('<SCD/S_Object/S_Object.h>')
