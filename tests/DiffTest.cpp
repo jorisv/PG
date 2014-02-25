@@ -101,6 +101,7 @@ BOOST_AUTO_TEST_CASE(FixedContactPosTest)
 
 BOOST_AUTO_TEST_CASE(FixedContactOriTest)
 {
+  using namespace Eigen;
   namespace cst = boost::math::constants;
 
   rbd::MultiBody mb;
@@ -109,14 +110,14 @@ BOOST_AUTO_TEST_CASE(FixedContactOriTest)
 
   pg::PGData pgdata(mb, gravity);
 
-  Eigen::Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
-  sva::PTransformd surface(sva::PTransformd::Identity());
+  Matrix3d oriTarget(sva::RotZ(cst::pi<double>()));
+  sva::PTransformd surface(sva::RotZ(-cst::pi<double>()/2.), Vector3d::Random());
 
   pg::FixedOrientationContactConstr foc(&pgdata, 12, oriTarget, surface);
 
   for(int i = 0; i < 100; ++i)
   {
-    Eigen::VectorXd x(Eigen::VectorXd::Random(mb.nrDof()));
+    VectorXd x(VectorXd::Random(mb.nrDof()));
     BOOST_CHECK_SMALL(checkGradient(foc, x), 1e-4);
   }
 }
