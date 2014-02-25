@@ -80,9 +80,9 @@ public:
       {
         sva::PTransformd X_0_pi = fd.points[i]*X_0_b;
         const Eigen::MatrixXd& jacPointMat =
-            jacPoints_[index].vectorBodyJacobian(pgdata_->mb(),
+            jacPoints_[index].vectorJacobian(pgdata_->mb(),
                                                  pgdata_->mbc(),
-                                                 X_0_pi.rotation().row(2).transpose())\
+                                                 fd.points[i].rotation().row(2).transpose())\
             .block(3, 0, 3, jacPoints_[index].dof());
         jacPointsMatTmp_[index].noalias() = fd.forces[i].force().transpose()*jacPointMat;
         jacPoints_[index].fullJacobian(pgdata_->mb(), jacPointsMatTmp_[index], jacPointMatFull_);

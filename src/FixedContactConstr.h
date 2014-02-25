@@ -120,7 +120,7 @@ public:
                      Eigen::MatrixBase<Derived3> const & jac) const
   {
     const Eigen::MatrixXd& mat =
-      jac_.vectorBodyJacobian(pgdata_->multibody(), pgdata_->mbc(), posRow.transpose());
+      jac_.vectorJacobian(pgdata_->multibody(), pgdata_->mbc(), posRow.transpose());
     dotCache_.noalias() = targetRow*mat.block(3, 0, 3, mat.cols());
     jac_.fullJacobian(pgdata_->multibody(), dotCache_, dotCacheFull_);
     const_cast< Eigen::MatrixBase<Derived3>&>(jac)\
@@ -131,10 +131,10 @@ public:
   {
     pgdata_->x(x);
     jac.setZero();
-    sva::PTransformd pos = surfaceFrame_*pgdata_->mbc().bodyPosW[bodyIndex_];
-    dotDerivative(pos.rotation().row(0), target_.row(0), jac.row(0));
-    dotDerivative(pos.rotation().row(1), target_.row(1), jac.row(1));
-    dotDerivative(pos.rotation().row(2), target_.row(2), jac.row(2));
+
+    dotDerivative(surfaceFrame_.rotation().row(0), target_.row(0), jac.row(0));
+    dotDerivative(surfaceFrame_.rotation().row(1), target_.row(1), jac.row(1));
+    dotDerivative(surfaceFrame_.rotation().row(2), target_.row(2), jac.row(2));
   }
 
   void impl_gradient(gradient_t& /* gradient */,

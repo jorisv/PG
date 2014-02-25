@@ -35,10 +35,9 @@
 #include "PositiveForceConstr.h"
 
 // Arm
-#include "Z12Arm.h"
+#include "XYZ12Arm.h"
 
 const Eigen::Vector3d gravity(0., 9.81, 0.);
-
 
 template <typename T>
 double checkGradient(
@@ -83,7 +82,7 @@ BOOST_AUTO_TEST_CASE(FixedContactPosTest)
 {
   rbd::MultiBody mb;
   rbd::MultiBodyConfig mbc;
-  std::tie(mb, mbc) = makeZ12Arm();
+  std::tie(mb, mbc) = makeXYZ12Arm();
 
   pg::PGData pgdata(mb, gravity);
 
@@ -106,14 +105,14 @@ BOOST_AUTO_TEST_CASE(FixedContactOriTest)
 
   rbd::MultiBody mb;
   rbd::MultiBodyConfig mbc;
-  std::tie(mb, mbc) = makeZ12Arm();
+  std::tie(mb, mbc) = makeXYZ12Arm();
 
   pg::PGData pgdata(mb, gravity);
 
   Matrix3d oriTarget(sva::RotZ(cst::pi<double>()));
   sva::PTransformd surface(sva::RotZ(-cst::pi<double>()/2.), Vector3d::Random());
 
-  pg::FixedOrientationContactConstr foc(&pgdata, 12, oriTarget, surface);
+  pg::FixedOrientationContactConstr foc(&pgdata, 3, oriTarget, surface);
 
   for(int i = 0; i < 100; ++i)
   {
@@ -128,7 +127,7 @@ BOOST_AUTO_TEST_CASE(PlanarPositionContactTest)
 
   rbd::MultiBody mb;
   rbd::MultiBodyConfig mbc;
-  std::tie(mb, mbc) = makeZ12Arm();
+  std::tie(mb, mbc) = makeXYZ12Arm();
 
   pg::PGData pgdata(mb, gravity);
 
@@ -150,7 +149,7 @@ BOOST_AUTO_TEST_CASE(PlanarOrientationContactTest)
 
   rbd::MultiBody mb;
   rbd::MultiBodyConfig mbc;
-  std::tie(mb, mbc) = makeZ12Arm();
+  std::tie(mb, mbc) = makeXYZ12Arm();
 
   pg::PGData pgdata(mb, gravity);
 
@@ -172,7 +171,7 @@ BOOST_AUTO_TEST_CASE(PlanarInclusionTest)
 
   rbd::MultiBody mb;
   rbd::MultiBodyConfig mbc;
-  std::tie(mb, mbc) = makeZ12Arm();
+  std::tie(mb, mbc) = makeXYZ12Arm();
 
   pg::PGData pgdata(mb, gravity);
 
@@ -198,7 +197,7 @@ BOOST_AUTO_TEST_CASE(StaticStabilityTest)
 
   rbd::MultiBody mb;
   rbd::MultiBodyConfig mbc;
-  std::tie(mb, mbc) = makeZ12Arm();
+  std::tie(mb, mbc) = makeXYZ12Arm();
 
   pg::PGData pgdata(mb, gravity);
 
@@ -227,7 +226,7 @@ BOOST_AUTO_TEST_CASE(PositiveForceTest)
 
   rbd::MultiBody mb;
   rbd::MultiBodyConfig mbc;
-  std::tie(mb, mbc) = makeZ12Arm();
+  std::tie(mb, mbc) = makeXYZ12Arm();
 
   pg::PGData pgdata(mb, gravity);
 

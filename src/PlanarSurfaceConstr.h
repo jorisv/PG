@@ -123,10 +123,8 @@ public:
     pgdata_->x(x);
     jac.setZero();
 
-    sva::PTransformd pos = surfaceFrame_*pgdata_->mbc().bodyPosW[bodyIndex_];
-    const Eigen::MatrixXd& mat = jac_.vectorBodyJacobian(pgdata_->multibody(),
-                                                         pgdata_->mbc(),
-                                                         pos.rotation().row(axis_));
+    const Eigen::MatrixXd& mat = jac_.vectorJacobian(pgdata_->multibody(),
+        pgdata_->mbc(), surfaceFrame_.rotation().row(axis_).transpose());
     dotCache_.noalias() = targetFrame_.rotation().row(axis_)*mat.block(3, 0, 3, mat.cols());
     jac_.fullJacobian(pgdata_->multibody(), dotCache_, dotCacheFull_);
     jac.block(0, 0, 1, pgdata_->mb().nrParams()).noalias() = dotCacheFull_;

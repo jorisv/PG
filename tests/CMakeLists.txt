@@ -9,7 +9,7 @@ SEARCH_FOR_BOOST()
 include_directories("${PROJECT_SOURCE_DIR}/src")
 include_directories(${Boost_INCLUDE_DIRS})
 
-set(HEADERS "Z12Arm.h")
+set(HEADERS Z12Arm.h XYZ12Arm.h)
 
 macro(addUnitTest name)
   add_executable(${name} ${name}.cpp ${HEADERS})
