@@ -33,7 +33,7 @@
 #include "StdCostFunc.h"
 #include "FixedContactConstr.h"
 #include "StaticStabilityConstr.h"
-//#include "PositiveForceConstr.h"
+#include "PositiveForceConstr.h"
 //#include "FrictionConeConstr.h"
 //#include "TorqueConstr.h"
 #include "PlanarSurfaceConstr.h"
@@ -380,11 +380,18 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
     }
 
     double initialForce = (pgdata_.gravity().norm()*robotMass)/pgdata_.nrForcePoints();
-    int pos = pgdata_.multibody().nrParams();
-    for(int i = 0; i < pgdata_.nrForcePoints(); ++i)
+    int pos = pgdata_.forceParamsBegin();
+    for(const PGData::ForceData& fd: pgdata_.forceDatas())
     {
-      (*problem.startingPoint())[pos + 2] = initialForce;
-      pos += 3;
+      for(std::size_t i = 0; i < fd.points.size(); ++i)
+      {
+        sva::PTransformd point = fd.points[i]*pgdata_.mbc().bodyPosW[fd.bodyIndex];
+        Eigen::Vector3d force(point.rotation().row(2).transpose()*initialForce);
+        (*problem.startingPoint())[pos + 0] = force(0);
+        (*problem.startingPoint())[pos + 1] = force(1);
+        (*problem.startingPoint())[pos + 2] = force(2);
+        pos += 3;
+      }
     }
   }
   else
