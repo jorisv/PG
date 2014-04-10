@@ -308,3 +308,29 @@ BOOST_AUTO_TEST_CASE(EnvCollisionTest)
     BOOST_CHECK_SMALL(checkGradient(ecc, x, 1e-4), 1e-1);
   }
 }
+
+
+BOOST_AUTO_TEST_CASE(SelfCollisionTest)
+{
+  using namespace Eigen;
+  namespace cst = boost::math::constants;
+
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeXYZ12Arm();
+
+  pg::PGData pgdata(mb, gravity);
+  SCD::S_Sphere hullBody1(0.2);
+  SCD::S_Sphere hullBody2(0.2);
+  pg::SelfCollision sc(12, &hullBody1, sva::PTransformd::Identity(),
+                       6, &hullBody2, sva::PTransformd::Identity(),
+                       0.1);
+
+  pg::SelfCollisionConstr scc(&pgdata, {sc});
+
+  for(int i = 0; i < 100; ++i)
+  {
+    Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize())*3.14);
+    BOOST_CHECK_SMALL(checkGradient(scc, x, 1e-4), 1e-1);
+  }
+}

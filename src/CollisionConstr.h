@@ -143,7 +143,7 @@ public:
       const Eigen::MatrixXd& jacMat = cd.jac.jacobian(pgdata_->mb(), pgdata_->mbc());
       cd.jacMat.noalias() = coef*dist3d.transpose()*jacMat.block(3, 0, 3, cd.jac.dof());
       cd.jac.fullJacobian(pgdata_->mb(), cd.jacMat, cd.jacMatFull);
-      jac.row(i) = cd.jacMatFull;
+      jac.row(i).noalias() = cd.jacMatFull;
       ++i;
     }
   }
@@ -171,8 +171,6 @@ private:
 
 
 
-/*
-template<typename Type>
 class SelfCollisionConstr : public roboptim::DifferentiableFunction
 {
 public:
@@ -180,16 +178,24 @@ public:
 
 public:
   SelfCollisionConstr(PGData* pgdata, const std::vector<SelfCollision>& cols)
-    : parent_t(pgdata->pbSize(), int(cols.size()), "EnvCollision")
+    : roboptim::DifferentiableFunction(pgdata->pbSize(), int(cols.size()), "EnvCollision")
     , pgdata_(pgdata)
   {
     cols_.reserve(cols.size());
     for(const SelfCollision& sc: cols)
     {
+      rbd::Jacobian jac1(pgdata_->mb(), sc.body1Id);
+      Eigen::MatrixXd jac1Mat(1, jac1.dof());
+      Eigen::MatrixXd jac1MatFull(1, pgdata_->mb().nrDof());
+
+      rbd::Jacobian jac2(pgdata_->mb(), sc.body2Id);
+      Eigen::MatrixXd jac2Mat(1, jac2.dof());
+      Eigen::MatrixXd jac2MatFull(1, pgdata_->mb().nrDof());
+
       cols_.push_back({pgdata_->multibody().bodyIndexById(sc.body1Id),
-                       sc.body1T,
+                       sc.body1T, jac1, jac1Mat, jac1MatFull,
                        pgdata_->multibody().bodyIndexById(sc.body2Id),
-                       sc.body2T,
+                       sc.body2T, jac2, jac2Mat, jac2MatFull,
                        new SCD::CD_Pair(sc.body1Hull, sc.body2Hull)});
     }
   }
@@ -203,25 +209,67 @@ public:
   }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& x) const
+  void impl_compute(result_t& res, const argument_t& x) const throw()
   {
-    const FK<scalar_t>& fk = pgdata_->fk();
+    pgdata_->x(x);
     int i = 0;
     for(const CollisionData& cd: cols_)
     {
-      const sva::PTransform<scalar_t>& obj1Pos = fk.bodyPosW()[cd.body1Index];
-      const sva::PTransform<scalar_t>& obj2Pos = fk.bodyPosW()[cd.body2Index];
-      sva::PTransformd obj1Posd(toValue(obj1Pos.rotation()), toValue(obj1Pos.translation()));
-      sva::PTransformd obj2Posd(toValue(obj2Pos.rotation()), toValue(obj2Pos.translation()));
+      sva::PTransformd X_0_b1(pgdata_->mbc().bodyPosW[cd.body1Index]);
+      sva::PTransformd X_0_b2(pgdata_->mbc().bodyPosW[cd.body2Index]);
 
-      cd.pair->operator[](0)->setTransformation(toSCD(cd.body1T*obj1Posd));
-      cd.pair->operator[](1)->setTransformation(toSCD(cd.body2T*obj2Posd));
+      cd.pair->operator[](0)->setTransformation(toSCD(cd.body1T*X_0_b1));
+      cd.pair->operator[](1)->setTransformation(toSCD(cd.body2T*X_0_b2));
 
-      res(i) = computeDist(cd.pair,
-                           obj1Pos, obj2Pos,
-                           obj1Posd, obj2Posd);
+      res(i) = distance(cd.pair);
       ++i;
     }
+  }
+
+
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+  {
+    pgdata_->x(x);
+    jac.setZero();
+
+    int i = 0;
+    for(CollisionData& cd: cols_)
+    {
+      sva::PTransformd X_0_b1(pgdata_->mbc().bodyPosW[cd.body1Index]);
+      sva::PTransformd X_0_b2(pgdata_->mbc().bodyPosW[cd.body2Index]);
+
+      cd.pair->operator[](0)->setTransformation(toSCD(cd.body1T*X_0_b1));
+      cd.pair->operator[](1)->setTransformation(toSCD(cd.body2T*X_0_b2));
+
+      double dist;
+      Eigen::Vector3d T_0_p1, T_0_p2;
+      std::tie(dist, T_0_p1, T_0_p2) = closestPoints(cd.pair);
+
+      Eigen::Vector3d dist3d(T_0_p1 - T_0_p2);
+      Eigen::Vector3d T_b_p1(X_0_b1.rotation()*(T_0_p1 - X_0_b1.translation()));
+      Eigen::Vector3d T_b_p2(X_0_b2.rotation()*(T_0_p2 - X_0_b2.translation()));
+
+      cd.jac1.point(T_b_p1);
+      cd.jac2.point(T_b_p2);
+
+      double coef = std::copysign(2., dist);
+      const Eigen::MatrixXd& jac1Mat = cd.jac1.jacobian(pgdata_->mb(), pgdata_->mbc());
+      const Eigen::MatrixXd& jac2Mat = cd.jac2.jacobian(pgdata_->mb(), pgdata_->mbc());
+
+      cd.jac1Mat.noalias() = coef*dist3d.transpose()*jac1Mat.block(3, 0, 3, cd.jac1.dof());
+      cd.jac2Mat.noalias() = coef*dist3d.transpose()*jac2Mat.block(3, 0, 3, cd.jac2.dof());
+
+      cd.jac1.fullJacobian(pgdata_->mb(), cd.jac1Mat, cd.jac1MatFull);
+      cd.jac2.fullJacobian(pgdata_->mb(), cd.jac2Mat, cd.jac2MatFull);
+      jac.row(i).noalias() = cd.jac1MatFull - cd.jac2MatFull;
+      ++i;
+    }
+  }
+
+  void impl_gradient(gradient_t& /* gradient */,
+      const argument_t& /* x */, size_type /* functionId */) const throw()
+  {
+    throw std::runtime_error("NEVER GO HERE");
   }
 
 private:
@@ -229,16 +277,19 @@ private:
   {
     int body1Index;
     sva::PTransformd body1T;
+    rbd::Jacobian jac1;
+    Eigen::MatrixXd jac1Mat, jac1MatFull;
     int body2Index;
     sva::PTransformd body2T;
+    rbd::Jacobian jac2;
+    Eigen::MatrixXd jac2Mat, jac2MatFull;
     SCD::CD_Pair* pair;
   };
 
 private:
-  PGData<Type>* pgdata_;
-  std::vector<CollisionData> cols_;
+  PGData* pgdata_;
+  mutable std::vector<CollisionData> cols_;
 };
-*/
 
 } // namespace pg
 
