@@ -38,7 +38,7 @@
 //#include "TorqueConstr.h"
 #include "PlanarSurfaceConstr.h"
 //#include "EllipseContactConstr.h"
-//#include "CollisionConstr.h"
+#include "CollisionConstr.h"
 #include "IterationCallback.h"
 
 namespace pg
@@ -533,7 +533,6 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
     problem.addConstraint(frictionCone, limFriction, scalFriction);
   }
 
-  /*
   if(!envCollisions_.empty())
   {
     boost::shared_ptr<EnvCollisionConstr> ec(
@@ -547,6 +546,7 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
     problem.addConstraint(ec, limCol, scalCol);
   }
 
+  /*
   if(!selfCollisions_.empty())
   {
     boost::shared_ptr<SelfCollisionConstr> sc(

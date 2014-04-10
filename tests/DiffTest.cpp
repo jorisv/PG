@@ -26,6 +26,9 @@
 // roboptim
 #include <roboptim/core/finite-difference-gradient.hh>
 
+// SCD
+#include <SCD/S_Object/S_Sphere.h>
+
 // PG
 #include "ConfigStruct.h"
 #include "PGData.h"
@@ -34,6 +37,7 @@
 #include "StaticStabilityConstr.h"
 #include "PositiveForceConstr.h"
 #include "FrictionConeConstr.h"
+#include "CollisionConstr.h"
 
 // Arm
 #include "XYZ12Arm.h"
@@ -42,15 +46,16 @@ const Eigen::Vector3d gravity(0., 9.81, 0.);
 
 template <typename T>
 double checkGradient(
- const roboptim::GenericDifferentiableFunction<T>& function,
- const typename roboptim::GenericDifferentiableFunction<T>::vector_t& x)
+  const roboptim::GenericDifferentiableFunction<T>& function,
+  const typename roboptim::GenericDifferentiableFunction<T>::vector_t& x,
+  double epsilon=1e-8)
 {
   Eigen::MatrixXd jac(std::get<0>(function.jacobianSize()),
                       std::get<1>(function.jacobianSize()));
   Eigen::MatrixXd jacF(std::get<0>(function.jacobianSize()),
                        std::get<1>(function.jacobianSize()));
 
-  roboptim::GenericFiniteDifferenceGradient<T> fdfunction(function);
+  roboptim::GenericFiniteDifferenceGradient<T> fdfunction(function, epsilon);
   function.jacobian(jac, x);
   fdfunction.jacobian(jacF, x);
 
@@ -275,5 +280,31 @@ BOOST_AUTO_TEST_CASE(FrictionConeTest)
   {
     Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize()));
     BOOST_CHECK_SMALL(checkGradient(fc, x), 1e-4);
+  }
+}
+
+
+BOOST_AUTO_TEST_CASE(EnvCollisionTest)
+{
+  using namespace Eigen;
+  namespace cst = boost::math::constants;
+
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeXYZ12Arm();
+
+  pg::PGData pgdata(mb, gravity);
+  SCD::S_Sphere hullBody(0.5);
+  SCD::S_Sphere hullEnv(0.5);
+  hullEnv.setTransformation(pg::toSCD(sva::PTransformd::Identity()));
+  pg::EnvCollision ec(12, &hullBody, sva::PTransformd::Identity(),
+                      &hullEnv, 0.1);
+
+  pg::EnvCollisionConstr ecc(&pgdata, {ec});
+
+  for(int i = 0; i < 100; ++i)
+  {
+    Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize())*3.14);
+    BOOST_CHECK_SMALL(checkGradient(ecc, x, 1e-4), 1e-1);
   }
 }

@@ -20,7 +20,6 @@
 #include <SCD/CD/CD_Pair.h>
 
 // PG
-#include "AutoDiffFunction.h"
 #include "ConfigStruct.h"
 #include "PGData.h"
 
@@ -50,50 +49,49 @@ SCD::Matrix4x4 toSCD(const sva::PTransformd& t)
 }
 
 
-template<typename T>
-T computeDist(SCD::CD_Pair* pair,
-              sva::PTransform<T> obj1, sva::PTransform<T> obj2,
-              sva::PTransformd obj1d, sva::PTransformd obj2d)
+// return the pair signed squared distance
+double distance(SCD::CD_Pair* pair)
+{
+  return pair->getDistance();
+}
+
+
+// return the pair signed squared distance and the closest point position in world frame
+std::tuple<double, Eigen::Vector3d, Eigen::Vector3d>
+closestPoints(SCD::CD_Pair* pair)
 {
   using namespace Eigen;
 
   SCD::Point3 pb1Tmp, pb2Tmp;
   double dist = pair->getClosestPoints(pb1Tmp, pb2Tmp);
-  double sign = dist >= 0. ? 1.: -1.;
 
-  sva::PTransformd pb1World(Vector3d(pb1Tmp[0], pb1Tmp[1], pb1Tmp[2]));
-  sva::PTransformd pb2World(Vector3d(pb2Tmp[0], pb2Tmp[1], pb2Tmp[2]));
+  Vector3d T_0_p1(pb1Tmp[0], pb1Tmp[1], pb1Tmp[2]);
+  Vector3d T_0_p2(pb2Tmp[0], pb2Tmp[1], pb2Tmp[2]);
 
-  Vector3d pb1Local = (pb1World*obj1d.inv()).translation();
-  Vector3d pb2Local = (pb2World*obj2d.inv()).translation();
-
-  Vector3<T> pb1((sva::PTransform<T>(Vector3<T>(pb1Local.cast<T>()))*obj1).translation());
-  Vector3<T> pb2((sva::PTransform<T>(Vector3<T>(pb2Local.cast<T>()))*obj2).translation());
-
-  return sign*(pb2 - pb1).norm();
+  return std::make_tuple(dist, T_0_p1, T_0_p2);
 }
 
 
 
-template<typename Type>
-class EnvCollisionConstr : public AutoDiffFunction<Type, Eigen::Dynamic>
+class EnvCollisionConstr : public roboptim::DifferentiableFunction
 {
 public:
-  typedef AutoDiffFunction<Type, Eigen::Dynamic> parent_t;
-  typedef typename parent_t::scalar_t scalar_t;
-  typedef typename parent_t::result_ad_t result_ad_t;
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  EnvCollisionConstr(PGData<Type>* pgdata, const std::vector<EnvCollision>& cols)
-    : parent_t(pgdata, pgdata->pbSize(), int(cols.size()), "EnvCollision")
+  EnvCollisionConstr(PGData* pgdata, const std::vector<EnvCollision>& cols)
+    : roboptim::DifferentiableFunction(pgdata->pbSize(), int(cols.size()), "EnvCollision")
     , pgdata_(pgdata)
   {
     cols_.reserve(cols.size());
     for(const EnvCollision& sc: cols)
     {
+      rbd::Jacobian jac(pgdata_->mb(), sc.bodyId);
+      Eigen::MatrixXd jacMat(1, jac.dof());
+      Eigen::MatrixXd jacMatFull(1, pgdata_->mb().nrDof());
       cols_.push_back({pgdata_->multibody().bodyIndexById(sc.bodyId),
-                       sc.bodyT, new SCD::CD_Pair(sc.bodyHull, sc.envHull)});
+                       sc.bodyT, new SCD::CD_Pair(sc.bodyHull, sc.envHull),
+                       jac, jacMat, jacMatFull});
     }
   }
   ~EnvCollisionConstr() throw()
@@ -106,22 +104,54 @@ public:
   }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
+  void impl_compute(result_t& res, const argument_t& x) const throw()
   {
-    const FK<scalar_t>& fk = pgdata_->fk();
+    pgdata_->x(x);
     int i = 0;
     for(const CollisionData& cd: cols_)
     {
-      const sva::PTransform<scalar_t>& objPos = fk.bodyPosW()[cd.bodyIndex];
-      sva::PTransformd objPosd(toValue(objPos.rotation()), toValue(objPos.translation()));
+      sva::PTransformd X_0_b(pgdata_->mbc().bodyPosW[cd.bodyIndex]);
 
-      cd.pair->operator[](0)->setTransformation(toSCD(cd.bodyT*objPosd));
+      cd.pair->operator[](0)->setTransformation(toSCD(cd.bodyT*X_0_b));
 
-      res(i) = computeDist(cd.pair,
-                           objPos, sva::PTransform<scalar_t>::Identity(),
-                           objPosd, sva::PTransformd::Identity());
+      res(i) = distance(cd.pair);
       ++i;
     }
+  }
+
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+  {
+    pgdata_->x(x);
+    jac.setZero();
+
+    int i = 0;
+    for(CollisionData& cd: cols_)
+    {
+      sva::PTransformd X_0_b(pgdata_->mbc().bodyPosW[cd.bodyIndex]);
+
+      cd.pair->operator[](0)->setTransformation(toSCD(cd.bodyT*X_0_b));
+
+      double dist;
+      Eigen::Vector3d T_0_p, pEnv;
+      std::tie(dist, T_0_p, pEnv) = closestPoints(cd.pair);
+
+      Eigen::Vector3d dist3d(T_0_p - pEnv);
+      Eigen::Vector3d T_b_p(X_0_b.rotation()*(T_0_p - X_0_b.translation()));
+      cd.jac.point(T_b_p);
+
+      double coef = std::copysign(2., dist);
+      const Eigen::MatrixXd& jacMat = cd.jac.jacobian(pgdata_->mb(), pgdata_->mbc());
+      cd.jacMat.noalias() = coef*dist3d.transpose()*jacMat.block(3, 0, 3, cd.jac.dof());
+      cd.jac.fullJacobian(pgdata_->mb(), cd.jacMat, cd.jacMatFull);
+      jac.row(i) = cd.jacMatFull;
+      ++i;
+    }
+  }
+
+  void impl_gradient(gradient_t& /* gradient */,
+      const argument_t& /* x */, size_type /* functionId */) const throw()
+  {
+    throw std::runtime_error("NEVER GO HERE");
   }
 
 private:
@@ -130,27 +160,27 @@ private:
     int bodyIndex;
     sva::PTransformd bodyT;
     SCD::CD_Pair* pair;
+    rbd::Jacobian jac;
+    Eigen::MatrixXd jacMat, jacMatFull;
   };
 
 private:
-  PGData<Type>* pgdata_;
-  std::vector<CollisionData> cols_;
+  PGData* pgdata_;
+  mutable std::vector<CollisionData> cols_;
 };
 
 
 
+/*
 template<typename Type>
-class SelfCollisionConstr : public AutoDiffFunction<Type, Eigen::Dynamic>
+class SelfCollisionConstr : public roboptim::DifferentiableFunction
 {
 public:
-  typedef AutoDiffFunction<Type, Eigen::Dynamic> parent_t;
-  typedef typename parent_t::scalar_t scalar_t;
-  typedef typename parent_t::result_ad_t result_ad_t;
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  SelfCollisionConstr(PGData<Type>* pgdata, const std::vector<SelfCollision>& cols)
-    : parent_t(pgdata, pgdata->pbSize(), int(cols.size()), "EnvCollision")
+  SelfCollisionConstr(PGData* pgdata, const std::vector<SelfCollision>& cols)
+    : parent_t(pgdata->pbSize(), int(cols.size()), "EnvCollision")
     , pgdata_(pgdata)
   {
     cols_.reserve(cols.size());
@@ -173,7 +203,7 @@ public:
   }
 
 
-  void impl_compute(result_ad_t& res, const argument_t& /* x */) const
+  void impl_compute(result_ad_t& res, const argument_t& x) const
   {
     const FK<scalar_t>& fk = pgdata_->fk();
     int i = 0;
@@ -208,6 +238,7 @@ private:
   PGData<Type>* pgdata_;
   std::vector<CollisionData> cols_;
 };
+*/
 
 } // namespace pg
 

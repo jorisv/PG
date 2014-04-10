@@ -31,8 +31,8 @@
 #include "PlanarSurfaceConstr.h"
 /*
 #include "TorqueConstr.h"
-#include "CollisionConstr.h"
 */
+#include "CollisionConstr.h"
 #include "IterationCallback.h"
 /*
 #include "EllipseContactConstr.h"
