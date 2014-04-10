@@ -25,11 +25,11 @@
 */
 #include "StdCostFunc.h"
 #include "FixedContactConstr.h"
-/*
 #include "StaticStabilityConstr.h"
 #include "PositiveForceConstr.h"
 #include "FrictionConeConstr.h"
 #include "PlanarSurfaceConstr.h"
+/*
 #include "TorqueConstr.h"
 #include "CollisionConstr.h"
 */

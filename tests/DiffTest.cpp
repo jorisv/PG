@@ -33,6 +33,7 @@
 #include "PlanarSurfaceConstr.h"
 #include "StaticStabilityConstr.h"
 #include "PositiveForceConstr.h"
+#include "FrictionConeConstr.h"
 
 // Arm
 #include "XYZ12Arm.h"
@@ -245,5 +246,34 @@ BOOST_AUTO_TEST_CASE(PositiveForceTest)
   {
     Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize()));
     BOOST_CHECK_SMALL(checkGradient(ss, x), 1e-4);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(FrictionConeTest)
+{
+  using namespace Eigen;
+  namespace cst = boost::math::constants;
+
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeXYZ12Arm();
+
+  pg::PGData pgdata(mb, gravity);
+
+  sva::PTransformd bodySurface(sva::RotZ(-cst::pi<double>()/2.), Eigen::Vector3d(0., 1., 0.));
+  std::vector<Vector2d> surfPoints = {{0.1, 0.1}, {-0.1, 0.1}, {-0.1, -0.1}, {0.1, -0.1}};
+  std::vector<sva::PTransformd> points(surfPoints.size());
+  for(std::size_t i = 0; i < points.size(); ++i)
+  {
+    points[i] = sva::PTransformd(Vector3d(surfPoints[i][0], surfPoints[i][1], 0.))*bodySurface;
+  }
+  pgdata.forces({pg::ForceContact{12, points, 0.7}, pg::ForceContact{0, points, 0.7}});
+
+  pg::FrictionConeConstr fc(&pgdata);
+
+  for(int i = 0; i < 100; ++i)
+  {
+    Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize()));
+    BOOST_CHECK_SMALL(checkGradient(fc, x), 1e-4);
   }
 }

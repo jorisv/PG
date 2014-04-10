@@ -34,7 +34,7 @@
 #include "FixedContactConstr.h"
 #include "StaticStabilityConstr.h"
 #include "PositiveForceConstr.h"
-//#include "FrictionConeConstr.h"
+#include "FrictionConeConstr.h"
 //#include "TorqueConstr.h"
 #include "PlanarSurfaceConstr.h"
 //#include "EllipseContactConstr.h"
@@ -535,16 +535,6 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
           pgdata_.nrForcePoints(), {0., std::numeric_limits<double>::infinity()});
     typename solver_t::problem_t::scales_t scalPositive(pgdata_.nrForcePoints(), 1.);
     problem.addConstraint(positiveForce, limPositive, scalPositive);
-    /*
-    // * constraint seem to converge more quickly than variable bound.
-    // * maybe scale fault ?
-    // int pos = pgdata_.multibody().nrParams();
-    // for(int i = 0; i < pgdata_.nrForcePoints(); ++i)
-    // {
-    //  double inf = std::numeric_limits<double>::infinity();
-    //  problem.argumentBounds()[pos + 2] = {0., inf};
-    //  pos += 3;
-    // }
 
     boost::shared_ptr<FrictionConeConstr> frictionCone(
         new FrictionConeConstr(&pgdata_));
@@ -552,7 +542,6 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
           pgdata_.nrForcePoints(), {-std::numeric_limits<double>::infinity(), 0.});
     typename solver_t::problem_t::scales_t scalFriction(pgdata_.nrForcePoints(), 1.);
     problem.addConstraint(frictionCone, limFriction, scalFriction);
-    */
   }
 
   /*
