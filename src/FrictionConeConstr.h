@@ -62,8 +62,8 @@ public:
       {
         sva::PTransformd X_0_pi = fd.points[i]*X_0_b;
         Eigen::Vector3d fBody(X_0_pi.rotation()*fd.forces[i].force());
-        res(index) = -fBody.z()*fd.mu +
-            std::sqrt(std::pow(fBody.x(), 2) + std::pow(fBody.y(), 2));
+        res(index) = -std::pow(fBody.z()*fd.mu, 2) +
+            std::pow(fBody.x(), 2) + std::pow(fBody.y(), 2);
         ++index;
       }
     }
@@ -79,6 +79,7 @@ public:
     for(const PGData::ForceData& fd: pgdata_->forceDatas())
     {
       const sva::PTransformd& X_0_b = pgdata_->mbc().bodyPosW[fd.bodyIndex];
+      double muSquare = std::pow(fd.mu, 2);
       for(std::size_t i = 0; i < fd.points.size(); ++i)
       {
         sva::PTransformd X_0_pi = fd.points[i]*X_0_b;
@@ -86,13 +87,14 @@ public:
 
         // Z axis
         //                dq
-        // -mu*forceB.z() => -mu*forceW*jacZ
+        // -(mu*forceB.z())^2 => -2*mu^2*forceB.z()*forceW*jacZ
         const Eigen::MatrixXd& jacPointVecZMat =
             jacPoints_[index].vectorJacobian(pgdata_->mb(),
                                              pgdata_->mbc(),
                                              fd.points[i].rotation().row(2).transpose())\
             .block(3, 0, 3, jacPoints_[index].dof());
-        jacPointsMatTmp_[index].row(0).noalias() = -fd.mu*fd.forces[i].force().transpose()*jacPointVecZMat;
+        jacPointsMatTmp_[index].row(0).noalias() =
+            (-2.*muSquare*fBody.z())*(fd.forces[i].force().transpose()*jacPointVecZMat);
         jacPoints_[index].fullJacobian(pgdata_->mb(), jacPointsMatTmp_[index], jacPointMatFull_);
         jac.block(index, 0, 1, pgdata_->mb().nrParams()).noalias() = jacPointMatFull_;
 
@@ -103,23 +105,13 @@ public:
         // Y axis
         //               dq
         // forceB.y()**2 => 2*forceB.y()*forceW*jacY
-        //
-        // sqrt(forceB.x()**2 + forceB.y()**2)
-        // dq =>
-        // d forceB.x()**2   d forceB.y()**2
-        // --------------- + ---------------
-        //     dq                dq
-        // ---------------------------------
-        // 2*sqrt(forceB.x()**2 + forceB.y()**2)
-
-        double xyNorm = std::sqrt(std::pow(fBody.x(), 2) + std::pow(fBody.y(), 2));
         const Eigen::MatrixXd& jacPointVecXMat =
             jacPoints_[index].vectorJacobian(pgdata_->mb(),
                                              pgdata_->mbc(),
                                              fd.points[i].rotation().row(0).transpose())\
             .block(3, 0, 3, jacPoints_[index].dof());
         jacPointsMatTmp_[index].noalias() =
-            (fBody.x()/xyNorm)*fd.forces[i].force().transpose()*jacPointVecXMat;
+            (2.*fBody.x())*(fd.forces[i].force().transpose()*jacPointVecXMat);
 
         const Eigen::MatrixXd& jacPointVecYMat =
             jacPoints_[index].vectorJacobian(pgdata_->mb(),
@@ -127,16 +119,16 @@ public:
                                              fd.points[i].rotation().row(1).transpose())\
             .block(3, 0, 3, jacPoints_[index].dof());
         jacPointsMatTmp_[index].noalias() +=
-            (fBody.y()/xyNorm)*fd.forces[i].force().transpose()*jacPointVecYMat;
+            (2.*fBody.y())*(fd.forces[i].force().transpose()*jacPointVecYMat);
 
         jacPoints_[index].fullJacobian(pgdata_->mb(), jacPointsMatTmp_[index], jacPointMatFull_);
         jac.block(index, 0, 1, pgdata_->mb().nrParams()).noalias() += jacPointMatFull_;
 
         // Z axis
         //                dforceW
-        // -mu*forceB.z() => -mu*X_0_pi_rowZ
+        // -(mu*forceB.z())^2 => -2*mu^2*forceB.z()*X_0_pi_rowZ
         jac.block<1,3>(index, pgdata_->forceParamsBegin() + index*3).noalias() =
-            -X_0_pi.rotation().row(2)*fd.mu;
+            (-2.*muSquare*fBody.z())*X_0_pi.rotation().row(2);
 
         // X axis
         //               dforceW
@@ -145,18 +137,10 @@ public:
         // Y axis
         //               dforceW
         // forceB.y()**2 => 2*forceB.y()*X_0_pi_rowY
-        //
-        // sqrt(forceB.x()**2 + forceB.y()**2)
-        // dforceW =>
-        // d forceB.x()**2   d forceB.y()**2
-        // --------------- + ---------------
-        //     dforceW                dforceW
-        // ---------------------------------
-        // 2*sqrt(forceB.x()**2 + forceB.y()**2)
         jac.block<1,3>(index, pgdata_->forceParamsBegin() + index*3).noalias() +=
-            (fBody.x()/xyNorm)*X_0_pi.rotation().row(0);
+            (2.*fBody.x())*X_0_pi.rotation().row(0);
         jac.block<1,3>(index, pgdata_->forceParamsBegin() + index*3).noalias() +=
-            (fBody.y()/xyNorm)*X_0_pi.rotation().row(1);
+            (2.*fBody.y())*X_0_pi.rotation().row(1);
 
         ++index;
       }
