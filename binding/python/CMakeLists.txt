@@ -23,6 +23,7 @@ include_directories(../../src)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 add_library(_pg SHARED ${SOURCES})
+target_link_libraries(_pg PG)
 PKG_CONFIG_USE_DEPENDENCY(_pg scd)
 PKG_CONFIG_USE_DEPENDENCY(_pg SpaceVecAlg)
 PKG_CONFIG_USE_DEPENDENCY(_pg RBDyn)

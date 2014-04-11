@@ -1,8 +1,12 @@
 INCLUDE_DIRECTORIES(BEFORE ${Boost_INCLUDE_DIR})
 
-set(SOURCES lib.cpp)
-set(HEADERS FK.h ID.h
-            PGData.h EigenAutoDiffScalar.h AutoDiffFunction.h
+set(SOURCES PGData.cpp
+            StdCostFunc.cpp
+            FixedContactConstr.cpp StaticStabilityConstr.cpp
+            PositiveForceConstr.cpp FrictionConeConstr.cpp
+            PlanarSurfaceConstr.cpp CollisionConstr.cpp
+            PostureGenerator.cpp)
+set(HEADERS PGData.h
             ConfigStruct.h
             StdCostFunc.h
             FixedContactConstr.h StaticStabilityConstr.h
@@ -12,18 +16,13 @@ set(HEADERS FK.h ID.h
             IterationCallback.h
             PostureGenerator.h)
 
-# !!! PG is an empty library !!!
-# !!! Its aim is to test header file and have an IDE integration !!!
-# !!! Don't link against it !!!
 add_library(PG SHARED ${SOURCES} ${HEADERS})
-
-
 PKG_CONFIG_USE_DEPENDENCY(PG scd)
 PKG_CONFIG_USE_DEPENDENCY(PG SpaceVecAlg)
 PKG_CONFIG_USE_DEPENDENCY(PG RBDyn)
 PKG_CONFIG_USE_DEPENDENCY(PG roboptim-core)
 
-
 set(INSTALL_PATH include/PG)
 install(FILES ${HEADERS} DESTINATION ${INSTALL_PATH})
+install(TARGETS PG DESTINATION "lib")
 

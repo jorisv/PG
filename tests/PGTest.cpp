@@ -29,18 +29,14 @@
 // SCD
 #include <SCD/S_Object/S_Sphere.h>
 
-#include "EigenAutoDiffScalar.h"
 // RBDyn
 #include <RBDyn/FK.h>
 #include <RBDyn/FV.h>
 #include <RBDyn/ID.h>
 
 // PG
-/*
-#include "FK.h"
-#include "ID.h"
-*/
 #include "PostureGenerator.h"
+#include "CollisionConstr.h" // toSCD
 #include "PGData.h"
 
 

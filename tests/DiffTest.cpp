@@ -346,39 +346,39 @@ BOOST_AUTO_TEST_CASE(StdCostFunctionTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-	pg::PGData pgdata(mb, gravity);
-	Vector3d target(1.5, 0., 0.);
-	Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
-	int id = 12;
-	Matrix3d frame(sva::RotX(-cst::pi<double>()/2.));
-	Matrix3d frameEnd(sva::RotX(cst::pi<double>()/2.));
-	std::vector<pg::ForceContact> forceContacts =
-		{{0 , {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
-					 sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.},
-		 {id, {sva::PTransformd(frameEnd, Vector3d(0.01, 0., 0.)),
-			sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}};
-	pgdata.forces(forceContacts);
+  pg::PGData pgdata(mb, gravity);
+  Vector3d target(1.5, 0., 0.);
+  Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
+  int id = 12;
+  Matrix3d frame(sva::RotX(-cst::pi<double>()/2.));
+  Matrix3d frameEnd(sva::RotX(cst::pi<double>()/2.));
+  std::vector<pg::ForceContact> forceContacts =
+    {{0 , {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
+           sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.},
+     {id, {sva::PTransformd(frameEnd, Vector3d(0.01, 0., 0.)),
+      sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}};
+  pgdata.forces(forceContacts);
 
-	std::vector<std::vector<double>> tq(mbc.q);
-	for(int i = 1; i < mb.nrJoints(); ++i)
-	{
-		tq[i] = {0.33*i};
-	}
+  std::vector<std::vector<double>> tq(mbc.q);
+  for(int i = 1; i < mb.nrJoints(); ++i)
+  {
+    tq[i] = {0.33*i};
+  }
 
-	/*
-	std::vector<pg::BodyPositionTarget> bodiesPos = {{12, target, 3.45}};
-	std::vector<pg::BodyOrientationTarget> bodiesOri = {{12, oriTarget, 5.66}};
-	std::vector<pg::ForceContactMinimization> forceMin = {{12, 8.87}};
+  /*
+  std::vector<pg::BodyPositionTarget> bodiesPos = {{12, target, 3.45}};
+  std::vector<pg::BodyOrientationTarget> bodiesOri = {{12, oriTarget, 5.66}};
+  std::vector<pg::ForceContactMinimization> forceMin = {{12, 8.87}};
 
-	pg::StdCostFunc cost(&pgdata, tq, 1.44, 0., 2.33, 0., bodiesPos, bodiesOri,
-											 forceContacts, forceMin);
-											 */
-	std::vector<pg::BodyPositionTarget> bodiesPos = {{12, target, 3.45}};
-	std::vector<pg::BodyOrientationTarget> bodiesOri = {{12, oriTarget, 5.06}};
-	std::vector<pg::ForceContactMinimization> forceMin = {{12, 1.87}};
+  pg::StdCostFunc cost(&pgdata, tq, 1.44, 0., 2.33, 0., bodiesPos, bodiesOri,
+                       forceContacts, forceMin);
+                       */
+  std::vector<pg::BodyPositionTarget> bodiesPos = {{12, target, 3.45}};
+  std::vector<pg::BodyOrientationTarget> bodiesOri = {{12, oriTarget, 5.06}};
+  std::vector<pg::ForceContactMinimization> forceMin = {{12, 1.87}};
 
-	pg::StdCostFunc cost(&pgdata, tq, 1.44, 0., 2.33, 0., bodiesPos, bodiesOri,
-											 forceContacts, forceMin);
+  pg::StdCostFunc cost(&pgdata, tq, 1.44, 0., 2.33, 0., bodiesPos, bodiesOri,
+                       forceContacts, forceMin);
 
 
   for(int i = 0; i < 100; ++i)

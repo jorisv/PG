@@ -16,11 +16,16 @@
 #pragma once
 
 // include
-// PG
-#include "PGData.h"
+// roboptim
+#include <roboptim/core.hh>
+
+// RBDyn
+#include <RBDyn/Jacobian.h>
+
 
 namespace pg
 {
+class PGData;
 
 class PositiveForceConstr : public roboptim::DifferentiableFunction
 {
@@ -28,75 +33,11 @@ public:
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  PositiveForceConstr(PGData* pgdata)
-    : roboptim::DifferentiableFunction(pgdata->pbSize(), pgdata->nrForcePoints(), "PositiveForce")
-    , pgdata_(pgdata)
-    , jacPoints_(pgdata->nrForcePoints())
-    , jacPointsMatTmp_(pgdata->nrForcePoints())
-    , jacPointMatFull_(1, pgdata->mb().nrParams())
-  {
-    std::size_t index = 0;
-    for(const PGData::ForceData& fd: pgdata_->forceDatas())
-    {
-      for(std::size_t i = 0; i < fd.forces.size(); ++i)
-      {
-        jacPoints_[index] = rbd::Jacobian(pgdata_->mb(), fd.bodyId, fd.points[i].translation());
-        jacPointsMatTmp_[index].resize(1, jacPoints_[index].dof());
-        ++index;
-      }
-    }
-  }
-  ~PositiveForceConstr() throw()
-  { }
+  PositiveForceConstr(PGData* pgdata);
+  ~PositiveForceConstr() throw();
 
-
-  void impl_compute(result_t& res, const argument_t& x) const throw()
-  {
-    pgdata_->x(x);
-
-    int index = 0;
-    for(const PGData::ForceData& fd: pgdata_->forceDatas())
-    {
-      const sva::PTransformd& X_0_b = pgdata_->mbc().bodyPosW[fd.bodyIndex];
-      for(std::size_t i = 0; i < fd.points.size(); ++i)
-      {
-        sva::PTransformd X_0_pi = fd.points[i]*X_0_b;
-        res(index) = X_0_pi.rotation().row(2).dot(fd.forces[i].force());
-        ++index;
-      }
-    }
-  }
-
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
-  {
-    pgdata_->x(x);
-    jac.setZero();
-
-    int index = 0;
-    for(const PGData::ForceData& fd: pgdata_->forceDatas())
-    {
-      const sva::PTransformd& X_0_b = pgdata_->mbc().bodyPosW[fd.bodyIndex];
-      for(std::size_t i = 0; i < fd.points.size(); ++i)
-      {
-        sva::PTransformd X_0_pi = fd.points[i]*X_0_b;
-        const Eigen::MatrixXd& jacPointMat =
-            jacPoints_[index].vectorJacobian(pgdata_->mb(),
-                                             pgdata_->mbc(),
-                                             fd.points[i].rotation().row(2).transpose())\
-            .block(3, 0, 3, jacPoints_[index].dof());
-        jacPointsMatTmp_[index].noalias() = fd.forces[i].force().transpose()*jacPointMat;
-        jacPoints_[index].fullJacobian(pgdata_->mb(), jacPointsMatTmp_[index], jacPointMatFull_);
-        jac.block(index, 0, 1, pgdata_->mb().nrParams()).noalias() = jacPointMatFull_;
-
-
-        jac.block<1,3>(index, pgdata_->forceParamsBegin() + index*3).noalias() =
-            X_0_pi.rotation().row(2);
-
-        ++index;
-      }
-    }
-  }
-
+  void impl_compute(result_t& res, const argument_t& x) const throw();
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw();
   void impl_gradient(gradient_t& /* gradient */,
       const argument_t& /* x */, size_type /* functionId */) const throw()
   {

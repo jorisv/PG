@@ -13,7 +13,7 @@ set(HEADERS Z12Arm.h XYZ12Arm.h)
 
 macro(addUnitTest name)
   add_executable(${name} ${name}.cpp ${HEADERS})
-  target_link_libraries(${name} ${Boost_LIBRARIES})
+  target_link_libraries(${name} ${Boost_LIBRARIES} PG)
   PKG_CONFIG_USE_DEPENDENCY(${name} scd)
   PKG_CONFIG_USE_DEPENDENCY(${name} SpaceVecAlg)
   PKG_CONFIG_USE_DEPENDENCY(${name} RBDyn)

@@ -19,6 +19,9 @@
 // std
 #include <vector>
 
+// boost
+#include <boost/math/constants/constants.hpp>
+
 // Eigen
 #include <Eigen/Core>
 
