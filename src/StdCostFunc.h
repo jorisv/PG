@@ -66,7 +66,7 @@ public:
 
     for(std::size_t i = 0; i < bodyOriTargets_.size(); ++i)
     {
-      rbd::Jacobian jac(pgdata->mb(), bodyPosTargets[i].bodyId);
+      rbd::Jacobian jac(pgdata->mb(), bodyOriTargets[i].bodyId);
       Eigen::MatrixXd jacMat(1, jac.dof());
       Eigen::MatrixXd jacMatFull(1, pgdata->mb().nrDof());
       bodyOriTargets_[i] = {pgdata->multibody().bodyIndexById(bodyOriTargets[i].bodyId),
