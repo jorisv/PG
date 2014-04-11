@@ -53,54 +53,64 @@ public:
     , bodyOriTargets_(bodyOriTargets.size())
     , forceContactsMin_()
   {
-    /*
     for(std::size_t i = 0; i < bodyPosTargets_.size(); ++i)
     {
+      rbd::Jacobian jac(pgdata->mb(), bodyPosTargets[i].bodyId);
+      Eigen::MatrixXd jacMat(1, jac.dof());
+      Eigen::MatrixXd jacMatFull(1, pgdata->mb().nrDof());
       bodyPosTargets_[i] = {pgdata->multibody().bodyIndexById(bodyPosTargets[i].bodyId),
-                            bodyPosTargets[i].target.cast<scalar_t>(),
-                            bodyPosTargets[i].scale};
+                            bodyPosTargets[i].target,
+                            bodyPosTargets[i].scale,
+                            jac, jacMat, jacMatFull};
     }
 
     for(std::size_t i = 0; i < bodyOriTargets_.size(); ++i)
     {
+      rbd::Jacobian jac(pgdata->mb(), bodyPosTargets[i].bodyId);
+      Eigen::MatrixXd jacMat(1, jac.dof());
+      Eigen::MatrixXd jacMatFull(1, pgdata->mb().nrDof());
       bodyOriTargets_[i] = {pgdata->multibody().bodyIndexById(bodyOriTargets[i].bodyId),
-                            bodyOriTargets[i].target.cast<scalar_t>(),
-                            bodyOriTargets[i].scale};
+                            bodyOriTargets[i].target,
+                            bodyOriTargets[i].scale,
+                            jac, jacMat, jacMatFull};
     }
 
     for(std::size_t i = 0; i < forceContactsMin.size(); ++i)
     {
+      std::size_t gradientPos = pgdata->forceParamsBegin();
       for(std::size_t j = 0; j < forceContacts.size(); ++j)
       {
         // we don't break scine it could be many contact on the same body
         if(forceContactsMin[i].bodyId == forceContacts[j].bodyId)
         {
-          forceContactsMin_.push_back({j, forceContactsMin[i].scale});
+          forceContactsMin_.push_back({j, gradientPos,forceContactsMin[i].scale});
         }
+        gradientPos += forceContacts[j].points.size()*3;
       }
     }
-    */
   }
 
 
-   /*
-  void impl_compute(result_ad_t& res, const argument_t& x) const throw()
+  void impl_compute(result_t& res, const argument_t& x) const throw()
   {
+    pgdata_->x(x);
+
     // compute posture task
-    scalar_t posture = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    double posture = 0.;
     if(postureScale_ > 0.)
     {
-      const std::vector<std::vector<scalar_t>>& q = pgdata_->q();
+      const std::vector<std::vector<double>>& q = pgdata_->mbc().q;
       for(int i = 0; i < pgdata_->multibody().nrJoints(); ++i)
       {
         if(pgdata_->multibody().joint(i).params() == 1)
         {
-          posture += std::pow(tq_[i][0] - q[i][0], 2);
+          posture += std::pow(q[i][0] - tq_[i][0], 2);
         }
       }
     }
 
     // compute torque task
+    /*
     scalar_t torque = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
     if(torqueScale_ > 0.)
     {
@@ -113,16 +123,17 @@ public:
         }
       }
     }
+    */
 
     // compute force task
-    scalar_t force(0., Eigen::VectorXd::Zero(this->inputSize()));
-    Eigen::Vector3<scalar_t> forceTmp(force, force, force);
+    double force = 0.;
+    Eigen::Vector3d forceTmp(Eigen::Vector3d::Zero());
     if(forceScale_ > 0.)
     {
       for(const auto& fd: pgdata_->forceDatas())
       {
-        forceTmp.setZero();
-        for(const sva::ForceVec<scalar_t>& fv: fd.forces)
+        Eigen::Vector3d forceTmp(Eigen::Vector3d::Zero());
+        for(const sva::ForceVecd& fv: fd.forces)
         {
           forceTmp += fv.force();
         }
@@ -130,28 +141,27 @@ public:
       }
     }
 
-    const FK<scalar_t>& fk = pgdata_->fk();
-    scalar_t pos = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    double pos = 0.;
     for(const BodyPositionTargetData& bp: bodyPosTargets_)
     {
-      pos += (fk.bodyPosW()[bp.bodyIndex].translation() - bp.target).squaredNorm()*
+      pos += (pgdata_->mbc().bodyPosW[bp.bodyIndex].translation() - bp.target).squaredNorm()*
           bp.scale;
     }
 
-    scalar_t ori = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    double ori = 0.;
     for(const BodyOrientationTargetData& bo: bodyOriTargets_)
     {
-      ori += sva::rotationError(
-            fk.bodyPosW()[bo.bodyIndex].rotation(), bo.target, 1e-7).squaredNorm()*
+      ori += sva::rotationError(bo.target,
+        pgdata_->mbc().bodyPosW[bo.bodyIndex].rotation(), 1e-7).squaredNorm()*
           bo.scale;
     }
 
-    scalar_t forceMin = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
+    double forceMin = 0.;
     for(const ForceContactMinimizationData& fcmd: forceContactsMin_)
     {
       const auto& forceData = pgdata_->forceDatas()[fcmd.forcePos];
-      forceTmp.setZero();
-      for(const sva::ForceVec<scalar_t>& fv: forceData.forces)
+      Eigen::Vector3d forceTmp(Eigen::Vector3d::Zero());
+      for(const sva::ForceVecd& fv: forceData.forces)
       {
         forceTmp += fv.force();
       }
@@ -159,6 +169,7 @@ public:
     }
 
     //Compute ellipse contact cost
+    /*
     scalar_t ellipses = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
     if(ellipseScale_ > 0.)
     {
@@ -168,22 +179,101 @@ public:
         std::cout << "ellipses cost: " << ellipses << std::endl;
       } 
     }
-
-    res(0) = posture*postureScale_ + torque*torqueScale_ + force +
-        pos + ori + forceMin + ellipses*ellipseScale_;
-    res(0) = 0.;
-  }
     */
 
-  void impl_compute(result_t& res, const argument_t& x) const throw()
-  {
-    res(0) = 0.;
+    res(0) = posture*postureScale_ + force +
+        pos + ori + forceMin;
   }
 
   void impl_gradient(gradient_t& gradient,
-      const argument_t& x, size_type functionId) const throw()
+      const argument_t& x, size_type /* functionId */) const throw()
   {
+    pgdata_->x(x);
     gradient.setZero();
+
+    if(postureScale_ > 0.)
+    {
+      int index = 0;
+      const std::vector<std::vector<double>>& q = pgdata_->mbc().q;
+      double coef = 2.*postureScale_;
+      for(int i = 0; i < pgdata_->multibody().nrJoints(); ++i)
+      {
+        if(pgdata_->multibody().joint(i).params() == 1)
+        {
+          gradient(index) += coef*(q[i][0] - tq_[i][0]);
+        }
+        index += pgdata_->mb().joint(i).dof();
+      }
+    }
+
+
+    if(forceScale_ > 0.)
+    {
+      int index = pgdata_->forceParamsBegin();
+      for(const auto& fd: pgdata_->forceDatas())
+      {
+        Eigen::Vector3d forceTmp(Eigen::Vector3d::Zero());
+        for(const sva::ForceVecd& fv: fd.forces)
+        {
+          forceTmp += fv.force();
+        }
+        forceTmp *= 2.*forceScale_;
+
+        for(std::size_t i = 0; i < fd.forces.size(); ++i)
+        {
+          gradient(index + 0) += forceTmp.x();
+          gradient(index + 1) += forceTmp.y();
+          gradient(index + 2) += forceTmp.z();
+          index += 3;
+        }
+      }
+    }
+
+
+    for(const ForceContactMinimizationData& fcmd: forceContactsMin_)
+    {
+      const auto& forceData = pgdata_->forceDatas()[fcmd.forcePos];
+      Eigen::Vector3d forceTmp(Eigen::Vector3d::Zero());
+      std::size_t index = fcmd.gradientPos;
+
+      for(const sva::ForceVecd& fv: forceData.forces)
+      {
+        forceTmp += fv.force();
+      }
+      forceTmp *= 2.*fcmd.scale;
+
+      for(std::size_t i = 0; i < forceData.forces.size(); ++i)
+      {
+        gradient(index + 0) += forceTmp.x();
+        gradient(index + 1) += forceTmp.y();
+        gradient(index + 2) += forceTmp.z();
+        index += 3;
+      }
+    }
+
+
+    for(BodyPositionTargetData& bp: bodyPosTargets_)
+    {
+      Eigen::Vector3d error(pgdata_->mbc().bodyPosW[bp.bodyIndex].translation()
+        - bp.target);
+
+      const Eigen::MatrixXd& jacMat = bp.jac.jacobian(pgdata_->mb(), pgdata_->mbc());
+      bp.jacMat.noalias() = (bp.scale*2.*error.transpose())*jacMat.block(3, 0, 3, bp.jac.dof());
+      bp.jac.fullJacobian(pgdata_->mb(), bp.jacMat, bp.jacMatFull);
+      gradient.head(bp.jacMatFull.cols()).noalias() += bp.jacMatFull.transpose();
+    }
+
+
+    for(BodyOrientationTargetData& bo: bodyOriTargets_)
+    {
+      Eigen::Vector3d error(sva::rotationError(bo.target,
+        pgdata_->mbc().bodyPosW[bo.bodyIndex].rotation(), 1e-7));
+
+      const Eigen::MatrixXd& jacMat = bo.jac.jacobian(pgdata_->mb(), pgdata_->mbc());
+      bo.jacMat.noalias() = (bo.scale*2.*error.transpose())*jacMat.block(0, 0, 3, bo.jac.dof());
+      bo.jac.fullJacobian(pgdata_->mb(), bo.jacMat, bo.jacMatFull);
+      gradient.head(bo.jacMatFull.cols()).noalias() += bo.jacMatFull.transpose();
+    }
   }
 
 private:
@@ -192,6 +282,8 @@ private:
     int bodyIndex;
     Eigen::Vector3d target;
     double scale;
+    rbd::Jacobian jac;
+    Eigen::MatrixXd jacMat, jacMatFull;
   };
 
   struct BodyOrientationTargetData
@@ -199,11 +291,14 @@ private:
     int bodyIndex;
     Eigen::Matrix3d target;
     double scale;
+    rbd::Jacobian jac;
+    Eigen::MatrixXd jacMat, jacMatFull;
   };
 
   struct ForceContactMinimizationData
   {
     std::size_t forcePos;
+    std::size_t gradientPos;
     double scale;
   };
 
@@ -214,8 +309,8 @@ private:
   double torqueScale_;
   double forceScale_;
   double ellipseScale_;
-  std::vector<BodyPositionTargetData> bodyPosTargets_;
-  std::vector<BodyOrientationTargetData> bodyOriTargets_;
+  mutable std::vector<BodyPositionTargetData> bodyPosTargets_;
+  mutable std::vector<BodyOrientationTargetData> bodyOriTargets_;
   std::vector<ForceContactMinimizationData> forceContactsMin_;
 };
 

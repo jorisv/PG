@@ -495,7 +495,6 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   /*
    *                      Environment collision avoidance
    */
-  /*
   {
     pg::PostureGenerator pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
@@ -540,13 +539,11 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     BOOST_CHECK_GT((mbcWork.bodyPosW[index].translation() - target).norm(), 1. + 0.1);
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12EnvCol2.py");
   }
-  */
 
 
   /*
    *                      Self collision avoidance
    */
-  /*
   {
     pg::PostureGenerator pgPb(mb, gravity);
     pgPb.param("ipopt.print_level", 0);
@@ -601,5 +598,4 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     BOOST_CHECK_GT(bodyDist, 1. + 0.1);
     toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12SelfCol2.py");
   }
-  */
 }
