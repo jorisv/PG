@@ -143,7 +143,7 @@ public:
       const Eigen::MatrixXd& jacMat = cd.jac.jacobian(pgdata_->mb(), pgdata_->mbc());
       cd.jacMat.noalias() = coef*dist3d.transpose()*jacMat.block(3, 0, 3, cd.jac.dof());
       cd.jac.fullJacobian(pgdata_->mb(), cd.jacMat, cd.jacMatFull);
-      jac.row(i).noalias() = cd.jacMatFull;
+      jac.block(i, 0, 1, cd.jacMatFull.cols()).noalias() = cd.jacMatFull;
       ++i;
     }
   }
@@ -261,7 +261,7 @@ public:
 
       cd.jac1.fullJacobian(pgdata_->mb(), cd.jac1Mat, cd.jac1MatFull);
       cd.jac2.fullJacobian(pgdata_->mb(), cd.jac2Mat, cd.jac2MatFull);
-      jac.row(i).noalias() = cd.jac1MatFull - cd.jac2MatFull;
+      jac.block(i, 0, 1, cd.jac1MatFull.cols()).noalias() = cd.jac1MatFull - cd.jac2MatFull;
       ++i;
     }
   }
