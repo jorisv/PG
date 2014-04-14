@@ -35,13 +35,13 @@
 #include <RBDyn/ID.h>
 
 // PG
+#include "ConfigStruct.h"
 #include "PostureGenerator.h"
 #include "CollisionConstr.h" // toSCD
-#include "PGData.h"
-
 
 // Arm
 #include "Z12Arm.h"
+
 
 const Eigen::Vector3d gravity(0., 9.81, 0.);
 
@@ -100,91 +100,6 @@ std::tuple<rbd::MultiBody, rbd::MultiBodyConfig> makeZXZArm(bool isFixed=true)
 }
 
 
-BOOST_AUTO_TEST_CASE(FKTest)
-{
-  /*
-  using namespace Eigen;
-  using namespace sva;
-  using namespace rbd;
-  namespace cst = boost::math::constants;
-  using scalar_t = pg::eigen_ad::scalar_t;
-
-  MultiBody mb;
-  MultiBodyConfig mbcInit;
-
-  std::tie(mb, mbcInit) = makeZXZArm();
-
-  pg::FK<scalar_t> fk(mb);
-  std::vector<std::vector<scalar_t>> q = {{},
-                                          {scalar_t(0., 3, 0)},
-                                          {scalar_t(0., 3, 1)},
-                                          {scalar_t(0., 3, 2)}};
-  fk.run(mb, q);
-  */
-}
-
-
-BOOST_AUTO_TEST_CASE(IDTest)
-{
-  /*
-  using namespace Eigen;
-  using namespace sva;
-  using namespace rbd;
-  namespace cst = boost::math::constants;
-  using scalar_t = pg::eigen_ad::scalar_t;
-
-  MultiBody mb;
-  MultiBodyConfig mbcInit;
-
-  std::tie(mb, mbcInit) = makeZXZArm();
-  double mass = 0.;
-  for(const Body& b: mb.bodies())
-  {
-    mass += b.inertia().mass();
-  }
-
-  pg::FK<scalar_t> fk(mb);
-  std::vector<std::vector<scalar_t>> q = {{},
-                                          {scalar_t(0., 6, 0)},
-                                          {scalar_t(0., 6, 1)},
-                                          {scalar_t(0., 6, 2)}};
-  fk.run(mb, q);
-
-  pg::ID<scalar_t> id(mb, mbcInit.gravity);
-
-  ForceVec<scalar_t> fNull(Vector6<scalar_t>::Zero());
-  ForceVec<scalar_t> fbaseNull(Vector3<scalar_t>::Zero(),
-                               Vector3<scalar_t>(
-                                 scalar_t(0., 6, 3),
-                                 scalar_t(mass*9.81, 6, 4),
-                                 scalar_t(0., 6, 5)
-                                 ));
-
-  id.run(mb, fk.bodyPosW(), fk.parentToSon(), {fbaseNull, fNull, fNull, fNull});
-  BOOST_CHECK_SMALL((pg::toValue(id.bodyAcc()[0].vector()) - Vector6d::Zero()).norm(), 1e-6);
-  */
-}
-
-
-BOOST_AUTO_TEST_CASE(PGDataTest)
-{
-  /*
-  using namespace Eigen;
-  using namespace sva;
-  using namespace rbd;
-  namespace cst = boost::math::constants;
-
-  MultiBody mb;
-  MultiBodyConfig mbcInit;
-
-  std::tie(mb, mbcInit) = makeZXZArm();
-
-  pg::PGData pgdata(mb, gravity);
-  pgdata.x(Eigen::VectorXd::Zero(3));
-  */
-}
-
-
 BOOST_AUTO_TEST_CASE(PGTest)
 {
   using namespace Eigen;
@@ -199,13 +114,15 @@ BOOST_AUTO_TEST_CASE(PGTest)
   mbcWork = mbcInit;
 
   {
-    pg::PostureGenerator pgPb(mb, gravity);
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc(mb);
     pgPb.param("ipopt.print_level", 0);
 
     Vector3d target(0., 0.5, 0.5);
-    pgPb.fixedPositionContacts({{3, target, sva::PTransformd::Identity()}});
+    rc.fixedPosContacts = {{3, target, sva::PTransformd::Identity()}};
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -213,13 +130,15 @@ BOOST_AUTO_TEST_CASE(PGTest)
   }
 
   {
-    pg::PostureGenerator pgPb(mb, gravity);
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc(mb);
     pgPb.param("ipopt.print_level", 0);
 
     Matrix3d target(Quaterniond(AngleAxisd(-cst::pi<double>()/2., Vector3d::UnitX())));
-    pgPb.fixedOrientationContacts({{3, target, sva::PTransformd::Identity()}});
+    rc.fixedOriContacts = {{3, target, sva::PTransformd::Identity()}};
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -285,7 +204,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   mbcWork = mbcInit;
 
   {
-    pg::PostureGenerator pgPb(mb, gravity);
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc(mb);
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "mumps");
 
@@ -293,20 +213,22 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
     int id = 12;
     int index = mb.bodyIndexById(id);
-    pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
-    pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
+    rc.fixedPosContacts = {{id, target, sva::PTransformd::Identity()}};
+    rc.fixedOriContacts = {{id, oriTarget, sva::PTransformd::Identity()}};
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-3);
-    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12.py");
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12.py");
   }
 
   {
-    pg::PostureGenerator pgPb(mb, gravity);
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc(mb);
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "mumps");
 
@@ -314,23 +236,25 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
     int id = 12;
     int index = mb.bodyIndexById(id);
-    pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
-    pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
+    rc.fixedPosContacts = {{id, target, sva::PTransformd::Identity()}};
+    rc.fixedOriContacts = {{id, oriTarget, sva::PTransformd::Identity()}};
     Matrix3d frame(RotX(-cst::pi<double>()/2.));
-    pgPb.forceContacts({{0, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
-                             sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.}});
+    rc.forceContacts = {{0, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
+                             sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.}};
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-3);
-    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Stab.py");
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12Stab.py");
   }
 
   {
-    pg::PostureGenerator pgPb(mb, gravity);
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc(mb);
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "mumps");
 
@@ -338,26 +262,28 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
     int id = 12;
     int index = mb.bodyIndexById(id);
-    pgPb.fixedPositionContacts({{id, target, sva::PTransformd::Identity()}});
-    pgPb.fixedOrientationContacts({{id, oriTarget, sva::PTransformd::Identity()}});
+    rc.fixedPosContacts = {{id, target, sva::PTransformd::Identity()}};
+    rc.fixedOriContacts = {{id, oriTarget, sva::PTransformd::Identity()}};
     Matrix3d frame(RotX(-cst::pi<double>()/2.));
     Matrix3d frameEnd(RotX(cst::pi<double>()/2.));
-    pgPb.forceContacts({{0 , {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
-                              sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.},
-                        {id, {sva::PTransformd(frameEnd, Vector3d(0.01, 0., 0.)),
-                              sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}});
+    rc.forceContacts = {{0, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
+                             sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.},
+                       {id, {sva::PTransformd(frameEnd, Vector3d(0.01, 0., 0.)),
+                             sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}};
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].rotation() - oriTarget).norm(), 1e-3);
-    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Stab2.py");
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12Stab2.py");
   }
 
   {
-    pg::PostureGenerator pgPb(mb, gravity);
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc(mb);
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "mumps");
 
@@ -368,10 +294,11 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     sva::PTransformd bodySurface(frame);
     std::vector<Eigen::Vector2d> targetPoints = {{1., 1.}, {-0., 1.}, {-0., -1.}, {1., -1.}};
     std::vector<Eigen::Vector2d> surfPoints = {{0.1, 0.1}, {-0.1, 0.1}, {-0.1, -0.1}, {0.1, -0.1}};
-    pgPb.planarContacts({{id, targetSurface, targetPoints, bodySurface, surfPoints}});
-    pgPb.bodyPositionTargets({{id, Vector3d(2., 1., 0.), 10.}});
+    rc.planarContacts = {{id, targetSurface, targetPoints, bodySurface, surfPoints}};
+    rc.bodyPosTargets = {{id, Vector3d(2., 1., 0.), 10.}};
 
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -381,7 +308,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     double oriErr = surfPos.rotation().row(2).dot(targetSurface.rotation().row(2)) - 1.;
     BOOST_CHECK_SMALL(posErr, 1e-5);
     BOOST_CHECK_SMALL(oriErr, 1e-5);
-    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12Planar.py");
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12Planar.py");
   }
 
   /*
@@ -492,23 +419,25 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
    *                      Environment collision avoidance
    */
   {
-    pg::PostureGenerator pgPb(mb, gravity);
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc(mb);
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "mumps");
 
     Vector3d target(0., 0., 0.);
     int id = 12;
     int index = mb.bodyIndexById(id);
-    pgPb.bodyPositionTargets({{id, target, 0.1}});
+    rc.bodyPosTargets = {{id, target, 0.1}};
 
     // first we try to go to origin
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 
     auto qOrigin = pgPb.q();
     mbcWork.q = qOrigin;
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_SMALL((mbcWork.bodyPosW[index].translation() - target).norm(), 1e-5);
-    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12EnvCol0.py");
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12EnvCol0.py");
 
     pgPb.param("ipopt.tol", 1e-1);
     pgPb.param("ipopt.dual_inf_tol", 1e-1);
@@ -516,24 +445,25 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     SCD::S_Sphere hullEnv(0.5);
     hullEnv.setTransformation(pg::toSCD(sva::PTransformd::Identity()));
 
-    pgPb.envCollisions({{id, &hullBody, sva::PTransformd::Identity(), &hullEnv, 0.1}});
+    rc.envCollisions = {{id, &hullBody, sva::PTransformd::Identity(), &hullEnv, 0.1}};
     // we check that we couldn't go in collision
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_GT((mbcWork.bodyPosW[index].translation() - target).norm(), 1. + 0.1);
-    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12EnvCol1.py");
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12EnvCol1.py");
 
-
-    pgPb.bodyPositionTargets({});
+    rc.bodyPosTargets = {};
     // same check but we start in constraint violation
-    BOOST_REQUIRE(pgPb.run(qOrigin, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(qOrigin, {}, mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     BOOST_CHECK_GT((mbcWork.bodyPosW[index].translation() - target).norm(), 1. + 0.1);
-    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12EnvCol2.py");
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12EnvCol2.py");
   }
 
 
@@ -541,7 +471,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
    *                      Self collision avoidance
    */
   {
-    pg::PostureGenerator pgPb(mb, gravity);
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc(mb);
     pgPb.param("ipopt.print_level", 0);
     pgPb.param("ipopt.linear_solver", "mumps");
 
@@ -550,10 +481,11 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     int index1 = mb.bodyIndexById(id1);
     int id2 = 6;
     int index2 = mb.bodyIndexById(id2);
-    pgPb.bodyPositionTargets({{id1, target, 0.1}, {id2, target, 0.1}});
+    rc.bodyPosTargets = {{id1, target, 0.1}, {id2, target, 0.1}};
 
     // first we try to go to origin
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 
     auto qOrigin = pgPb.q();
     mbcWork.q = qOrigin;
@@ -561,37 +493,39 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     double bodyDist = (mbcWork.bodyPosW[index1].translation() -
                        mbcWork.bodyPosW[index2].translation()).norm();
     BOOST_CHECK_SMALL(bodyDist, 1e-5);
-    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12SelfCol0.py");
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12SelfCol0.py");
 
     pgPb.param("ipopt.tol", 1e-1);
     pgPb.param("ipopt.dual_inf_tol", 1e-1);
     SCD::S_Sphere hullBody1(0.5);
     SCD::S_Sphere hullBody2(0.5);
 
-    pgPb.selfCollisions({{id1, &hullBody1, sva::PTransformd::Identity(),
+    rc.selfCollisions = {{id1, &hullBody1, sva::PTransformd::Identity(),
                           id2, &hullBody2, sva::PTransformd::Identity(),
-                          0.1}});
+                          0.1}};
 
     // we check that we couldn't go in collision
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     bodyDist = (mbcWork.bodyPosW[index1].translation() -
                 mbcWork.bodyPosW[index2].translation()).norm();
     BOOST_CHECK_GT(bodyDist, 1. + 0.1);
-    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12SelfCol1.py");
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12SelfCol1.py");
 
 
-    pgPb.bodyPositionTargets({});
+    rc.bodyPosTargets = {};
     // same check but we start in constraint violation
-    BOOST_REQUIRE(pgPb.run(qOrigin, {}, mbcInit.q, 0., 0., 0.));
+    pgPb.robotConfig(rc, gravity);
+    BOOST_REQUIRE(pgPb.run(qOrigin, {}, mbcInit.q));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
     bodyDist = (mbcWork.bodyPosW[index1].translation() -
                 mbcWork.bodyPosW[index2].translation()).norm();
     BOOST_CHECK_GT(bodyDist, 1. + 0.1);
-    toPython(mb, mbcWork, pgPb.forceContacts(), pgPb.forces(),"Z12SelfCol2.py");
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12SelfCol2.py");
   }
 }

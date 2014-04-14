@@ -92,9 +92,14 @@ void PGData::forces(const std::vector<ForceContact>& forceContacts)
 }
 
 
-void PGData::ellipses(std::vector<EllipseData> ed)
+void PGData::ellipses(const std::vector<EllipseContact>& ellipseContacts)
 {
-  ellipseDatas_ = std::move(ed);
+  std::vector<PGData::EllipseData> ellipseDatas;
+  ellipseDatas.reserve(ellipseContacts.size());
+  for(const EllipseContact& ec: ellipseContacts)
+  {
+    ellipseDatas.push_back({mb_.bodyIndexById(ec.bodyId), 0., 0., 0., 0., 0.});
+  }
   x_.setZero(pbSize());
   ++xStamp_;
 }

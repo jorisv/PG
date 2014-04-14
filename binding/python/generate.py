@@ -53,6 +53,7 @@ def import_eigen3_types(mod):
 def build_pg(pg):
   pgSolver = pg.add_class('PostureGenerator', custom_name='PostureGenerator')
 
+  robotConfig = pg.add_struct('RobotConfig')
   fixedPositionContact = pg.add_struct('FixedPositionContact')
   fixedOrientationContact = pg.add_struct('FixedOrientationContact')
   planarContact = pg.add_struct('PlanarContact')
@@ -84,28 +85,10 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::EllipseResult>', 'pg::EllipseResult', 'vector')
 
   # PostureGenerator
-  pgSolver.add_constructor([param('const rbd::MultiBody&', 'mb'), param('const Eigen::Vector3d&', 'gravity')])
+  pgSolver.add_constructor([])
 
-  pgSolver.add_method('fixedPositionContacts', None, [param('std::vector<pg::FixedPositionContact>', 'contacts')])
-  pgSolver.add_method('fixedOrientationContacts', None, [param('std::vector<pg::FixedOrientationContact>', 'contacts')])
-  pgSolver.add_method('planarContacts', None, [param('std::vector<pg::PlanarContact>', 'contacts')])
-  pgSolver.add_method('ellipseContacts', None, [param('std::vector<pg::EllipseContact>', 'contacts')])
-  pgSolver.add_method('gripperContacts', None, [param('std::vector<pg::GripperContact>', 'contacts')])
-  pgSolver.add_method('forceContacts', None, [param('std::vector<pg::ForceContact>', 'contacts')])
-  pgSolver.add_method('forceContacts', retval('std::vector<pg::ForceContact>'), [])
-  pgSolver.add_method('envCollisions', None, [param('std::vector<pg::EnvCollision>', 'cols')])
-  pgSolver.add_method('selfCollisions', None, [param('std::vector<pg::SelfCollision>', 'cols')])
-  pgSolver.add_method('bodyPositionTargets', None, [param('std::vector<pg::BodyPositionTarget>', 'targets')])
-  pgSolver.add_method('bodyOrientationTargets', None, [param('std::vector<pg::BodyOrientationTarget>', 'targets')])
-  pgSolver.add_method('forceContactsMinimization', None, [param('std::vector<pg::ForceContactMinimization>', 'min')])
-  pgSolver.add_method('ellipseCostScale', None, [param('double', 'ellipseScale')])
-  pgSolver.add_method('qBounds', None, [param('std::vector<std::vector<double> >', 'lq'),
-                                        param('std::vector<std::vector<double> >', 'uq')])
-  pgSolver.add_method('torqueBounds', None, [param('std::vector<std::vector<double> >', 'lt'),
-                                             param('std::vector<std::vector<double> >', 'ut')])
-  pgSolver.add_method('torqueBoundsPoly', None, [param('std::vector<std::vector<Eigen::VectorXd> >', 'lt'),
-                                                 param('std::vector<std::vector<Eigen::VectorXd> >', 'ut')])
-
+  pgSolver.add_method('robotConfig', None, [param('pg::RobotConfig', 'rc'), param('const Eigen::Vector3d&', 'gravity')])
+  pgSolver.add_method('robotConfig', retval('pg::RobotConfig'), [], is_const=True)
 
   # Don't change the order. We must try to convert in int before convert in double
   # because double -> int fail but int -> double succeed (so int are read as double).
@@ -115,10 +98,7 @@ def build_pg(pg):
 
   pgSolver.add_method('run', retval('bool'), [param('std::vector<std::vector<double> >', 'initQ'),
                                               param('std::vector<sva::ForceVecd>', 'initForces'),
-                                              param('std::vector<std::vector<double> >', 'targetQ'),
-                                              param('double', 'postureScale'),
-                                              param('double', 'torqueScale'),
-                                              param('double', 'forceScale')])
+                                              param('std::vector<std::vector<double> >', 'targetQ')])
 
   pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [])
   pgSolver.add_method('forces', retval('std::vector<sva::ForceVecd>'), [])
@@ -170,18 +150,18 @@ def build_pg(pg):
 
   # EllipseContact
   ellipseContact.add_constructor([])
-  ellipseContact.add_constructor([param('int', 'bodyId'), 
+  ellipseContact.add_constructor([param('int', 'bodyId'),
                                   param('double', 'radiusMin1'),
                                   param('double', 'radiusMin2'),
-                                  param('const sva::PTransformd&', 'tf'), 
+                                  param('const sva::PTransformd&', 'tf'),
                                   param('std::vector<Eigen::Vector2d>', 'tp'),
-                                  param('const sva::PTransformd&', 'sf'), 
+                                  param('const sva::PTransformd&', 'sf'),
                                   param('std::vector<Eigen::Vector2d>', 'sp')])
-  ellipseContact.add_constructor([param('int', 'bodyId'), 
+  ellipseContact.add_constructor([param('int', 'bodyId'),
                                   param('double', 'radiusMin1'),
-                                  param('const sva::PTransformd&', 'tf'), 
+                                  param('const sva::PTransformd&', 'tf'),
                                   param('std::vector<Eigen::Vector2d>', 'tp'),
-                                  param('const sva::PTransformd&', 'sf'), 
+                                  param('const sva::PTransformd&', 'sf'),
                                   param('std::vector<Eigen::Vector2d>', 'sp')])
 
   ellipseContact.add_instance_attribute('bodyId', 'int')
@@ -275,6 +255,31 @@ def build_pg(pg):
 
   forceContactMin.add_instance_attribute('bodyId', 'int')
   forceContactMin.add_instance_attribute('scale', 'double')
+
+  # RobotConfig
+  robotConfig.add_constructor([param('const rbd::MultiBody&', 'mb')])
+  robotConfig.add_instance_attribute('fixedPosContacts', 'std::vector<pg::FixedPositionContact>')
+  robotConfig.add_instance_attribute('fixedOriContacts', 'std::vector<pg::FixedOrientationContact>')
+  robotConfig.add_instance_attribute('planarContacts', 'std::vector<pg::PlanarContact>')
+  robotConfig.add_instance_attribute('ellipseContacts', 'std::vector<pg::EllipseContact>')
+  robotConfig.add_instance_attribute('gripperContacts', 'std::vector<pg::GripperContact>')
+  robotConfig.add_instance_attribute('forceContacts', 'std::vector<pg::ForceContact>')
+  robotConfig.add_instance_attribute('envCollisions', 'std::vector<pg::EnvCollision>')
+  robotConfig.add_instance_attribute('selfCollisions', 'std::vector<pg::SelfCollision>')
+  robotConfig.add_instance_attribute('ql', 'std::vector<std::vector<double> >')
+  robotConfig.add_instance_attribute('qu', 'std::vector<std::vector<double> >')
+  robotConfig.add_instance_attribute('tl', 'std::vector<std::vector<double> >')
+  robotConfig.add_instance_attribute('tu', 'std::vector<std::vector<double> >')
+  robotConfig.add_instance_attribute('tlPoly', 'std::vector<std::vector<Eigen::VectorXd> >')
+  robotConfig.add_instance_attribute('tuPoly', 'std::vector<std::vector<Eigen::VectorXd> >')
+
+  robotConfig.add_instance_attribute('postureScale', 'double')
+  robotConfig.add_instance_attribute('torqueScale', 'double')
+  robotConfig.add_instance_attribute('forceScale', 'double')
+  robotConfig.add_instance_attribute('ellipseCostScale', 'double')
+  robotConfig.add_instance_attribute('bodyPosTargets', 'std::vector<pg::BodyPositionTarget>')
+  robotConfig.add_instance_attribute('bodyOriTargets', 'std::vector<pg::BodyOrientationTarget>')
+  robotConfig.add_instance_attribute('forceContactsMin', 'std::vector<pg::ForceContactMinimization>')
 
   # IterateQuantities
   iterateQuantities.add_instance_attribute('obj', 'double')

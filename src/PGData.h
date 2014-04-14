@@ -34,8 +34,8 @@
 
 namespace pg
 {
-class EllipseData;
 class ForceContact;
+class EllipseContact;
 
 class PGData
 {
@@ -72,7 +72,7 @@ public:
   void x(const Eigen::VectorXd& x);
 
   void forces(const std::vector<ForceContact>& fd);
-  void ellipses(std::vector<EllipseData> ed);
+  void ellipses(const std::vector<EllipseContact>& ed);
   void update();
 
   const rbd::MultiBodyConfig& mbc() const

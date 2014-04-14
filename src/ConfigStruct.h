@@ -28,6 +28,9 @@
 // SpaceVecAlg
 #include <SpaceVecAlg/SpaceVecAlg>
 
+// RBDyn
+#include <RBDyn/MultiBody.h>
+
 
 // forward declaration
 namespace SCD
@@ -275,6 +278,50 @@ struct EllipseResult
     result << 2*this->r1 << ", " << 2*this->r2 << ", " << 180*this->theta/boost::math::constants::pi<double>() << ")\n";
     return result.str();
   }
+};
+
+
+struct RobotConfig
+{
+  RobotConfig()
+    : postureScale(0.)
+    , torqueScale(0.)
+    , forceScale(0.)
+    , ellipseCostScale(0.)
+  {}
+
+  RobotConfig(rbd::MultiBody multibody)
+    : mb(std::move(multibody))
+    , postureScale(0.)
+    , torqueScale(0.)
+    , forceScale(0.)
+    , ellipseCostScale(0.)
+  {}
+
+  // robot
+  rbd::MultiBody mb;
+
+  // constraints
+  std::vector<FixedPositionContact> fixedPosContacts;
+  std::vector<FixedOrientationContact> fixedOriContacts;
+  std::vector<PlanarContact> planarContacts;
+  std::vector<EllipseContact> ellipseContacts;
+  std::vector<GripperContact> gripperContacts;
+  std::vector<ForceContact> forceContacts;
+  std::vector<EnvCollision> envCollisions;
+  std::vector<SelfCollision> selfCollisions;
+  std::vector<std::vector<double>> ql, qu;
+  std::vector<std::vector<double>> tl, tu;
+  std::vector<std::vector<Eigen::VectorXd>> tlPoly, tuPoly;
+
+  // costs
+  double postureScale;
+  double torqueScale;
+  double forceScale;
+  double ellipseCostScale;
+  std::vector<BodyPositionTarget> bodyPosTargets;
+  std::vector<BodyOrientationTarget> bodyOriTargets;
+  std::vector<ForceContactMinimization> forceContactsMin;
 };
 
 

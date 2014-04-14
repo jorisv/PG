@@ -60,32 +60,10 @@ public:
     solver_t::solverState_t > iteration_callback_t;
 
 public:
-  PostureGenerator(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity);
+  PostureGenerator();
 
-  void fixedPositionContacts(std::vector<FixedPositionContact> contacts);
-  void fixedOrientationContacts(std::vector<FixedOrientationContact> contacts);
-  void planarContacts(std::vector<PlanarContact> contacts);
-  void ellipseContacts(std::vector<EllipseContact> contacts);
-  void gripperContacts(std::vector<GripperContact> contacts);
-
-  void forceContacts(std::vector<ForceContact> contacts);
-  const std::vector<ForceContact>& forceContacts();
-
-  void envCollisions(std::vector<EnvCollision> cols);
-  void selfCollisions(std::vector<SelfCollision> cols);
-
-  void bodyPositionTargets(std::vector<BodyPositionTarget> targets);
-  void bodyOrientationTargets(std::vector<BodyOrientationTarget> targets);
-
-  void forceContactsMinimization(std::vector<ForceContactMinimization> min);
-  void ellipseCostScale(double ellipseScale);
-
-  void qBounds(const std::vector<std::vector<double>>& lq,
-               const std::vector<std::vector<double>>& uq);
-  void torqueBounds(std::vector<std::vector<double>> lt,
-                    std::vector<std::vector<double>> ut);
-  void torqueBoundsPoly(std::vector<std::vector<Eigen::VectorXd>> lt,
-                        std::vector<std::vector<Eigen::VectorXd>> ut);
+  void robotConfig(RobotConfig robotConfig, const Eigen::Vector3d& gravity);
+  const RobotConfig& robotConfig() const;
 
   void param(const std::string& name, const std::string& value);
   void param(const std::string& name, double value);
@@ -93,8 +71,7 @@ public:
 
   bool run(const std::vector<std::vector<double> >& initQ,
            const std::vector<sva::ForceVecd>& initForces,
-           const std::vector<std::vector<double> >& targetQ,
-           double postureScale, double torqueScale, double forceScale);
+           const std::vector<std::vector<double> >& targetQ);
 
   std::vector<std::vector<double>> q() const;
   std::vector<sva::ForceVecd> forces() const;
@@ -115,25 +92,9 @@ private:
   std::vector<EllipseResult> ellipses(const Eigen::VectorXd& x) const;
 
 private:
-  PGData pgdata_;
+  std::unique_ptr<PGData> pgdata_;
+  std::unique_ptr<RobotConfig> robotConfig_;
   solver_t::parameters_t params_;
-
-  std::vector<FixedPositionContact> fixedPosContacts_;
-  std::vector<FixedOrientationContact> fixedOriContacts_;
-  std::vector<PlanarContact> planarContacts_;
-  std::vector<EllipseContact> ellipseContacts_;
-  double ellipseCostScale_;
-  std::vector<GripperContact> gripperContacts_;
-  std::vector<ForceContact> forceContacts_;
-  std::vector<EnvCollision> envCollisions_;
-  std::vector<SelfCollision> selfCollisions_;
-  std::vector<BodyPositionTarget> bodyPosTargets_;
-  std::vector<BodyOrientationTarget> bodyOriTargets_;
-  std::vector<ForceContactMinimization> forceContactsMin_;
-  Eigen::VectorXd ql_, qu_;
-  Eigen::VectorXd tl_, tu_;
-  std::vector<std::vector<Eigen::VectorXd>> tlPoly_, tuPoly_;
-  bool isTorque_;
 
   Eigen::VectorXd x_;
   boost::shared_ptr<iteration_callback_t> iters_;
