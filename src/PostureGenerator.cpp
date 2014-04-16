@@ -368,7 +368,7 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
   }
   */
 
-  roboptim::SolverFactory<solver_t> factory ("ipopt", problem);
+  roboptim::SolverFactory<solver_t> factory ("ipopt-sparse", problem);
   solver_t& solver = factory ();
 
   iters_->datas.clear();

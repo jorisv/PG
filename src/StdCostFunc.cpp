@@ -23,6 +23,7 @@
 // PG
 #include "PGData.h"
 #include "ConfigStruct.h"
+#include "FillSparse.h"
 
 
 namespace pg
@@ -36,7 +37,7 @@ StdCostFunc::StdCostFunc(PGData* pgdata, std::vector<std::vector<double>> q,
             const std::vector<BodyOrientationTarget>& bodyOriTargets,
             const std::vector<ForceContact>& forceContacts,
             const std::vector<ForceContactMinimization>& forceContactsMin)
-  : roboptim::DifferentiableFunction(pgdata->pbSize(), 1, "StdCostFunc")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), 1, "StdCostFunc")
   , pgdata_(pgdata)
   , tq_(std::move(q))
   , postureScale_(postureScale)
@@ -51,7 +52,8 @@ StdCostFunc::StdCostFunc(PGData* pgdata, std::vector<std::vector<double>> q,
   {
     rbd::Jacobian jac(pgdata->mb(), bodyPosTargets[i].bodyId);
     Eigen::MatrixXd jacMat(1, jac.dof());
-    Eigen::MatrixXd jacMatFull(1, pgdata->mb().nrDof());
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jacMatFull(1, pgdata_->pbSize());
+    jacMatFull.reserve(jac.dof());
     bodyPosTargets_[i] = {pgdata->multibody().bodyIndexById(bodyPosTargets[i].bodyId),
                           bodyPosTargets[i].target,
                           bodyPosTargets[i].scale,
@@ -62,7 +64,8 @@ StdCostFunc::StdCostFunc(PGData* pgdata, std::vector<std::vector<double>> q,
   {
     rbd::Jacobian jac(pgdata->mb(), bodyOriTargets[i].bodyId);
     Eigen::MatrixXd jacMat(1, jac.dof());
-    Eigen::MatrixXd jacMatFull(1, pgdata->mb().nrDof());
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jacMatFull(1, pgdata_->pbSize());
+    jacMatFull.reserve(jac.dof());
     bodyOriTargets_[i] = {pgdata->multibody().bodyIndexById(bodyOriTargets[i].bodyId),
                           bodyOriTargets[i].target,
                           bodyOriTargets[i].scale,
@@ -183,6 +186,7 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
     const argument_t& x, size_type /* functionId */) const throw()
 {
   pgdata_->x(x);
+  gradient.reserve(pgdata_->pbSize());
   gradient.setZero();
 
   if(postureScale_ > 0.)
@@ -194,7 +198,7 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
     {
       if(pgdata_->multibody().joint(i).params() == 1)
       {
-        gradient(index) += coef*(q[i][0] - tq_[i][0]);
+        gradient.coeffRef(index) += coef*(q[i][0] - tq_[i][0]);
       }
       index += pgdata_->mb().joint(i).dof();
     }
@@ -215,9 +219,9 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
 
       for(std::size_t i = 0; i < fd.forces.size(); ++i)
       {
-        gradient(index + 0) += forceTmp.x();
-        gradient(index + 1) += forceTmp.y();
-        gradient(index + 2) += forceTmp.z();
+        gradient.coeffRef(index + 0) += forceTmp.x();
+        gradient.coeffRef(index + 1) += forceTmp.y();
+        gradient.coeffRef(index + 2) += forceTmp.z();
         index += 3;
       }
     }
@@ -228,7 +232,7 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
   {
     const auto& forceData = pgdata_->forceDatas()[fcmd.forcePos];
     Eigen::Vector3d forceTmp(Eigen::Vector3d::Zero());
-    std::size_t index = fcmd.gradientPos;
+    int index = int(fcmd.gradientPos);
 
     for(const sva::ForceVecd& fv: forceData.forces)
     {
@@ -238,9 +242,9 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
 
     for(std::size_t i = 0; i < forceData.forces.size(); ++i)
     {
-      gradient(index + 0) += forceTmp.x();
-      gradient(index + 1) += forceTmp.y();
-      gradient(index + 2) += forceTmp.z();
+      gradient.coeffRef(index + 0) += forceTmp.x();
+      gradient.coeffRef(index + 1) += forceTmp.y();
+      gradient.coeffRef(index + 2) += forceTmp.z();
       index += 3;
     }
   }
@@ -253,8 +257,8 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
 
     const Eigen::MatrixXd& jacMat = bp.jac.jacobian(pgdata_->mb(), pgdata_->mbc());
     bp.jacMat.noalias() = (bp.scale*2.*error.transpose())*jacMat.block(3, 0, 3, bp.jac.dof());
-    bp.jac.fullJacobian(pgdata_->mb(), bp.jacMat, bp.jacMatFull);
-    gradient.head(bp.jacMatFull.cols()).noalias() += bp.jacMatFull.transpose();
+    updateFullJacobianSparse(pgdata_->mb(), bp.jac, bp.jacMat, bp.jacMatFull);
+    gradient += bp.jacMatFull.transpose();
   }
 
 
@@ -265,8 +269,8 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
 
     const Eigen::MatrixXd& jacMat = bo.jac.jacobian(pgdata_->mb(), pgdata_->mbc());
     bo.jacMat.noalias() = (bo.scale*2.*error.transpose())*jacMat.block(0, 0, 3, bo.jac.dof());
-    bo.jac.fullJacobian(pgdata_->mb(), bo.jacMat, bo.jacMatFull);
-    gradient.head(bo.jacMatFull.cols()).noalias() += bo.jacMatFull.transpose();
+    updateFullJacobianSparse(pgdata_->mb(), bo.jac, bo.jacMat, bo.jacMatFull);
+    gradient += bo.jacMatFull.transpose();
   }
 }
 

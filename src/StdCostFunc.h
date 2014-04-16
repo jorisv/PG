@@ -31,7 +31,7 @@ class BodyOrientationTarget;
 class ForceContact;
 class ForceContactMinimization;
 
-class StdCostFunc : public roboptim::DifferentiableFunction
+class StdCostFunc : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
@@ -56,7 +56,8 @@ private:
     Eigen::Vector3d target;
     double scale;
     rbd::Jacobian jac;
-    Eigen::MatrixXd jacMat, jacMatFull;
+    Eigen::MatrixXd jacMat;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jacMatFull;
   };
 
   struct BodyOrientationTargetData
@@ -65,7 +66,8 @@ private:
     Eigen::Matrix3d target;
     double scale;
     rbd::Jacobian jac;
-    Eigen::MatrixXd jacMat, jacMatFull;
+    Eigen::MatrixXd jacMat;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jacMatFull;
   };
 
   struct ForceContactMinimizationData

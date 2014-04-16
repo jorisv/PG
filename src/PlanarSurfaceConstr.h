@@ -31,7 +31,7 @@ namespace pg
 {
 class PGData;
 
-class PlanarPositionContactConstr : public roboptim::DifferentiableFunction
+class PlanarPositionContactConstr : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
@@ -59,12 +59,11 @@ private:
   sva::PTransformd surfaceFrame_;
   mutable rbd::Jacobian jac_;
   mutable Eigen::MatrixXd dotCache_;
-  mutable Eigen::MatrixXd dotCacheFull_;
 };
 
 
 
-class PlanarOrientationContactConstr : public roboptim::DifferentiableFunction
+class PlanarOrientationContactConstr : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
@@ -94,12 +93,11 @@ private:
   int axis_;
   mutable rbd::Jacobian jac_;
   mutable Eigen::MatrixXd dotCache_;
-  mutable Eigen::MatrixXd dotCacheFull_;
 };
 
 
 
-class PlanarInclusionConstr : public roboptim::DifferentiableFunction
+class PlanarInclusionConstr : public roboptim::DifferentiableSparseFunction
 
 {
 public:

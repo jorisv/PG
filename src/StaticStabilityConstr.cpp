@@ -19,6 +19,7 @@
 // include
 // PG
 #include "PGData.h"
+#include "FillSparse.h"
 
 
 namespace pg
@@ -26,7 +27,7 @@ namespace pg
 
 
 StaticStabilityConstr::StaticStabilityConstr(PGData* pgdata)
-  : roboptim::DifferentiableFunction(pgdata->pbSize(), 6, "StaticStability")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), 6, "StaticStability")
   , pgdata_(pgdata)
   , gravityForce_(-pgdata->robotMass()*pgdata->gravity())
   , jacPoints_(pgdata->nrForcePoints())
@@ -74,8 +75,10 @@ void StaticStabilityConstr::impl_compute(result_t& res, const argument_t& x) con
 void StaticStabilityConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
   pgdata_->x(x);
-  jac.setZero();
-  std::size_t index = 0;
+  couple_jac_.setZero();
+  jac.reserve(pgdata_->mb().nrDof()*3 + pgdata_->nrForcePoints()*(9*2));
+
+  int index = 0;
   for(const PGData::ForceData& fd: pgdata_->forceDatas())
   {
     const sva::PTransformd& X_0_b = pgdata_->mbc().bodyPosW[fd.bodyIndex];
@@ -88,26 +91,28 @@ void StaticStabilityConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) 
       const Eigen::MatrixXd& jacP = jacPoints_[index].jacobian(pgdata_->mb(),
                                                                 pgdata_->mbc());
 
+      // couple
       jacPoints_[index].fullJacobian(pgdata_->mb(), jacP.block(3, 0, 3, jacP.cols()), jacFullMat_);
       T_com_fi_jac_.noalias() = jacFullMat_ - pgdata_->comJac();
-      couple_jac_.noalias() = sva::vector3ToCrossMatrix((-fd.forces[i].force()).eval())*T_com_fi_jac_;
+      couple_jac_.noalias() += sva::vector3ToCrossMatrix((-fd.forces[i].force()).eval())*T_com_fi_jac_;
 
-      // couple
-      jac.block(0, 0, 3, pgdata_->mb().nrParams()).noalias() += couple_jac_;
       // force
       // Zero
 
 
       // force jacobian
       // couple
-      jac.block<3,3>(0, pgdata_->forceParamsBegin() + index*3).noalias() =
-          sva::vector3ToCrossMatrix(T_com_fi);
+      int indexCols = (pgdata_->forceParamsBegin() + index*3);
+      Eigen::Matrix3d couple_force_jac = sva::vector3ToCrossMatrix(T_com_fi);
+      fillSparse(couple_force_jac, jac, {0, indexCols});
       // force
-      jac.block<3,3>(3, pgdata_->forceParamsBegin() + index*3).noalias() =
-          Eigen::Matrix3d::Identity();
+      fillSparse(Eigen::Matrix3d::Identity(), jac, {3, indexCols});
+
       ++index;
     }
   }
+  // fill couple
+  fillSparse(couple_jac_, jac);
 }
 
 } // pg

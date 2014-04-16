@@ -26,7 +26,7 @@ namespace pg
 {
 class PGData;
 
-class FixedPositionContactConstr : public roboptim::DifferentiableFunction
+class FixedPositionContactConstr : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
@@ -58,7 +58,7 @@ private:
 
 
 
-class FixedOrientationContactConstr : public roboptim::DifferentiableFunction
+class FixedOrientationContactConstr : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
@@ -93,7 +93,7 @@ private:
 
   mutable rbd::Jacobian jac_;
   mutable Eigen::MatrixXd dotCache_;
-  mutable Eigen::MatrixXd dotCacheFull_;
+  mutable Eigen::MatrixXd dotCacheSum_;
 };
 
 } // namespace pg

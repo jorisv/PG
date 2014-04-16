@@ -27,7 +27,7 @@ namespace pg
 {
 class PGData;
 
-class PositiveForceConstr : public roboptim::DifferentiableFunction
+class PositiveForceConstr : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
@@ -46,10 +46,10 @@ public:
 
 private:
   PGData* pgdata_;
+  int nrNonZero_;
 
   mutable std::vector<rbd::Jacobian> jacPoints_;
   mutable std::vector<Eigen::MatrixXd> jacPointsMatTmp_;
-  mutable Eigen::MatrixXd jacPointMatFull_;
 };
 
 } // namespace pg

@@ -38,7 +38,7 @@ struct IterationCallback;
 class PostureGenerator
 {
 public:
-  typedef roboptim::EigenMatrixDense functionType_t;
+  typedef roboptim::EigenMatrixSparse functionType_t;
 
   //TODO: this could be written in a cleaner way
   typedef boost::mpl::push_back<
@@ -99,10 +99,6 @@ private:
   Eigen::VectorXd x_;
   boost::shared_ptr<iteration_callback_t> iters_;
 };
-
-
-// inline
-
 
 
 } // namespace pg

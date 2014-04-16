@@ -19,6 +19,7 @@
 // include
 // PG
 #include "PGData.h"
+#include "FillSparse.h"
 
 
 namespace pg
@@ -33,14 +34,13 @@ namespace pg
 PlanarPositionContactConstr::PlanarPositionContactConstr(PGData* pgdata, int bodyId,
     const sva::PTransformd& targetFrame,
     const sva::PTransformd& surfaceFrame)
-  : roboptim::DifferentiableFunction(pgdata->pbSize(), 1, "PlanarPositionContact")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), 1, "PlanarPositionContact")
   , pgdata_(pgdata)
   , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
   , targetFrame_(targetFrame)
   , surfaceFrame_(surfaceFrame)
   , jac_(pgdata->multibody(), bodyId, surfaceFrame.translation())
   , dotCache_(1, jac_.dof())
-  , dotCacheFull_(1, pgdata_->multibody().nrDof())
 {}
 
 
@@ -60,12 +60,11 @@ void PlanarPositionContactConstr::impl_compute(result_t& res, const argument_t& 
 void PlanarPositionContactConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
   pgdata_->x(x);
-  jac.setZero();
+  jac.reserve(jac_.dof());
 
   const Eigen::MatrixXd& mat = jac_.jacobian(pgdata_->multibody(), pgdata_->mbc());
   dotCache_.noalias() = targetFrame_.rotation().row(2)*mat.block(3, 0, 3, mat.cols());
-  jac_.fullJacobian(pgdata_->multibody(), dotCache_, dotCacheFull_);
-  jac.block(0, 0, 1, pgdata_->mb().nrParams()).noalias() = dotCacheFull_;
+  fullJacobianSparse(pgdata_->mb(), jac_, dotCache_, jac);
 }
 
 
@@ -78,7 +77,7 @@ PlanarOrientationContactConstr::PlanarOrientationContactConstr(PGData* pgdata, i
     const sva::PTransformd& targetFrame,
     const sva::PTransformd& surfaceFrame,
     int axis)
-  : roboptim::DifferentiableFunction(pgdata->pbSize(), 1, "PlanarPositionContact")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), 1, "PlanarPositionContact")
   , pgdata_(pgdata)
   , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
   , targetFrame_(targetFrame)
@@ -86,7 +85,6 @@ PlanarOrientationContactConstr::PlanarOrientationContactConstr(PGData* pgdata, i
   , axis_(axis)
   , jac_(pgdata->multibody(), bodyId, surfaceFrame.translation())
   , dotCache_(1, jac_.dof())
-  , dotCacheFull_(1, pgdata_->multibody().nrDof())
 {}
 
 
@@ -106,13 +104,12 @@ void PlanarOrientationContactConstr::impl_compute(result_t& res, const argument_
 void PlanarOrientationContactConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
   pgdata_->x(x);
-  jac.setZero();
+  jac.reserve(jac_.dof());
 
   const Eigen::MatrixXd& mat = jac_.vectorJacobian(pgdata_->multibody(),
       pgdata_->mbc(), surfaceFrame_.rotation().row(axis_).transpose());
   dotCache_.noalias() = targetFrame_.rotation().row(axis_)*mat.block(3, 0, 3, mat.cols());
-  jac_.fullJacobian(pgdata_->multibody(), dotCache_, dotCacheFull_);
-  jac.block(0, 0, 1, pgdata_->mb().nrParams()).noalias() = dotCacheFull_;
+  fullJacobianSparse(pgdata_->mb(), jac_, dotCache_, jac);
 }
 
 
@@ -126,7 +123,7 @@ PlanarInclusionConstr::PlanarInclusionConstr(PGData* pgdata, int bodyId,
     const std::vector<Eigen::Vector2d>& targetPoints,
     const sva::PTransformd& surfaceFrame,
     const std::vector<Eigen::Vector2d>& surfacePoints)
-  : roboptim::DifferentiableFunction(pgdata->pbSize(), int(surfacePoints.size()*targetPoints.size()), "PlanarInclusionContact")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), int(surfacePoints.size()*targetPoints.size()), "PlanarInclusionContact")
   , pgdata_(pgdata)
   , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
   , targetFrame_(targetFrame)
@@ -138,7 +135,7 @@ PlanarInclusionConstr::PlanarInclusionConstr(PGData* pgdata, int bodyId,
   , tJac_(1, jac_.dof())
   , bJac_(1, jac_.dof())
   , sumJac_(1, jac_.dof())
-  , fullJac_(1, pgdata_->multibody().nrDof())
+  , fullJac_(outputSize(), jac_.dof())
 {
   assert(targetPoints.size() > 2);
   for(std::size_t i = 0; i < targetPoints.size(); ++i)
@@ -187,7 +184,7 @@ void PlanarInclusionConstr::impl_compute(result_t& res, const argument_t& x) con
 void PlanarInclusionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
   pgdata_->x(x);
-  jac.setZero();
+  jac.reserve(outputSize()*jac_.dof());
 
   const Eigen::MatrixXd& jacMat = jac_.jacobian(pgdata_->multibody(), pgdata_->mbc());
   int resIndex = 0;
@@ -201,11 +198,11 @@ void PlanarInclusionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) 
       const auto& n = targetVecNorm_[i];
       sumJac_.noalias() = n.x()*tJac_;
       sumJac_.noalias() += n.y()*bJac_;
-      jac_.fullJacobian(pgdata_->multibody(), sumJac_, fullJac_);
-      jac.block(resIndex, 0, 1, pgdata_->mb().nrParams()).noalias() = fullJac_;
+      fullJac_.row(resIndex).noalias() = sumJac_;
       ++resIndex;
     }
   }
+  fullJacobianSparse(pgdata_->mb(), jac_, fullJac_, jac);
 }
 
 } // pg

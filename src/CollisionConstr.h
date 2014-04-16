@@ -45,7 +45,7 @@ class SelfCollision;
 SCD::Matrix4x4 toSCD(const sva::PTransformd& t);
 
 
-class EnvCollisionConstr : public roboptim::DifferentiableFunction
+class EnvCollisionConstr : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
@@ -70,17 +70,18 @@ private:
     sva::PTransformd bodyT;
     SCD::CD_Pair* pair;
     rbd::Jacobian jac;
-    Eigen::MatrixXd jacMat, jacMatFull;
+    Eigen::MatrixXd jacMat;
   };
 
 private:
   PGData* pgdata_;
+  int nrNonZero_;
   mutable std::vector<CollisionData> cols_;
 };
 
 
 
-class SelfCollisionConstr : public roboptim::DifferentiableFunction
+class SelfCollisionConstr : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
@@ -103,16 +104,19 @@ private:
     int body1Index;
     sva::PTransformd body1T;
     rbd::Jacobian jac1;
-    Eigen::MatrixXd jac1Mat, jac1MatFull;
+    Eigen::MatrixXd jac1Mat;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jac1MatFull;
     int body2Index;
     sva::PTransformd body2T;
     rbd::Jacobian jac2;
-    Eigen::MatrixXd jac2Mat, jac2MatFull;
+    Eigen::MatrixXd jac2Mat;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jac2MatFull;
     SCD::CD_Pair* pair;
   };
 
 private:
   PGData* pgdata_;
+  int nrNonZero_;
   mutable std::vector<CollisionData> cols_;
 };
 

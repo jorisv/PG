@@ -271,6 +271,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
                        {id, {sva::PTransformd(frameEnd, Vector3d(0.01, 0., 0.)),
                              sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}};
 
+    rc.postureScale = 1.;
     pgPb.robotConfig(rc, gravity);
     BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
 

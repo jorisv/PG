@@ -19,17 +19,18 @@
 // include
 // PG
 #include "PGData.h"
+#include "FillSparse.h"
 
 namespace pg
 {
 
 
 PositiveForceConstr::PositiveForceConstr(PGData* pgdata)
-  : roboptim::DifferentiableFunction(pgdata->pbSize(), pgdata->nrForcePoints(), "PositiveForce")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), pgdata->nrForcePoints(), "PositiveForce")
   , pgdata_(pgdata)
+  , nrNonZero_(0)
   , jacPoints_(pgdata->nrForcePoints())
   , jacPointsMatTmp_(pgdata->nrForcePoints())
-  , jacPointMatFull_(1, pgdata->mb().nrParams())
 {
   std::size_t index = 0;
   for(const PGData::ForceData& fd: pgdata_->forceDatas())
@@ -38,6 +39,8 @@ PositiveForceConstr::PositiveForceConstr(PGData* pgdata)
     {
       jacPoints_[index] = rbd::Jacobian(pgdata_->mb(), fd.bodyId, fd.points[i].translation());
       jacPointsMatTmp_[index].resize(1, jacPoints_[index].dof());
+      // jacobian dof + force vec
+      nrNonZero_ += jacPoints_[index].dof() + 3;
       ++index;
     }
   }
@@ -69,7 +72,7 @@ void PositiveForceConstr::impl_compute(result_t& res, const argument_t& x) const
 void PositiveForceConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
   pgdata_->x(x);
-  jac.setZero();
+  jac.reserve(nrNonZero_);
 
   int index = 0;
   for(const PGData::ForceData& fd: pgdata_->forceDatas())
@@ -84,12 +87,13 @@ void PositiveForceConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) co
                                            fd.points[i].rotation().row(2).transpose())\
           .block(3, 0, 3, jacPoints_[index].dof());
       jacPointsMatTmp_[index].noalias() = fd.forces[i].force().transpose()*jacPointMat;
-      jacPoints_[index].fullJacobian(pgdata_->mb(), jacPointsMatTmp_[index], jacPointMatFull_);
-      jac.block(index, 0, 1, pgdata_->mb().nrParams()).noalias() = jacPointMatFull_;
+      fullJacobianSparse(pgdata_->mb(), jacPoints_[index], jacPointsMatTmp_[index],
+                         jac, {index, 0});
 
-
-      jac.block<1,3>(index, pgdata_->forceParamsBegin() + index*3).noalias() =
-          X_0_pi.rotation().row(2);
+      int indexCols = pgdata_->forceParamsBegin() + index*3;
+      jac.insert(index, indexCols + 0) = X_0_pi.rotation().row(2)(0);
+      jac.insert(index, indexCols + 1) = X_0_pi.rotation().row(2)(1);
+      jac.insert(index, indexCols + 2) = X_0_pi.rotation().row(2)(2);
 
       ++index;
     }

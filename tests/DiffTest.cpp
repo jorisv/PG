@@ -51,10 +51,12 @@ double checkGradient(
   const typename roboptim::GenericDifferentiableFunction<T>::vector_t& x,
   double epsilon=1e-8)
 {
-  Eigen::MatrixXd jac(std::get<0>(function.jacobianSize()),
-                      std::get<1>(function.jacobianSize()));
-  Eigen::MatrixXd jacF(std::get<0>(function.jacobianSize()),
-                       std::get<1>(function.jacobianSize()));
+  typename roboptim::GenericFunctionTraits<T>::jacobian_t jac(
+    std::get<0>(function.jacobianSize()),
+    std::get<1>(function.jacobianSize()));
+  typename roboptim::GenericFunctionTraits<T>::jacobian_t jacF(
+    std::get<0>(function.jacobianSize()),
+    std::get<1>(function.jacobianSize()));
 
   roboptim::GenericFiniteDifferenceGradient<T> fdfunction(function, epsilon);
   function.jacobian(jac, x);
@@ -365,14 +367,6 @@ BOOST_AUTO_TEST_CASE(StdCostFunctionTest)
     tq[i] = {0.33*i};
   }
 
-  /*
-  std::vector<pg::BodyPositionTarget> bodiesPos = {{12, target, 3.45}};
-  std::vector<pg::BodyOrientationTarget> bodiesOri = {{12, oriTarget, 5.66}};
-  std::vector<pg::ForceContactMinimization> forceMin = {{12, 8.87}};
-
-  pg::StdCostFunc cost(&pgdata, tq, 1.44, 0., 2.33, 0., bodiesPos, bodiesOri,
-                       forceContacts, forceMin);
-                       */
   std::vector<pg::BodyPositionTarget> bodiesPos = {{12, target, 3.45}};
   std::vector<pg::BodyOrientationTarget> bodiesOri = {{12, oriTarget, 5.06}};
   std::vector<pg::ForceContactMinimization> forceMin = {{12, 1.87}};

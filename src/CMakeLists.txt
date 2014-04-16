@@ -1,12 +1,12 @@
 INCLUDE_DIRECTORIES(BEFORE ${Boost_INCLUDE_DIR})
 
-set(SOURCES PGData.cpp
+set(SOURCES PGData.cpp FillSparse.cpp
             StdCostFunc.cpp
             FixedContactConstr.cpp StaticStabilityConstr.cpp
             PositiveForceConstr.cpp FrictionConeConstr.cpp
             PlanarSurfaceConstr.cpp CollisionConstr.cpp
             PostureGenerator.cpp)
-set(HEADERS PGData.h
+set(HEADERS PGData.h FillSparse.h
             ConfigStruct.h
             StdCostFunc.h
             FixedContactConstr.h StaticStabilityConstr.h

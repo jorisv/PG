@@ -23,6 +23,7 @@
 // PG
 #include "ConfigStruct.h"
 #include "PGData.h"
+#include "FillSparse.h"
 
 namespace pg
 {
@@ -79,18 +80,19 @@ closestPoints(SCD::CD_Pair* pair)
 
 
 EnvCollisionConstr::EnvCollisionConstr(PGData* pgdata, const std::vector<EnvCollision>& cols)
-  : roboptim::DifferentiableFunction(pgdata->pbSize(), int(cols.size()), "EnvCollision")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), int(cols.size()), "EnvCollision")
   , pgdata_(pgdata)
+  , nrNonZero_(0)
 {
   cols_.reserve(cols.size());
   for(const EnvCollision& sc: cols)
   {
     rbd::Jacobian jac(pgdata_->mb(), sc.bodyId);
     Eigen::MatrixXd jacMat(1, jac.dof());
-    Eigen::MatrixXd jacMatFull(1, pgdata_->mb().nrDof());
     cols_.push_back({pgdata_->multibody().bodyIndexById(sc.bodyId),
                      sc.bodyT, new SCD::CD_Pair(sc.bodyHull, sc.envHull),
-                     jac, jacMat, jacMatFull});
+                     jac, jacMat});
+    nrNonZero_ += jac.dof();
   }
 }
 
@@ -124,7 +126,7 @@ void EnvCollisionConstr::impl_compute(result_t& res, const argument_t& x) const 
 void EnvCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
   pgdata_->x(x);
-  jac.setZero();
+  jac.reserve(nrNonZero_);
 
   int i = 0;
   for(CollisionData& cd: cols_)
@@ -144,8 +146,7 @@ void EnvCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
     double coef = std::copysign(2., dist);
     const Eigen::MatrixXd& jacMat = cd.jac.jacobian(pgdata_->mb(), pgdata_->mbc());
     cd.jacMat.noalias() = coef*dist3d.transpose()*jacMat.block(3, 0, 3, cd.jac.dof());
-    cd.jac.fullJacobian(pgdata_->mb(), cd.jacMat, cd.jacMatFull);
-    jac.block(i, 0, 1, cd.jacMatFull.cols()).noalias() = cd.jacMatFull;
+    fullJacobianSparse(pgdata_->mb(), cd.jac, cd.jacMat, jac, {i, 0});
     ++i;
   }
 }
@@ -157,25 +158,33 @@ void EnvCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
 
 
 SelfCollisionConstr::SelfCollisionConstr(PGData* pgdata, const std::vector<SelfCollision>& cols)
-  : roboptim::DifferentiableFunction(pgdata->pbSize(), int(cols.size()), "EnvCollision")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), int(cols.size()), "EnvCollision")
   , pgdata_(pgdata)
+  , nrNonZero_(0)
 {
   cols_.reserve(cols.size());
   for(const SelfCollision& sc: cols)
   {
     rbd::Jacobian jac1(pgdata_->mb(), sc.body1Id);
     Eigen::MatrixXd jac1Mat(1, jac1.dof());
-    Eigen::MatrixXd jac1MatFull(1, pgdata_->mb().nrDof());
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jac1MatFull(outputSize(),
+                                                             pgdata_->pbSize());
+
+    jac1MatFull.reserve(jac1.dof());
 
     rbd::Jacobian jac2(pgdata_->mb(), sc.body2Id);
     Eigen::MatrixXd jac2Mat(1, jac2.dof());
-    Eigen::MatrixXd jac2MatFull(1, pgdata_->mb().nrDof());
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jac2MatFull(outputSize(),
+                                                             pgdata_->pbSize());
+    jac2MatFull.reserve(jac2.dof());
 
     cols_.push_back({pgdata_->multibody().bodyIndexById(sc.body1Id),
                      sc.body1T, jac1, jac1Mat, jac1MatFull,
                      pgdata_->multibody().bodyIndexById(sc.body2Id),
                      sc.body2T, jac2, jac2Mat, jac2MatFull,
                      new SCD::CD_Pair(sc.body1Hull, sc.body2Hull)});
+    // not true, but better to ask bigger
+    nrNonZero_ += jac1.dof() + jac2.dof();
   }
 }
 
@@ -211,7 +220,7 @@ void SelfCollisionConstr::impl_compute(result_t& res, const argument_t& x) const
 void SelfCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
   pgdata_->x(x);
-  jac.setZero();
+  jac.reserve(nrNonZero_);
 
   int i = 0;
   for(CollisionData& cd: cols_)
@@ -240,9 +249,11 @@ void SelfCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) co
     cd.jac1Mat.noalias() = coef*dist3d.transpose()*jac1Mat.block(3, 0, 3, cd.jac1.dof());
     cd.jac2Mat.noalias() = coef*dist3d.transpose()*jac2Mat.block(3, 0, 3, cd.jac2.dof());
 
-    cd.jac1.fullJacobian(pgdata_->mb(), cd.jac1Mat, cd.jac1MatFull);
-    cd.jac2.fullJacobian(pgdata_->mb(), cd.jac2Mat, cd.jac2MatFull);
-    jac.block(i, 0, 1, cd.jac1MatFull.cols()).noalias() = cd.jac1MatFull - cd.jac2MatFull;
+    cd.jac1MatFull.setZero();
+    cd.jac2MatFull.setZero();
+    updateFullJacobianSparse(pgdata_->mb(), cd.jac1, cd.jac1Mat, cd.jac1MatFull, {i, 0});
+    updateFullJacobianSparse(pgdata_->mb(), cd.jac2, cd.jac2Mat, cd.jac2MatFull, {i, 0});
+    jac = cd.jac1MatFull - cd.jac2MatFull;
     ++i;
   }
 }

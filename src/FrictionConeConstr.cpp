@@ -19,17 +19,18 @@
 // PG
 #include "ConfigStruct.h"
 #include "PGData.h"
+#include "FillSparse.h"
 
 namespace pg
 {
 
 
 FrictionConeConstr::FrictionConeConstr(PGData* pgdata)
-  : roboptim::DifferentiableFunction(pgdata->pbSize(), pgdata->nrForcePoints(), "FrictionConeConstr")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), pgdata->nrForcePoints(), "FrictionConeConstr")
   , pgdata_(pgdata)
+  , nrNonZero_(0)
   , jacPoints_(pgdata->nrForcePoints())
   , jacPointsMatTmp_(pgdata->nrForcePoints())
-  , jacPointMatFull_(1, pgdata->mb().nrParams())
 {
   std::size_t index = 0;
   for(const PGData::ForceData& fd: pgdata_->forceDatas())
@@ -38,6 +39,8 @@ FrictionConeConstr::FrictionConeConstr(PGData* pgdata)
     {
       jacPoints_[index] = rbd::Jacobian(pgdata_->mb(), fd.bodyId, fd.points[i].translation());
       jacPointsMatTmp_[index].resize(1, jacPoints_[index].dof());
+      // jacobian dof + force vec
+      nrNonZero_ += jacPoints_[index].dof() + 3;
       ++index;
     }
   }
@@ -71,7 +74,7 @@ void FrictionConeConstr::impl_compute(result_t& res, const argument_t& x) const 
 void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
   pgdata_->x(x);
-  jac.setZero();
+  jac.reserve(nrNonZero_);
 
   int index = 0;
   for(const PGData::ForceData& fd: pgdata_->forceDatas())
@@ -86,16 +89,7 @@ void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
       // Z axis
       //                dq
       // -(mu*forceB.z())^2 => -2*mu^2*forceB.z()*forceW*jacZ
-      const Eigen::MatrixXd& jacPointVecZMat =
-          jacPoints_[index].vectorJacobian(pgdata_->mb(),
-                                           pgdata_->mbc(),
-                                           fd.points[i].rotation().row(2).transpose())\
-          .block(3, 0, 3, jacPoints_[index].dof());
-      jacPointsMatTmp_[index].row(0).noalias() =
-          (-2.*muSquare*fBody.z())*(fd.forces[i].force().transpose()*jacPointVecZMat);
-      jacPoints_[index].fullJacobian(pgdata_->mb(), jacPointsMatTmp_[index], jacPointMatFull_);
-      jac.block(index, 0, 1, pgdata_->mb().nrParams()).noalias() = jacPointMatFull_;
-
+      //
       // X axis
       //               dq
       // forceB.x()**2 => 2*forceB.x()*forceW*jacX
@@ -103,12 +97,20 @@ void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
       // Y axis
       //               dq
       // forceB.y()**2 => 2*forceB.y()*forceW*jacY
+      const Eigen::MatrixXd& jacPointVecZMat =
+          jacPoints_[index].vectorJacobian(pgdata_->mb(),
+                                           pgdata_->mbc(),
+                                           fd.points[i].rotation().row(2).transpose())\
+          .block(3, 0, 3, jacPoints_[index].dof());
+      jacPointsMatTmp_[index].row(0).noalias() =
+          (-2.*muSquare*fBody.z())*(fd.forces[i].force().transpose()*jacPointVecZMat);
+
       const Eigen::MatrixXd& jacPointVecXMat =
           jacPoints_[index].vectorJacobian(pgdata_->mb(),
                                            pgdata_->mbc(),
                                            fd.points[i].rotation().row(0).transpose())\
           .block(3, 0, 3, jacPoints_[index].dof());
-      jacPointsMatTmp_[index].noalias() =
+      jacPointsMatTmp_[index].noalias() +=
           (2.*fBody.x())*(fd.forces[i].force().transpose()*jacPointVecXMat);
 
       const Eigen::MatrixXd& jacPointVecYMat =
@@ -119,15 +121,13 @@ void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
       jacPointsMatTmp_[index].noalias() +=
           (2.*fBody.y())*(fd.forces[i].force().transpose()*jacPointVecYMat);
 
-      jacPoints_[index].fullJacobian(pgdata_->mb(), jacPointsMatTmp_[index], jacPointMatFull_);
-      jac.block(index, 0, 1, pgdata_->mb().nrParams()).noalias() += jacPointMatFull_;
+      fullJacobianSparse(pgdata_->mb(), jacPoints_[index], jacPointsMatTmp_[index],
+        jac, {index, 0});
 
       // Z axis
       //                dforceW
       // -(mu*forceB.z())^2 => -2*mu^2*forceB.z()*X_0_pi_rowZ
-      jac.block<1,3>(index, pgdata_->forceParamsBegin() + index*3).noalias() =
-          (-2.*muSquare*fBody.z())*X_0_pi.rotation().row(2);
-
+      //
       // X axis
       //               dforceW
       // forceB.x()**2 => 2*forceB.x()*X_0_pi_rowX
@@ -135,10 +135,13 @@ void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
       // Y axis
       //               dforceW
       // forceB.y()**2 => 2*forceB.y()*X_0_pi_rowY
-      jac.block<1,3>(index, pgdata_->forceParamsBegin() + index*3).noalias() +=
-          (2.*fBody.x())*X_0_pi.rotation().row(0);
-      jac.block<1,3>(index, pgdata_->forceParamsBegin() + index*3).noalias() +=
-          (2.*fBody.y())*X_0_pi.rotation().row(1);
+      Eigen::RowVector3d fDiff = (-2.*muSquare*fBody.z())*X_0_pi.rotation().row(2);
+      fDiff.noalias() += (2.*fBody.x())*X_0_pi.rotation().row(0);
+      fDiff.noalias() += (2.*fBody.y())*X_0_pi.rotation().row(1);
+      int indexCols = pgdata_->forceParamsBegin() + index*3;
+      jac.insert(index, indexCols + 0) = fDiff(0);
+      jac.insert(index, indexCols + 1) = fDiff(1);
+      jac.insert(index, indexCols + 2) = fDiff(2);
 
       ++index;
     }

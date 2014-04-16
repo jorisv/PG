@@ -27,7 +27,7 @@ namespace pg
 {
 class PGData;
 
-class StaticStabilityConstr : public roboptim::DifferentiableFunction
+class StaticStabilityConstr : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
