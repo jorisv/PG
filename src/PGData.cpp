@@ -26,6 +26,7 @@
 
 // PG
 #include "ConfigStruct.h"
+#include "JacobianPatcher.h"
 
 namespace pg
 {
@@ -109,6 +110,7 @@ void PGData::update()
 {
   rbd::vectorToParam(x_.head(mb_.nrParams()), mbc_.q);
   rbd::forwardKinematics(mb_, mbc_);
+  patchMbc(mb_, mbc_);
   com_ = rbd::computeCoM(mb_, mbc_);
   comJacMat_ = comJac_.jacobian(mb_, mbc_);
 

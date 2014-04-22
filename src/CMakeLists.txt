@@ -13,7 +13,7 @@ set(HEADERS PGData.h FillSparse.h
             PositiveForceConstr.h FrictionConeConstr.h
             PlanarSurfaceConstr.h TorqueConstr.h
             CollisionConstr.h EllipseContactConstr.h
-            IterationCallback.h
+            IterationCallback.h JacobianPatcher.h
             PostureGenerator.h)
 
 add_library(PG SHARED ${SOURCES} ${HEADERS})

@@ -305,7 +305,7 @@ BOOST_AUTO_TEST_CASE(EnvCollisionTest)
 
   pg::EnvCollisionConstr ecc(&pgdata, {ec});
 
-  for(int i = 0; i < 100; ++i)
+  for(int i = 0; i < 50; ++i)
   {
     Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize())*3.14);
     BOOST_CHECK_SMALL(checkGradient(ecc, x, 1e-4), 1e-1);
@@ -331,7 +331,7 @@ BOOST_AUTO_TEST_CASE(SelfCollisionTest)
 
   pg::SelfCollisionConstr scc(&pgdata, {sc});
 
-  for(int i = 0; i < 100; ++i)
+  for(int i = 0; i < 50; ++i)
   {
     Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize())*3.14);
     BOOST_CHECK_SMALL(checkGradient(scc, x, 1e-4), 1e-1);
@@ -374,10 +374,13 @@ BOOST_AUTO_TEST_CASE(StdCostFunctionTest)
   pg::StdCostFunc cost(&pgdata, tq, 1.44, 0., 2.33, 0., bodiesPos, bodiesOri,
                        forceContacts, forceMin);
 
-
+  // an error could appear
+  // apparently sva::rotationError is not right when
+  // the sum of rotation error diagonal is near (-)1.
+  // see A mathematical introduction to robotic manipulation Prop 2.5 p29.
   for(int i = 0; i < 100; ++i)
   {
     Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize())*3.14);
-    BOOST_CHECK_SMALL(checkGradient(cost, x, 1e-6), 1e-3);
+    BOOST_CHECK_SMALL(checkGradient(cost, x, 1e-5), 1e-3);
   }
 }

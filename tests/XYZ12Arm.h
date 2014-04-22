@@ -19,7 +19,7 @@
 #include <RBDyn/MultiBodyGraph.h>
 
 /// @return An simple Z*12 arm with Y as up axis.
-std::tuple<rbd::MultiBody, rbd::MultiBodyConfig> makeXYZ12Arm(bool isFixed=true)
+std::tuple<rbd::MultiBody, rbd::MultiBodyConfig> makeXYZ12Arm(bool isPlanar=true)
 {
   using namespace Eigen;
   using namespace sva;
@@ -72,7 +72,7 @@ std::tuple<rbd::MultiBody, rbd::MultiBodyConfig> makeXYZ12Arm(bool isFixed=true)
     mbg.linkBodies(i, to, i + 1, from, i);
   }
 
-  MultiBody mb = mbg.makeMultiBody(0, isFixed);
+  MultiBody mb = mbg.makeMultiBody(0, isPlanar ? Joint::Planar : Joint::Fixed);
 
   MultiBodyConfig mbc(mb);
   mbc.zero(mb);
