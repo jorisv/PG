@@ -67,6 +67,7 @@ def build_pg(pg):
   forceContactMin = pg.add_struct('ForceContactMinimization')
   iterateQuantities = pg.add_struct('IterateQuantities')
   ellipseResult = pg.add_struct('EllipseResult')
+  runConfig = pg.add_struct('RunConfig')
 
   # build list type
   pg.add_container('std::vector<pg::FixedPositionContact>', 'pg::FixedPositionContact', 'vector')
@@ -83,12 +84,14 @@ def build_pg(pg):
   pg.add_container('std::vector<Eigen::VectorXd>', 'Eigen::VectorXd', 'vector')
   pg.add_container('std::vector<std::vector<Eigen::VectorXd> >', 'std::vector<Eigen::VectorXd>', 'vector')
   pg.add_container('std::vector<pg::EllipseResult>', 'pg::EllipseResult', 'vector')
+  pg.add_container('std::vector<pg::RobotConfig>', 'pg::RobotConfig', 'vector')
+  pg.add_container('std::vector<pg::RunConfig>', 'pg::RunConfig', 'vector')
 
   # PostureGenerator
   pgSolver.add_constructor([])
 
-  pgSolver.add_method('robotConfig', None, [param('pg::RobotConfig', 'rc'), param('const Eigen::Vector3d&', 'gravity')])
-  pgSolver.add_method('robotConfig', retval('pg::RobotConfig'), [], is_const=True)
+  pgSolver.add_method('robotConfig', None, [param('std::vector<pg::RobotConfig>', 'rc'), param('const Eigen::Vector3d&', 'gravity')])
+  pgSolver.add_method('robotConfig', retval('std::vector<pg::RobotConfig>'), [], is_const=True)
 
   # Don't change the order. We must try to convert in int before convert in double
   # because double -> int fail but int -> double succeed (so int are read as double).
@@ -96,25 +99,41 @@ def build_pg(pg):
   pgSolver.add_method('param', None, [param('const std::string&', 'name'), param('int', 'value')])
   pgSolver.add_method('param', None, [param('const std::string&', 'name'), param('double', 'value')])
 
-  pgSolver.add_method('run', retval('bool'), [param('std::vector<std::vector<double> >', 'initQ'),
-                                              param('std::vector<sva::ForceVecd>', 'initForces'),
-                                              param('std::vector<std::vector<double> >', 'targetQ')])
+  pgSolver.add_method('run', retval('bool'), [param('const std::vector<pg::RunConfig>&', 'config')])
 
-  pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [])
-  pgSolver.add_method('forces', retval('std::vector<sva::ForceVecd>'), [])
-  pgSolver.add_method('torque', retval('std::vector<std::vector<double> >'), [])
-  pgSolver.add_method('ellipses', retval('std::vector<pg::EllipseResult>'), [])
+  pgSolver.add_method('q', retval('std::vector<std::vector<double> >'), [], is_const=True)
+  pgSolver.add_method('forces', retval('std::vector<sva::ForceVecd>'), [], is_const=True)
+  pgSolver.add_method('torque', retval('std::vector<std::vector<double> >'), [], is_const=True)
+  pgSolver.add_method('ellipses', retval('std::vector<pg::EllipseResult>'), [], is_const=True)
 
-  pgSolver.add_method('nrIters', retval('int'), [])
+  pgSolver.add_method('q', retval('std::vector<std::vector<double> >'),
+                      [param('int', 'robot')], is_const=True)
+  pgSolver.add_method('forces', retval('std::vector<sva::ForceVecd>'),
+                      [param('int', 'robot')], is_const=True)
+  pgSolver.add_method('torque', retval('std::vector<std::vector<double> >'),
+                      [param('int', 'robot')])
+  pgSolver.add_method('ellipses', retval('std::vector<pg::EllipseResult>'),
+                      [param('int', 'robot')], is_const=True)
+
+  pgSolver.add_method('nrIters', retval('int'), [], is_const=True)
   pgSolver.add_method('qIter', retval('std::vector<std::vector<double> >'),
-                      [param('int', 'iter')], throw=[out_ex])
+                      [param('int', 'iter')], throw=[out_ex], is_const=True)
   pgSolver.add_method('forcesIter', retval('std::vector<sva::ForceVecd>'),
-                      [param('int', 'iter')], throw=[out_ex])
+                      [param('int', 'iter')], throw=[out_ex], is_const=True)
   pgSolver.add_method('torqueIter', retval('std::vector<std::vector<double> >'),
                       [param('int', 'iter')], throw=[out_ex])
+  pgSolver.add_method('ellipsesIter', retval('std::vector<pg::EllipseResult>'),
+                      [param('int', 'iter')], throw=[out_ex], is_const=True)
+  pgSolver.add_method('qIter', retval('std::vector<std::vector<double> >'),
+                      [param('int', 'robot'), param('int', 'iter')], throw=[out_ex], is_const=True)
+  pgSolver.add_method('forcesIter', retval('std::vector<sva::ForceVecd>'),
+                      [param('int', 'robot'), param('int', 'iter')], throw=[out_ex], is_const=True)
+  pgSolver.add_method('torqueIter', retval('std::vector<std::vector<double> >'),
+                      [param('int', 'robot'), param('int', 'iter')], throw=[out_ex])
+  pgSolver.add_method('ellipsesIter', retval('std::vector<pg::EllipseResult>'),
+                      [param('int', 'robot'), param('int', 'iter')], throw=[out_ex], is_const=True)
   pgSolver.add_method('quantitiesIter', retval('pg::IterateQuantities'),
-                      [param('int', 'iter')], throw=[out_ex])
-  pgSolver.add_method('ellipsesIter', retval('std::vector<pg::EllipseResult>'), [param('int', 'iter')], throw=[out_ex])
+                      [param('int', 'iter')], throw=[out_ex], is_const=True)
 
   # FixedPositionContact
   fixedPositionContact.add_constructor([])
@@ -280,6 +299,15 @@ def build_pg(pg):
   robotConfig.add_instance_attribute('bodyPosTargets', 'std::vector<pg::BodyPositionTarget>')
   robotConfig.add_instance_attribute('bodyOriTargets', 'std::vector<pg::BodyOrientationTarget>')
   robotConfig.add_instance_attribute('forceContactsMin', 'std::vector<pg::ForceContactMinimization>')
+
+  # RunConfig
+  runConfig.add_constructor([])
+  runConfig.add_constructor([param('std::vector<std::vector<double> >', 'initQ'),
+                             param('std::vector<sva::ForceVecd>', 'initForces'),
+                             param('std::vector<std::vector<double> >', 'targetQ')])
+  runConfig.add_instance_attribute('initQ', 'std::vector<std::vector<double> >')
+  runConfig.add_instance_attribute('initForces', 'std::vector<sva::ForceVecd>')
+  runConfig.add_instance_attribute('targetQ', 'std::vector<std::vector<double> >')
 
   # IterateQuantities
   iterateQuantities.add_instance_attribute('obj', 'double')
