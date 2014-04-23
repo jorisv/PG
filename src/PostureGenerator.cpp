@@ -188,16 +188,22 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
 
   for(const PlanarContact& pc: robotConfig_->planarContacts)
   {
-    boost::shared_ptr<PlanarPositionContactConstr> ppc(
-        new PlanarPositionContactConstr(pgdata_.get(), pc.bodyId, pc.targetFrame, pc.surfaceFrame));
-    problem.addConstraint(ppc, {{0., 0.}}, {{1.}});
+    int bodyIndex = pgdata_->mb().bodyIndexById(pc.bodyId);
+    // if the root body is a planar contact and the root joint is a planar joint
+    // we don't need to add planar position and orientation constraint
+    if(bodyIndex != 0 || pgdata_->mb().joint(0).type() != rbd::Joint::Planar)
+    {
+      boost::shared_ptr<PlanarPositionContactConstr> ppc(
+          new PlanarPositionContactConstr(pgdata_.get(), pc.bodyId, pc.targetFrame, pc.surfaceFrame));
+      problem.addConstraint(ppc, {{0., 0.}}, {{1.}});
 
-    // N axis must be aligned between target and surface frame.
-    boost::shared_ptr<PlanarOrientationContactConstr> poc(
-        new PlanarOrientationContactConstr(pgdata_.get(), pc.bodyId,
-                                           pc.targetFrame, pc.surfaceFrame,
-                                           2));
-    problem.addConstraint(poc, {{1., 1.}}, {{1.}});
+      // N axis must be aligned between target and surface frame.
+      boost::shared_ptr<PlanarOrientationContactConstr> poc(
+          new PlanarOrientationContactConstr(pgdata_.get(), pc.bodyId,
+                                             pc.targetFrame, pc.surfaceFrame,
+                                             2));
+      problem.addConstraint(poc, {{1., 1.}}, {{1.}});
+    }
 
     boost::shared_ptr<PlanarInclusionConstr> pic(
         new PlanarInclusionConstr(pgdata_.get(), pc.bodyId,
