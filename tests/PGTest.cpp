@@ -121,8 +121,8 @@ BOOST_AUTO_TEST_CASE(PGTest)
     Vector3d target(0., 0.5, 0.5);
     rc.fixedPosContacts = {{3, target, sva::PTransformd::Identity()}};
 
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -137,8 +137,8 @@ BOOST_AUTO_TEST_CASE(PGTest)
     Matrix3d target(Quaterniond(AngleAxisd(-cst::pi<double>()/2., Vector3d::UnitX())));
     rc.fixedOriContacts = {{3, target, sva::PTransformd::Identity()}};
 
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -216,8 +216,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     rc.fixedPosContacts = {{id, target, sva::PTransformd::Identity()}};
     rc.fixedOriContacts = {{id, oriTarget, sva::PTransformd::Identity()}};
 
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -242,8 +242,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     rc.forceContacts = {{0, {sva::PTransformd(frame, Vector3d(0.01, 0., 0.)),
                              sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.}};
 
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -272,8 +272,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
                              sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}};
 
     rc.postureScale = 1.;
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -298,8 +298,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     rc.planarContacts = {{id, targetSurface, targetPoints, bodySurface, surfPoints}};
     rc.bodyPosTargets = {{id, Vector3d(2., 1., 0.), 10.}};
 
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -431,8 +431,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     rc.bodyPosTargets = {{id, target, 0.1}};
 
     // first we try to go to origin
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
 
     auto qOrigin = pgPb.q();
     mbcWork.q = qOrigin;
@@ -448,8 +448,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
 
     rc.envCollisions = {{id, &hullBody, sva::PTransformd::Identity(), &hullEnv, 0.1}};
     // we check that we couldn't go in collision
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -458,8 +458,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
 
     rc.bodyPosTargets = {};
     // same check but we start in constraint violation
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(qOrigin, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{qOrigin, {}, mbcInit.q}}));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -485,8 +485,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     rc.bodyPosTargets = {{id1, target, 0.1}, {id2, target, 0.1}};
 
     // first we try to go to origin
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
 
     auto qOrigin = pgPb.q();
     mbcWork.q = qOrigin;
@@ -506,8 +506,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
                           0.1}};
 
     // we check that we couldn't go in collision
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(mbcInit.q, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);
@@ -519,8 +519,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
 
     rc.bodyPosTargets = {};
     // same check but we start in constraint violation
-    pgPb.robotConfig(rc, gravity);
-    BOOST_REQUIRE(pgPb.run(qOrigin, {}, mbcInit.q));
+    pgPb.robotConfig({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{qOrigin, {}, mbcInit.q}}));
 
     mbcWork.q = pgPb.q();
     forwardKinematics(mb, mbcWork);

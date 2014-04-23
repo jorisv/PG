@@ -59,7 +59,8 @@ void FixedPositionContactConstr::impl_jacobian(jacobian_t& jac, const argument_t
   pgdata_->x(x);
   jac.reserve(3*jac_.dof());
   const Eigen::MatrixXd& jacMat = jac_.jacobian(pgdata_->multibody(), pgdata_->mbc());
-  fullJacobianSparse(pgdata_->mb(), jac_, jacMat.block(3, 0, 3, jacMat.cols()), jac);
+  fullJacobianSparse(pgdata_->mb(), jac_, jacMat.block(3, 0, 3, jacMat.cols()),
+                     jac, {0, pgdata_->qParamsBegin()});
 }
 
 
@@ -118,7 +119,7 @@ void FixedOrientationContactConstr::impl_jacobian(jacobian_t& jac, const argumen
   dotDerivative(surfaceFrame_.rotation().row(1), target_.row(1), dotCacheSum_.row(1));
   dotDerivative(surfaceFrame_.rotation().row(2), target_.row(2), dotCacheSum_.row(2));
 
-  fullJacobianSparse(pgdata_->mb(), jac_, dotCacheSum_, jac);
+  fullJacobianSparse(pgdata_->mb(), jac_, dotCacheSum_, jac, {0, pgdata_->qParamsBegin()});
 }
 
 

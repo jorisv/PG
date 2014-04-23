@@ -112,7 +112,7 @@ void StaticStabilityConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) 
     }
   }
   // fill couple
-  fillSparse(couple_jac_, jac);
+  fillSparse(couple_jac_, jac, {0, pgdata_->qParamsBegin()});
 }
 
 } // pg

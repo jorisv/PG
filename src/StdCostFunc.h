@@ -26,10 +26,8 @@
 namespace pg
 {
 class PGData;
-class BodyPositionTarget;
-class BodyOrientationTarget;
-class ForceContact;
-class ForceContactMinimization;
+class RobotConfig;
+class RunConfig;
 
 class StdCostFunc : public roboptim::DifferentiableSparseFunction
 {
@@ -37,13 +35,8 @@ public:
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  StdCostFunc(PGData* pgdata, std::vector<std::vector<double>> q,
-              double postureScale, double torqueScale, double forceScale, 
-              double ellipseScale,
-              const std::vector<BodyPositionTarget>& bodyPosTargets,
-              const std::vector<BodyOrientationTarget>& bodyOriTargets,
-              const std::vector<ForceContact>& forceContacts,
-              const std::vector<ForceContactMinimization>& forceContactsMin);
+  StdCostFunc(std::vector<PGData>& pgdatas, const std::vector<RobotConfig>& robotConfigs,
+              const std::vector<RunConfig>& runConfigs);
 
   void impl_compute(result_t& res, const argument_t& x) const throw();
   void impl_gradient(gradient_t& gradient,
@@ -77,16 +70,21 @@ private:
     double scale;
   };
 
+  struct RobotData
+  {
+    PGData* pgdata;
+    std::vector<std::vector<double>> tq;
+    double postureScale;
+    double torqueScale;
+    double forceScale;
+    double ellipseScale;
+    std::vector<BodyPositionTargetData> bodyPosTargets;
+    std::vector<BodyOrientationTargetData> bodyOriTargets;
+    std::vector<ForceContactMinimizationData> forceContactsMin;
+  };
+
 private:
-  PGData* pgdata_;
-  std::vector<std::vector<double>> tq_;
-  double postureScale_;
-  double torqueScale_;
-  double forceScale_;
-  double ellipseScale_;
-  mutable std::vector<BodyPositionTargetData> bodyPosTargets_;
-  mutable std::vector<BodyOrientationTargetData> bodyOriTargets_;
-  std::vector<ForceContactMinimizationData> forceContactsMin_;
+  mutable std::vector<RobotData> robotDatas_;
 };
 
 } // namespace pg

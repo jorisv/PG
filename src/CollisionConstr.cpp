@@ -146,7 +146,7 @@ void EnvCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
     double coef = std::copysign(2., dist);
     const Eigen::MatrixXd& jacMat = cd.jac.jacobian(pgdata_->mb(), pgdata_->mbc());
     cd.jacMat.noalias() = coef*dist3d.transpose()*jacMat.block(3, 0, 3, cd.jac.dof());
-    fullJacobianSparse(pgdata_->mb(), cd.jac, cd.jacMat, jac, {i, 0});
+    fullJacobianSparse(pgdata_->mb(), cd.jac, cd.jacMat, jac, {i, pgdata_->qParamsBegin()});
     ++i;
   }
 }
@@ -249,8 +249,8 @@ void SelfCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) co
     cd.jac1Mat.noalias() = coef*dist3d.transpose()*jac1Mat.block(3, 0, 3, cd.jac1.dof());
     cd.jac2Mat.noalias() = coef*dist3d.transpose()*jac2Mat.block(3, 0, 3, cd.jac2.dof());
 
-    updateFullJacobianSparse(pgdata_->mb(), cd.jac1, cd.jac1Mat, cd.jac1MatFull, {i, 0});
-    updateFullJacobianSparse(pgdata_->mb(), cd.jac2, cd.jac2Mat, cd.jac2MatFull, {i, 0});
+    updateFullJacobianSparse(pgdata_->mb(), cd.jac1, cd.jac1Mat, cd.jac1MatFull, {i, pgdata_->qParamsBegin()});
+    updateFullJacobianSparse(pgdata_->mb(), cd.jac2, cd.jac2Mat, cd.jac2MatFull, {i, pgdata_->qParamsBegin()});
     jac += cd.jac1MatFull - cd.jac2MatFull;
     ++i;
   }

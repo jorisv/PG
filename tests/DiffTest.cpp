@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(FixedContactPosTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  pg::PGData pgdata(mb, gravity, mb.nrParams(), 0, mb.nrParams());
 
   Eigen::Vector3d target(2., 0., 0.);
   sva::PTransformd surface(sva::PTransformd::Identity());
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(FixedContactOriTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  pg::PGData pgdata(mb, gravity, mb.nrParams(), 0, mb.nrParams());
 
   Matrix3d oriTarget(sva::RotZ(cst::pi<double>()));
   sva::PTransformd surface(sva::RotZ(-cst::pi<double>()/2.), Vector3d::Random());
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(PlanarPositionContactTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  pg::PGData pgdata(mb, gravity, mb.nrParams(), 0, mb.nrParams());
 
   sva::PTransformd target(Eigen::Vector3d(0., 1., 0.));
   sva::PTransformd surface(sva::PTransformd::Identity());
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(PlanarOrientationContactTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  pg::PGData pgdata(mb, gravity, mb.nrParams(), 0, mb.nrParams());
 
   Eigen::Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
   sva::PTransformd surface(sva::PTransformd::Identity());
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE(PlanarInclusionTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  pg::PGData pgdata(mb, gravity, mb.nrParams(), 0, mb.nrParams());
 
   sva::PTransformd targetSurface(sva::RotZ(-cst::pi<double>()), Eigen::Vector3d(0., 1., 0.));
   sva::PTransformd bodySurface(sva::RotZ(-cst::pi<double>()/2.), Eigen::Vector3d(0., 1., 0.));
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE(StaticStabilityTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  pg::PGData pgdata(mb, gravity, mb.nrParams() + 8*3, 0, mb.nrParams());
 
   sva::PTransformd bodySurface(sva::RotZ(-cst::pi<double>()/2.), Eigen::Vector3d(0., 1., 0.));
   std::vector<Vector2d> surfPoints = {{0.1, 0.1}, {-0.1, 0.1}, {-0.1, -0.1}, {0.1, -0.1}};
@@ -237,7 +237,7 @@ BOOST_AUTO_TEST_CASE(PositiveForceTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  pg::PGData pgdata(mb, gravity, mb.nrParams() + 8*3, 0, mb.nrParams());
 
   sva::PTransformd bodySurface(sva::RotZ(-cst::pi<double>()/2.), Eigen::Vector3d(0., 1., 0.));
   std::vector<Vector2d> surfPoints = {{0.1, 0.1}, {-0.1, 0.1}, {-0.1, -0.1}, {0.1, -0.1}};
@@ -266,7 +266,7 @@ BOOST_AUTO_TEST_CASE(FrictionConeTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  pg::PGData pgdata(mb, gravity, mb.nrParams() + 8*3, 0, mb.nrParams());
 
   sva::PTransformd bodySurface(sva::RotZ(-cst::pi<double>()/2.), Eigen::Vector3d(0., 1., 0.));
   std::vector<Vector2d> surfPoints = {{0.1, 0.1}, {-0.1, 0.1}, {-0.1, -0.1}, {0.1, -0.1}};
@@ -296,7 +296,8 @@ BOOST_AUTO_TEST_CASE(EnvCollisionTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  pg::PGData pgdata(mb, gravity, mb.nrParams(), 0, mb.nrParams());
+
   SCD::S_Sphere hullBody(0.5);
   SCD::S_Sphere hullEnv(0.5);
   hullEnv.setTransformation(pg::toSCD(sva::PTransformd::Identity()));
@@ -322,7 +323,8 @@ BOOST_AUTO_TEST_CASE(SelfCollisionTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  pg::PGData pgdata(mb, gravity, mb.nrParams(), 0, mb.nrParams());
+
   SCD::S_Sphere hullBody1(0.2);
   SCD::S_Sphere hullBody2(0.2);
   pg::SelfCollision sc(12, &hullBody1, sva::PTransformd::Identity(),
@@ -348,7 +350,9 @@ BOOST_AUTO_TEST_CASE(StdCostFunctionTest)
   rbd::MultiBodyConfig mbc;
   std::tie(mb, mbc) = makeXYZ12Arm();
 
-  pg::PGData pgdata(mb, gravity);
+  std::vector<pg::PGData> pgdatas;
+  pgdatas.push_back({mb, gravity, mb.nrParams() + 4*3, 0, mb.nrParams()});
+
   Vector3d target(1.5, 0., 0.);
   Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
   int id = 12;
@@ -359,20 +363,25 @@ BOOST_AUTO_TEST_CASE(StdCostFunctionTest)
            sva::PTransformd(frame, Vector3d(-0.01, 0., 0.))}, 1.},
      {id, {sva::PTransformd(frameEnd, Vector3d(0.01, 0., 0.)),
       sva::PTransformd(frameEnd, Vector3d(-0.01, 0., 0.))}, 1.}};
-  pgdata.forces(forceContacts);
+  pgdatas.back().forces(forceContacts);
 
-  std::vector<std::vector<double>> tq(mbc.q);
+  pg::RunConfig runConfig;
+  pg::RobotConfig robotConfig;
+  runConfig.targetQ = mbc.q;
   for(int i = 1; i < mb.nrJoints(); ++i)
   {
-    tq[i] = {0.33*i};
+    runConfig.targetQ[i] = {0.33*i};
   }
 
-  std::vector<pg::BodyPositionTarget> bodiesPos = {{12, target, 3.45}};
-  std::vector<pg::BodyOrientationTarget> bodiesOri = {{12, oriTarget, 5.06}};
-  std::vector<pg::ForceContactMinimization> forceMin = {{12, 1.87}};
+  robotConfig.postureScale = 1.44;
+  robotConfig.torqueScale = 0.;
+  robotConfig.forceScale = 2.33;
+  robotConfig.ellipseCostScale = 0.;
+  robotConfig.bodyPosTargets = {{12, target, 3.45}};
+  robotConfig.bodyOriTargets = {{12, oriTarget, 5.06}};
+  robotConfig.forceContactsMin = {{12, 1.87}};
 
-  pg::StdCostFunc cost(&pgdata, tq, 1.44, 0., 2.33, 0., bodiesPos, bodiesOri,
-                       forceContacts, forceMin);
+  pg::StdCostFunc cost(pgdatas, {robotConfig}, {runConfig});
 
   // an error could appear
   // apparently sva::rotationError is not right when
@@ -380,7 +389,7 @@ BOOST_AUTO_TEST_CASE(StdCostFunctionTest)
   // see A mathematical introduction to robotic manipulation Prop 2.5 p29.
   for(int i = 0; i < 100; ++i)
   {
-    Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize())*3.14);
+    Eigen::VectorXd x(Eigen::VectorXd::Random(pgdatas.back().pbSize())*3.14);
     BOOST_CHECK_SMALL(checkGradient(cost, x, 1e-5), 1e-3);
   }
 }

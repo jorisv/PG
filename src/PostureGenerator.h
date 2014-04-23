@@ -62,38 +62,50 @@ public:
 public:
   PostureGenerator();
 
-  void robotConfig(RobotConfig robotConfig, const Eigen::Vector3d& gravity);
-  const RobotConfig& robotConfig() const;
+  void robotConfig(std::vector<RobotConfig> robotConfigs, const Eigen::Vector3d& gravity);
+  const std::vector<RobotConfig>& robotConfig() const;
 
   void param(const std::string& name, const std::string& value);
   void param(const std::string& name, double value);
   void param(const std::string& name, int value);
 
-  bool run(const std::vector<std::vector<double> >& initQ,
-           const std::vector<sva::ForceVecd>& initForces,
-           const std::vector<std::vector<double> >& targetQ);
+  bool run(const std::vector<RunConfig>& configs);
 
+  // robot 0
   std::vector<std::vector<double>> q() const;
   std::vector<sva::ForceVecd> forces() const;
   std::vector<std::vector<double>> torque();
   std::vector<EllipseResult> ellipses() const;
 
+  std::vector<std::vector<double>> q(int robot) const;
+  std::vector<sva::ForceVecd> forces(int robot) const;
+  std::vector<std::vector<double>> torque(int robot);
+  std::vector<EllipseResult> ellipses(int robot) const;
+
   int nrIters() const;
+
+  // robot 0
   std::vector<std::vector<double>> qIter(int i) const;
   std::vector<sva::ForceVecd> forcesIter(int i) const;
   std::vector<std::vector<double>> torqueIter(int i);
   std::vector<EllipseResult> ellipsesIter(int i) const;
+
+  std::vector<std::vector<double>> qIter(int robot, int i) const;
+  std::vector<sva::ForceVecd> forcesIter(int robot, int i) const;
+  std::vector<std::vector<double>> torqueIter(int robot, int i);
+  std::vector<EllipseResult> ellipsesIter(int robot, int i) const;
+
   IterateQuantities quantitiesIter(int i) const;
 
 private:
-  std::vector<std::vector<double>> q(const Eigen::VectorXd& x) const;
-  std::vector<sva::ForceVecd> forces(const Eigen::VectorXd& x) const;
-  std::vector<std::vector<double>> torque(const Eigen::VectorXd& x);
-  std::vector<EllipseResult> ellipses(const Eigen::VectorXd& x) const;
+  std::vector<std::vector<double>> q(int robot, const Eigen::VectorXd& x) const;
+  std::vector<sva::ForceVecd> forces(int robot, const Eigen::VectorXd& x) const;
+  std::vector<std::vector<double>> torque(int robot, const Eigen::VectorXd& x);
+  std::vector<EllipseResult> ellipses(int robot, const Eigen::VectorXd& x) const;
 
 private:
-  std::unique_ptr<PGData> pgdata_;
-  std::unique_ptr<RobotConfig> robotConfig_;
+  std::vector<PGData> pgdatas_;
+  std::vector<RobotConfig> robotConfigs_;
   solver_t::parameters_t params_;
 
   Eigen::VectorXd x_;

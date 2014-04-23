@@ -32,7 +32,8 @@ namespace pg
 {
 
 
-PGData::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
+PGData::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity,
+               int pbSize, int qBegin, int forceBegin)
   : mb_(mb)
   , mbc_(mb)
   , robotMass_(0.)
@@ -40,11 +41,14 @@ PGData::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
   , comJac_(mb)
   , comJacMat_(3, mb.nrDof())
   , gravity_(gravity)
-  , x_(mb.nrParams())
+  , xq_(mb.nrParams())
+  , xf_()
   , nrForcePoints_(0)
-  , xStamp_(1)
+  , pbSize_(pbSize)
+  , qBegin_(qBegin)
+  , forceBegin_(forceBegin)
 {
-  x_.setZero();
+  xq_.setZero();
   mbc_.zero(mb_);
   rbd::forwardKinematics(mb_, mbc_);
   rbd::forwardVelocity(mb_, mbc_);
@@ -58,12 +62,11 @@ PGData::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity)
 
 void PGData::x(const Eigen::VectorXd& x)
 {
-  assert(x.size() == x_.size());
-
-  if(x_ != x)
+  if(xq_ != x.segment(qBegin_, mb_.nrParams()) ||
+     xf_ != x.segment(forceBegin_, nrForcePoints_*3))
   {
-    x_ = x;
-    ++xStamp_;
+    xq_ = x.segment(qBegin_, mb_.nrParams());
+    xf_ = x.segment(forceBegin_, nrForcePoints_*3);
     update();
   }
 }
@@ -87,9 +90,7 @@ void PGData::forces(const std::vector<ForceContact>& forceContacts)
     forceDatas_.push_back({mb_.bodyIndexById(fc.bodyId), fc.bodyId,
                            points, forces, fc.mu});
   }
-
-  x_.setZero(pbSize());
-  ++xStamp_;
+  xf_.setZero(nrForcePoints_*3);
 }
 
 
@@ -101,27 +102,25 @@ void PGData::ellipses(const std::vector<EllipseContact>& ellipseContacts)
   {
     ellipseDatas.push_back({mb_.bodyIndexById(ec.bodyId), 0., 0., 0., 0., 0.});
   }
-  x_.setZero(pbSize());
-  ++xStamp_;
 }
 
 
 void PGData::update()
 {
-  rbd::vectorToParam(x_.head(mb_.nrParams()), mbc_.q);
+  rbd::vectorToParam(xq_.head(mb_.nrParams()), mbc_.q);
   rbd::forwardKinematics(mb_, mbc_);
   patchMbc(mb_, mbc_);
   com_ = rbd::computeCoM(mb_, mbc_);
   comJacMat_ = comJac_.jacobian(mb_, mbc_);
 
-  int xPos = mb_.nrParams();
+  int fPos = 0;
   for(ForceData& fd: forceDatas_)
   {
     for(std::size_t i = 0; i < fd.forces.size(); ++i)
     {
-      Eigen::Vector3d force(x_[xPos + 0], x_[xPos + 1], x_[xPos + 2]);
+      Eigen::Vector3d force(xf_[fPos + 0], xf_[fPos + 1], xf_[fPos + 2]);
       fd.forces[i] = sva::ForceVecd(Eigen::Vector3d::Zero(), force);
-      xPos += 3;
+      fPos += 3;
     }
   }
 

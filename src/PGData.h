@@ -67,7 +67,8 @@ public:
   };
 
 public:
-  PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity);
+  PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity,
+         int pbSize, int qBegin, int forceBegin);
 
   void x(const Eigen::VectorXd& x);
 
@@ -107,12 +108,17 @@ public:
 
   int pbSize() const
   {
-    return mb_.nrParams() + nrForcePoints_*3 + int(ellipseDatas_.size())*5;
+    return pbSize_;
+  }
+
+  int qParamsBegin() const
+  {
+    return qBegin_;
   }
 
   int forceParamsBegin() const
   {
-    return mb_.nrParams();
+    return forceBegin_;
   }
 
   int ellipseParamsBegin() const
@@ -140,11 +146,6 @@ public:
     return gravity_;
   }
 
-  std::size_t xStamp() const
-  {
-    return xStamp_;
-  }
-
 private:
   rbd::MultiBody mb_;
   rbd::MultiBodyConfig mbc_;
@@ -156,14 +157,15 @@ private:
 
   Eigen::Vector3d gravity_;
 
-  Eigen::VectorXd x_;
+  Eigen::VectorXd xq_, xf_;
 
   std::vector<ForceData> forceDatas_;
   int nrForcePoints_;
 
-  std::vector<EllipseData> ellipseDatas_;
+  int pbSize_;
+  int qBegin_, forceBegin_;
 
-  std::size_t xStamp_;
+  std::vector<EllipseData> ellipseDatas_;
 };
 
 

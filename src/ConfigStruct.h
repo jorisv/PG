@@ -325,6 +325,23 @@ struct RobotConfig
 };
 
 
+struct RunConfig
+{
+  RunConfig(){}
+  RunConfig(std::vector<std::vector<double>> iQ,
+            std::vector<sva::ForceVecd> iF,
+            std::vector<std::vector<double>> tQ)
+    : initQ(std::move(iQ))
+    , initForces(std::move(iF))
+    , targetQ(std::move(tQ))
+  {}
+
+  std::vector<std::vector<double>> initQ;
+  std::vector<sva::ForceVecd> initForces;
+  std::vector<std::vector<double>> targetQ;
+};
+
+
 struct IterateQuantities
 {
   double obj, constr_viol;

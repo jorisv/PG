@@ -64,7 +64,7 @@ void PlanarPositionContactConstr::impl_jacobian(jacobian_t& jac, const argument_
 
   const Eigen::MatrixXd& mat = jac_.jacobian(pgdata_->multibody(), pgdata_->mbc());
   dotCache_.noalias() = targetFrame_.rotation().row(2)*mat.block(3, 0, 3, mat.cols());
-  fullJacobianSparse(pgdata_->mb(), jac_, dotCache_, jac);
+  fullJacobianSparse(pgdata_->mb(), jac_, dotCache_, jac, {0, pgdata_->qParamsBegin()});
 }
 
 
@@ -109,7 +109,7 @@ void PlanarOrientationContactConstr::impl_jacobian(jacobian_t& jac, const argume
   const Eigen::MatrixXd& mat = jac_.vectorJacobian(pgdata_->multibody(),
       pgdata_->mbc(), surfaceFrame_.rotation().row(axis_).transpose());
   dotCache_.noalias() = targetFrame_.rotation().row(axis_)*mat.block(3, 0, 3, mat.cols());
-  fullJacobianSparse(pgdata_->mb(), jac_, dotCache_, jac);
+  fullJacobianSparse(pgdata_->mb(), jac_, dotCache_, jac, {0, pgdata_->qParamsBegin()});
 }
 
 
@@ -202,7 +202,7 @@ void PlanarInclusionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) 
       ++resIndex;
     }
   }
-  fullJacobianSparse(pgdata_->mb(), jac_, fullJac_, jac);
+  fullJacobianSparse(pgdata_->mb(), jac_, fullJac_, jac, {0, pgdata_->qParamsBegin()});
 }
 
 } // pg
