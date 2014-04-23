@@ -122,7 +122,7 @@ void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
           (2.*fBody.y())*(fd.forces[i].force().transpose()*jacPointVecYMat);
 
       fullJacobianSparse(pgdata_->mb(), jacPoints_[index], jacPointsMatTmp_[index],
-        jac, {index, 0});
+        jac, {index, pgdata_->qParamsBegin()});
 
       // Z axis
       //                dforceW

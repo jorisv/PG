@@ -88,7 +88,7 @@ void PositiveForceConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) co
           .block(3, 0, 3, jacPoints_[index].dof());
       jacPointsMatTmp_[index].noalias() = fd.forces[i].force().transpose()*jacPointMat;
       fullJacobianSparse(pgdata_->mb(), jacPoints_[index], jacPointsMatTmp_[index],
-                         jac, {index, 0});
+                         jac, {index, pgdata_->qParamsBegin()});
 
       int indexCols = pgdata_->forceParamsBegin() + index*3;
       jac.insert(index, indexCols + 0) = X_0_pi.rotation().row(2)(0);
