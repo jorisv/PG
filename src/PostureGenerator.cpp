@@ -172,18 +172,30 @@ bool PostureGenerator::run(const std::vector<std::vector<double> >& initQ,
 
   for(const FixedPositionContact& fc: robotConfig_->fixedPosContacts)
   {
-    boost::shared_ptr<FixedPositionContactConstr> fcc(
-        new FixedPositionContactConstr(pgdata_.get(), fc.bodyId, fc.target, fc.surfaceFrame));
-    problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.}},
-        {{1.}, {1.}, {1.}});
+    int bodyIndex = pgdata_->mb().bodyIndexById(fc.bodyId);
+    // if the root body is a fixed contact and the root joint is fixed
+    // this constraint is useless
+    if(bodyIndex != 0 || pgdata_->mb().joint(0).type() != rbd::Joint::Fixed)
+    {
+      boost::shared_ptr<FixedPositionContactConstr> fcc(
+          new FixedPositionContactConstr(pgdata_.get(), fc.bodyId, fc.target, fc.surfaceFrame));
+      problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.}},
+          {{1.}, {1.}, {1.}});
+    }
   }
 
   for(const FixedOrientationContact& fc: robotConfig_->fixedOriContacts)
   {
-    boost::shared_ptr<FixedOrientationContactConstr> fcc(
-        new FixedOrientationContactConstr(pgdata_.get(), fc.bodyId, fc.target, fc.surfaceFrame));
-    problem.addConstraint(fcc, {{1., 1.}, {1., 1.}, {1., 1.}},
-        {{1e+1}, {1e+1}, {1e+1}});
+    int bodyIndex = pgdata_->mb().bodyIndexById(fc.bodyId);
+    // if the root body is a fixed contact and the root joint is fixed
+    // this constraint is useless
+    if(bodyIndex != 0 || pgdata_->mb().joint(0).type() != rbd::Joint::Fixed)
+    {
+      boost::shared_ptr<FixedOrientationContactConstr> fcc(
+          new FixedOrientationContactConstr(pgdata_.get(), fc.bodyId, fc.target, fc.surfaceFrame));
+      problem.addConstraint(fcc, {{1., 1.}, {1., 1.}, {1., 1.}},
+          {{1e+1}, {1e+1}, {1e+1}});
+    }
   }
 
   for(const PlanarContact& pc: robotConfig_->planarContacts)
