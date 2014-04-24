@@ -107,7 +107,7 @@ void PGData::ellipses(const std::vector<EllipseContact>& ellipseContacts)
 
 void PGData::update()
 {
-  rbd::vectorToParam(xq_.head(mb_.nrParams()), mbc_.q);
+  rbd::vectorToParam(xq_, mbc_.q);
   rbd::forwardKinematics(mb_, mbc_);
   patchMbc(mb_, mbc_);
   com_ = rbd::computeCoM(mb_, mbc_);

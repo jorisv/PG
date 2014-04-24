@@ -47,6 +47,12 @@ void updateFullJacobianSparse(const rbd::MultiBody& mb, const rbd::Jacobian& jac
   const jac_offset_t& offset=jac_offset_t(0, 0));
 
 
+void incrementFullJacobianSparse(const rbd::MultiBody& mb, const rbd::Jacobian& jac,
+  const Eigen::Ref<const Eigen::MatrixXd>& jacMat,
+  Eigen::SparseMatrix<double, Eigen::RowMajor>& res,
+  const jac_offset_t& offset=jac_offset_t(0, 0));
+
+
 template <typename Derived>
 void fillSparse(const Eigen::MatrixBase<Derived>& mat,
   Eigen::SparseMatrix<double, Eigen::RowMajor>& res,

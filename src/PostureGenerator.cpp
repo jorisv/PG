@@ -33,6 +33,7 @@
 #include "PlanarSurfaceConstr.h"
 //#include "EllipseContactConstr.h"
 #include "CollisionConstr.h"
+#include "RobotLinkConstr.h"
 #include "IterationCallback.h"
 
 namespace pg
@@ -111,6 +112,18 @@ void PostureGenerator::robotConfig(std::vector<RobotConfig> robotConfigs,
 }
 
 
+void PostureGenerator::robotLinks(std::vector<RobotLink> robotLinks)
+{
+  robotLinks_ = std::move(robotLinks);
+}
+
+
+const std::vector<RobotLink>& PostureGenerator::robotLinks() const
+{
+  return robotLinks_;
+}
+
+
 const std::vector<RobotConfig>& PostureGenerator::robotConfig() const
 {
   return robotConfigs_;
@@ -148,7 +161,7 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
     const RunConfig& config = configs[robotIndex];
     PGData& pgdata = pgdatas_[robotIndex];
 
-    problem.startingPoint()->head(pgdata.qParamsBegin() + pgdata.multibody().nrParams()) =
+    problem.startingPoint()->segment(pgdata.qParamsBegin(), pgdata.mb().nrParams()) =
       rbd::paramToVector(pgdata.multibody(), config.initQ);
 
     // if init force is not well sized we compute it
@@ -412,6 +425,15 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
       }
     }
     */
+  }
+
+  for(const RobotLink& rl: robotLinks_)
+  {
+    boost::shared_ptr<RobotLinkConstr> rlc(
+      new RobotLinkConstr(&pgdatas_[rl.robot1Index],
+                          &pgdatas_[rl.robot2Index], rl.linkedBodiesId));
+    problem.addConstraint(rlc, {{1., 1.}, {1., 1.}, {1., 1.}, {0., 0.}, {0., 0.}, {0., 0.}},
+        {{1e+1}, {1e+1}, {1e+1}, {1e+0}, {1e+0}, {1e+0}});
   }
 
   roboptim::SolverFactory<solver_t> factory ("ipopt-sparse", problem);

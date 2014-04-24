@@ -68,6 +68,7 @@ def build_pg(pg):
   iterateQuantities = pg.add_struct('IterateQuantities')
   ellipseResult = pg.add_struct('EllipseResult')
   runConfig = pg.add_struct('RunConfig')
+  robotLink = pg.add_struct('RobotLink')
 
   # build list type
   pg.add_container('std::vector<pg::FixedPositionContact>', 'pg::FixedPositionContact', 'vector')
@@ -86,12 +87,16 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::EllipseResult>', 'pg::EllipseResult', 'vector')
   pg.add_container('std::vector<pg::RobotConfig>', 'pg::RobotConfig', 'vector')
   pg.add_container('std::vector<pg::RunConfig>', 'pg::RunConfig', 'vector')
+  pg.add_container('std::vector<pg::RobotLink>', 'pg::RobotLink', 'vector')
 
   # PostureGenerator
   pgSolver.add_constructor([])
 
   pgSolver.add_method('robotConfig', None, [param('std::vector<pg::RobotConfig>', 'rc'), param('const Eigen::Vector3d&', 'gravity')])
   pgSolver.add_method('robotConfig', retval('std::vector<pg::RobotConfig>'), [], is_const=True)
+
+  pgSolver.add_method('robotLinks', None, [param('std::vector<pg::RobotLink>', 'rl')])
+  pgSolver.add_method('robotLinks', retval('std::vector<pg::RobotLink>'), [], is_const=True)
 
   # Don't change the order. We must try to convert in int before convert in double
   # because double -> int fail but int -> double succeed (so int are read as double).
@@ -309,6 +314,15 @@ def build_pg(pg):
   runConfig.add_instance_attribute('initForces', 'std::vector<sva::ForceVecd>')
   runConfig.add_instance_attribute('targetQ', 'std::vector<std::vector<double> >')
 
+  # RobotLink
+  robotLink.add_constructor([])
+  robotLink.add_constructor([param('int', 'robot1Index'),
+                             param('int', 'robot2Index'),
+                             param('std::vector<int>', 'linkedBodiesId')])
+  robotLink.add_instance_attribute('robot1Index', 'int')
+  robotLink.add_instance_attribute('robot2Index', 'int')
+  robotLink.add_instance_attribute('linkedBodiesId', 'std::vector<int>')
+
   # IterateQuantities
   iterateQuantities.add_instance_attribute('obj', 'double')
   iterateQuantities.add_instance_attribute('constr_viol', 'double')
@@ -344,6 +358,7 @@ if __name__ == '__main__':
   import_SCD_types(pg)
 
   # build list type
+  pg.add_container('std::vector<int>', 'int', 'vector')
   pg.add_container('std::vector<double>', 'double', 'vector')
   pg.add_container('std::vector<std::vector<double> >', 'std::vector<double>', 'vector')
   pg.add_container('std::vector<sva::PTransformd>', 'sva::PTransformd', 'vector')

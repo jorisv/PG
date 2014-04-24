@@ -529,4 +529,39 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     BOOST_CHECK_GT(bodyDist, 1. + 0.1);
     toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12SelfCol2.py");
   }
+
+  /*
+   *                              MultiRobot
+   */
+  {
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc1(mb), rc2(mb);
+    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "mumps");
+
+    Vector3d target(2., 0., 0.);
+    Matrix3d oriTarget(sva::RotZ(-cst::pi<double>()));
+    int id = 12;
+    int index = mb.bodyIndexById(id);
+    rc1.fixedPosContacts = {{id, target, sva::PTransformd::Identity()}};
+    rc1.fixedOriContacts = {{id, oriTarget, sva::PTransformd::Identity()}};
+
+    pg::RobotLink rl(0, 1, {12});
+    pg::RunConfig rc({mbcInit.q, {}, mbcInit.q});
+
+    pgPb.robotConfig({rc1, rc2}, gravity);
+    pgPb.robotLinks({rl});
+    BOOST_REQUIRE(pgPb.run({rc, rc}));
+
+    rbd::MultiBodyConfig mbcWork2(mb);
+    mbcWork.q = pgPb.q(0);
+    mbcWork2.q = pgPb.q(1);
+
+    forwardKinematics(mb, mbcWork);
+    forwardKinematics(mb, mbcWork2);
+    sva::PTransformd body1(mbcWork.bodyPosW[index]);
+    sva::PTransformd body2(mbcWork2.bodyPosW[index]);
+    BOOST_CHECK_SMALL((body1.translation() - body2.translation()).norm(), 1e-5);
+    BOOST_CHECK_SMALL((body1.rotation() - body2.rotation()).norm(), 1e-3);
+  }
 }

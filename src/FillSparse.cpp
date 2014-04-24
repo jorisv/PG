@@ -80,5 +80,17 @@ void updateFullJacobianSparse(const rbd::MultiBody& mb, const rbd::Jacobian& jac
 }
 
 
+void incrementFullJacobianSparse(const rbd::MultiBody& mb, const rbd::Jacobian& jac,
+  const Eigen::Ref<const Eigen::MatrixXd>& jacMat,
+  Eigen::SparseMatrix<double, Eigen::RowMajor>& res,
+  const jac_offset_t& offset)
+{
+  auto coeffRef = [](Eigen::SparseMatrix<double, Eigen::RowMajor>& res, int row, int col, double val)
+  {
+    res.coeffRef(row, col) += val;
+  };
+  fullJacobianSparse_p(mb, jac, jacMat, res, offset, coeffRef);
+}
+
 
 } // pg

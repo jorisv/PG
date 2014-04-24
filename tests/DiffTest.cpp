@@ -39,6 +39,7 @@
 #include "FrictionConeConstr.h"
 #include "CollisionConstr.h"
 #include "StdCostFunc.h"
+#include "RobotLinkConstr.h"
 
 // Arm
 #include "XYZ12Arm.h"
@@ -428,5 +429,31 @@ BOOST_AUTO_TEST_CASE(StdCostFunctionTest)
   {
     Eigen::VectorXd x(Eigen::VectorXd::Random(pgdatas.back().pbSize())*3.14);
     BOOST_CHECK_SMALL(checkGradient(cost, x, 1e-5), 1e-3);
+  }
+}
+
+
+BOOST_AUTO_TEST_CASE(RobotLinkTest)
+{
+  using namespace Eigen;
+  namespace cst = boost::math::constants;
+
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeXYZ12Arm();
+
+  int qBegin = 5;
+  int qBegin2 = qBegin + mb.nrParams();
+  int nrVar = mb.nrParams()*2 + qBegin;
+
+  pg::PGData pgdata1(mb, gravity, nrVar, qBegin, mb.nrParams() + qBegin);
+  pg::PGData pgdata2(mb, gravity, nrVar, qBegin2, mb.nrParams() + qBegin2);
+
+  pg::RobotLinkConstr rlc(&pgdata1, &pgdata2, {12, 6});
+
+  for(int i = 0; i < 100; ++i)
+  {
+    Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata1.pbSize())*3.14);
+    BOOST_CHECK_SMALL(checkGradient(rlc, x), 1e-4);
   }
 }

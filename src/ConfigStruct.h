@@ -325,6 +325,26 @@ struct RobotConfig
 };
 
 
+struct RobotLink
+{
+  RobotLink()
+    : robot1Index(-1)
+    , robot2Index(-1)
+    , linkedBodiesId()
+  {}
+
+  RobotLink(int r1Index, int r2Index, std::vector<int> lbodiesId)
+    : robot1Index(r1Index)
+    , robot2Index(r2Index)
+    , linkedBodiesId(std::move(lbodiesId))
+  {}
+
+  int robot1Index;
+  int robot2Index;
+  std::vector<int> linkedBodiesId;
+};
+
+
 struct RunConfig
 {
   RunConfig(){}

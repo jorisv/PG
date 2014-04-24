@@ -65,6 +65,9 @@ public:
   void robotConfig(std::vector<RobotConfig> robotConfigs, const Eigen::Vector3d& gravity);
   const std::vector<RobotConfig>& robotConfig() const;
 
+  void robotLinks(std::vector<RobotLink> robotLinks);
+  const std::vector<RobotLink>& robotLinks() const;
+
   void param(const std::string& name, const std::string& value);
   void param(const std::string& name, double value);
   void param(const std::string& name, int value);
@@ -106,6 +109,7 @@ private:
 private:
   std::vector<PGData> pgdatas_;
   std::vector<RobotConfig> robotConfigs_;
+  std::vector<RobotLink> robotLinks_;
   solver_t::parameters_t params_;
 
   Eigen::VectorXd x_;
