@@ -62,8 +62,8 @@ public:
 public:
   PostureGenerator();
 
-  void robotConfig(std::vector<RobotConfig> robotConfigs, const Eigen::Vector3d& gravity);
-  const std::vector<RobotConfig>& robotConfig() const;
+  void robotConfigs(std::vector<RobotConfig> robotConfigs, const Eigen::Vector3d& gravity);
+  const std::vector<RobotConfig>& robotConfigs() const;
 
   void robotLinks(std::vector<RobotLink> robotLinks);
   const std::vector<RobotLink>& robotLinks() const;

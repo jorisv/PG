@@ -92,8 +92,8 @@ def build_pg(pg):
   # PostureGenerator
   pgSolver.add_constructor([])
 
-  pgSolver.add_method('robotConfig', None, [param('std::vector<pg::RobotConfig>', 'rc'), param('const Eigen::Vector3d&', 'gravity')])
-  pgSolver.add_method('robotConfig', retval('std::vector<pg::RobotConfig>'), [], is_const=True)
+  pgSolver.add_method('robotConfigs', None, [param('std::vector<pg::RobotConfig>', 'rc'), param('const Eigen::Vector3d&', 'gravity')])
+  pgSolver.add_method('robotConfigs', retval('std::vector<pg::RobotConfig>'), [], is_const=True)
 
   pgSolver.add_method('robotLinks', None, [param('std::vector<pg::RobotLink>', 'rl')])
   pgSolver.add_method('robotLinks', retval('std::vector<pg::RobotLink>'), [], is_const=True)

@@ -70,7 +70,7 @@ PostureGenerator::PostureGenerator()
 {}
 
 
-void PostureGenerator::robotConfig(std::vector<RobotConfig> robotConfigs,
+void PostureGenerator::robotConfigs(std::vector<RobotConfig> robotConfigs,
   const Eigen::Vector3d& gravity)
 {
   robotConfigs_.clear();
@@ -112,6 +112,12 @@ void PostureGenerator::robotConfig(std::vector<RobotConfig> robotConfigs,
 }
 
 
+const std::vector<RobotConfig>& PostureGenerator::robotConfigs() const
+{
+  return robotConfigs_;
+}
+
+
 void PostureGenerator::robotLinks(std::vector<RobotLink> robotLinks)
 {
   robotLinks_ = std::move(robotLinks);
@@ -121,12 +127,6 @@ void PostureGenerator::robotLinks(std::vector<RobotLink> robotLinks)
 const std::vector<RobotLink>& PostureGenerator::robotLinks() const
 {
   return robotLinks_;
-}
-
-
-const std::vector<RobotConfig>& PostureGenerator::robotConfig() const
-{
-  return robotConfigs_;
 }
 
 
