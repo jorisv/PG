@@ -556,7 +556,7 @@ std::vector<std::vector<double> >
 PostureGenerator::q(int robot, const Eigen::VectorXd& x) const
 {
   const PGData& pgdata = pgdatas_[robot];
-  Eigen::VectorXd eigenQ(x.head(pgdata.qParamsBegin() + pgdata.mb().nrParams()));
+  Eigen::VectorXd eigenQ(x.segment(pgdata.qParamsBegin(), pgdata.mb().nrParams()));
   if(pgdata.multibody().joint(0).type() == rbd::Joint::Free)
   {
     eigenQ.head(4) /= eigenQ.head(4).norm();
