@@ -34,6 +34,7 @@
 //#include "EllipseContactConstr.h"
 #include "CollisionConstr.h"
 #include "RobotLinkConstr.h"
+#include "FreeGripperConstr.h"
 #include "IterationCallback.h"
 
 namespace pg
@@ -326,6 +327,28 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
             pic->outputSize(), {0., std::numeric_limits<double>::infinity()});
       typename solver_t::problem_t::scales_t scalInc(pic->outputSize(), 1.);
       problem.addConstraint(pic, limInc, scalInc);
+    }
+
+    for(const FreeGripperContact& pc: robotConfig.freeGripperContacts)
+    {
+      boost::shared_ptr<FreeGripperPositionConstr> fgpc(
+          new FreeGripperPositionConstr(&pgdata, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
+      double radiuasSquare = std::pow(pc.targetRadius, 2);
+      problem.addConstraint(fgpc, {{radiuasSquare, radiuasSquare},
+                                   {-pc.targetWidth/2., pc.targetWidth/2.}},
+                            {{1.}, {1.}});
+
+      boost::shared_ptr<FreeGripperNVecConstr> fgnvc(
+          new FreeGripperNVecConstr(&pgdata, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
+      problem.addConstraint(fgnvc, {{0., 0.}}, {{1.}});
+
+      // T axis must be aligned between target and surface frame.
+      /// @todo see why that part kill the PG :(
+      boost::shared_ptr<PlanarOrientationContactConstr> poc(
+          new PlanarOrientationContactConstr(&pgdata, pc.bodyId,
+                                             pc.targetFrame, pc.surfaceFrame,
+                                             0));
+      problem.addConstraint(poc, {{1., 1.}}, {{1.}});
     }
 
     if(!robotConfig.forceContacts.empty())

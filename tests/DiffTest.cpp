@@ -40,6 +40,7 @@
 #include "CollisionConstr.h"
 #include "StdCostFunc.h"
 #include "RobotLinkConstr.h"
+#include "FreeGripperConstr.h"
 
 // Arm
 #include "XYZ12Arm.h"
@@ -455,5 +456,67 @@ BOOST_AUTO_TEST_CASE(RobotLinkTest)
   {
     Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata1.pbSize())*3.14);
     BOOST_CHECK_SMALL(checkGradient(rlc, x), 1e-4);
+  }
+}
+
+
+BOOST_AUTO_TEST_CASE(FreeGripperPositionTest)
+{
+  using namespace Eigen;
+  namespace cst = boost::math::constants;
+
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeXYZ12Arm();
+
+  int qBegin = 5;
+  int nrVar = mb.nrParams() + qBegin;
+
+  pg::PGData pgdata(mb, gravity, nrVar, qBegin, mb.nrParams());
+
+  Eigen::Quaterniond qs(Eigen::Vector4d::Random());
+  Eigen::Quaterniond qt(Eigen::Vector4d::Random());
+  qs.normalize();
+  qt.normalize();
+  sva::PTransformd target(qt, Vector3d::Random());
+  sva::PTransformd surface(qs, Vector3d::Random());
+
+  pg::FreeGripperPositionConstr fgpc(&pgdata, 12, target, surface);
+
+  for(int i = 0; i < 100; ++i)
+  {
+    VectorXd x(VectorXd::Random(pgdata.pbSize()));
+    BOOST_CHECK_SMALL(checkGradient(fgpc, x), 1e-4);
+  }
+}
+
+
+BOOST_AUTO_TEST_CASE(FreeGripperNVecTest)
+{
+  using namespace Eigen;
+  namespace cst = boost::math::constants;
+
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeXYZ12Arm();
+
+  int qBegin = 5;
+  int nrVar = mb.nrParams() + qBegin;
+
+  pg::PGData pgdata(mb, gravity, nrVar, qBegin, mb.nrParams());
+
+  Eigen::Quaterniond qs(Eigen::Vector4d::Random());
+  Eigen::Quaterniond qt(Eigen::Vector4d::Random());
+  qs.normalize();
+  qt.normalize();
+  sva::PTransformd target(qt, Vector3d::Random());
+  sva::PTransformd surface(qs, Vector3d::Random());
+
+  pg::FreeGripperNVecConstr fgnvc(&pgdata, 12, target, surface);
+
+  for(int i = 0; i < 100; ++i)
+  {
+    VectorXd x(VectorXd::Random(pgdata.pbSize()));
+    BOOST_CHECK_SMALL(checkGradient(fgnvc, x), 1e-4);
   }
 }

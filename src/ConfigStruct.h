@@ -159,6 +159,26 @@ struct GripperContact
 };
 
 
+struct FreeGripperContact
+{
+  FreeGripperContact() {}
+  FreeGripperContact(int bId, double tR, double tW,
+                     const sva::PTransformd& tf, const sva::PTransformd& sf)
+    : bodyId(bId)
+    , targetRadius(tR)
+    , targetWidth(tW)
+    , targetFrame(tf)
+    , surfaceFrame(sf)
+  {}
+
+  int bodyId;
+  double targetRadius;
+  double targetWidth;
+  sva::PTransformd targetFrame; ///< Target frame in world coordinate.
+  sva::PTransformd surfaceFrame; ///< Body surface frame in body coordinate.
+};
+
+
 struct ForceContact
 {
   ForceContact() {}
@@ -307,6 +327,7 @@ struct RobotConfig
   std::vector<PlanarContact> planarContacts;
   std::vector<EllipseContact> ellipseContacts;
   std::vector<GripperContact> gripperContacts;
+  std::vector<FreeGripperContact> freeGripperContacts;
   std::vector<ForceContact> forceContacts;
   std::vector<EnvCollision> envCollisions;
   std::vector<SelfCollision> selfCollisions;

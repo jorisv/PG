@@ -564,4 +564,38 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     BOOST_CHECK_SMALL((body1.translation() - body2.translation()).norm(), 1e-5);
     BOOST_CHECK_SMALL((body1.rotation() - body2.rotation()).norm(), 1e-3);
   }
+
+  /*
+   *                        FreeGripper
+   */
+  {
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc(mb);
+    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "mumps");
+
+    int id = 12;
+    int index = mb.bodyIndexById(id);
+    Matrix3d bodyFrame(RotX(cst::pi<double>()/2.)*RotY(cst::pi<double>()/2.));
+    sva::PTransformd targetSurface(RotY(cst::pi<double>()/2.), Vector3d(0., 1., 0.));
+    sva::PTransformd bodySurface(bodyFrame);
+    double radius = 0.1;
+    rc.freeGripperContacts = {{id, radius, 5., targetSurface, bodySurface}};
+
+    pgPb.robotConfigs({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+    sva::PTransformd surfPos = bodySurface*mbcWork.bodyPosW[index];
+
+    Vector3d vec = targetSurface.translation() - surfPos.translation();
+    double posErr = vec.norm();
+    double oriErr = surfPos.rotation().row(0).dot(targetSurface.rotation().row(0));
+    double NErr = vec.normalized().dot(surfPos.rotation().row(2));
+    BOOST_CHECK_SMALL(posErr - radius, 1e-5);
+    BOOST_CHECK_SMALL(oriErr - 1., 1e-5);
+    BOOST_CHECK_SMALL(NErr - 1., 1e-5);
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12FreeGripper.py");
+  }
 }

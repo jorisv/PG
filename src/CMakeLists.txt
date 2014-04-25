@@ -5,7 +5,7 @@ set(SOURCES PGData.cpp FillSparse.cpp
             FixedContactConstr.cpp StaticStabilityConstr.cpp
             PositiveForceConstr.cpp FrictionConeConstr.cpp
             PlanarSurfaceConstr.cpp CollisionConstr.cpp
-            RobotLinkConstr.cpp
+            RobotLinkConstr.cpp FreeGripperConstr.cpp
             PostureGenerator.cpp)
 set(HEADERS PGData.h FillSparse.h
             ConfigStruct.h
@@ -14,7 +14,7 @@ set(HEADERS PGData.h FillSparse.h
             PositiveForceConstr.h FrictionConeConstr.h
             PlanarSurfaceConstr.h TorqueConstr.h
             CollisionConstr.h EllipseContactConstr.h
-            RobotLinkConstr.h
+            RobotLinkConstr.h FreeGripperConstr.h
             IterationCallback.h JacobianPatcher.h
             PostureGenerator.h)
 
