@@ -90,7 +90,7 @@ private:
   int bodyIndex_;
   sva::PTransformd targetFrame_;
   sva::PTransformd surfaceFrame_;
-  int axis_, coaxis_;
+  int Naxis_, Taxis_, Baxis_;
   mutable rbd::Jacobian jac_;
   mutable Eigen::MatrixXd dotCache_;
 };
