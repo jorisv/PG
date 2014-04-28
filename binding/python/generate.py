@@ -69,6 +69,7 @@ def build_pg(pg):
   ellipseResult = pg.add_struct('EllipseResult')
   runConfig = pg.add_struct('RunConfig')
   robotLink = pg.add_struct('RobotLink')
+  freeGripperContact = pg.add_struct('FreeGripperContact')
 
   # build list type
   pg.add_container('std::vector<pg::FixedPositionContact>', 'pg::FixedPositionContact', 'vector')
@@ -88,6 +89,7 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::RobotConfig>', 'pg::RobotConfig', 'vector')
   pg.add_container('std::vector<pg::RunConfig>', 'pg::RunConfig', 'vector')
   pg.add_container('std::vector<pg::RobotLink>', 'pg::RobotLink', 'vector')
+  pg.add_container('std::vector<pg::FreeGripperContact>', 'pg::FreeGripperContact', 'vector')
 
   # PostureGenerator
   pgSolver.add_constructor([])
@@ -287,6 +289,7 @@ def build_pg(pg):
   robotConfig.add_instance_attribute('planarContacts', 'std::vector<pg::PlanarContact>')
   robotConfig.add_instance_attribute('ellipseContacts', 'std::vector<pg::EllipseContact>')
   robotConfig.add_instance_attribute('gripperContacts', 'std::vector<pg::GripperContact>')
+  robotConfig.add_instance_attribute('freeGripperContacts', 'std::vector<pg::FreeGripperContact>')
   robotConfig.add_instance_attribute('forceContacts', 'std::vector<pg::ForceContact>')
   robotConfig.add_instance_attribute('envCollisions', 'std::vector<pg::EnvCollision>')
   robotConfig.add_instance_attribute('selfCollisions', 'std::vector<pg::SelfCollision>')
@@ -322,6 +325,19 @@ def build_pg(pg):
   robotLink.add_instance_attribute('robot1Index', 'int')
   robotLink.add_instance_attribute('robot2Index', 'int')
   robotLink.add_instance_attribute('linkedBodiesId', 'std::vector<int>')
+
+  # FreeGripperContact
+  freeGripperContact.add_constructor([])
+  freeGripperContact.add_constructor([param('int', 'bodyId'),
+                                      param('double', 'targetRadius'),
+                                      param('double', 'targetWidth'),
+                                      param('sva::PTransformd', 'targetFrame'),
+                                      param('sva::PTransformd', 'surfaceFrame')])
+  freeGripperContact.add_instance_attribute('bodyId', 'int')
+  freeGripperContact.add_instance_attribute('targetRadius', 'double')
+  freeGripperContact.add_instance_attribute('targetWidth', 'double')
+  freeGripperContact.add_instance_attribute('targetFrame', 'sva::PTransformd')
+  freeGripperContact.add_instance_attribute('surfaceFrame', 'sva::PTransformd')
 
   # IterateQuantities
   iterateQuantities.add_instance_attribute('obj', 'double')
