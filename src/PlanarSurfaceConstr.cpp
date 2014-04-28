@@ -77,14 +77,15 @@ PlanarOrientationContactConstr::PlanarOrientationContactConstr(PGData* pgdata, i
     const sva::PTransformd& targetFrame,
     const sva::PTransformd& surfaceFrame,
     int axis)
-  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), 1, "PlanarPositionContact")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), 2, "PlanarPositionContact")
   , pgdata_(pgdata)
   , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
   , targetFrame_(targetFrame)
   , surfaceFrame_(surfaceFrame)
   , axis_(axis)
+  , coaxis_((axis + 1) % 3)
   , jac_(pgdata->multibody(), bodyId, surfaceFrame.translation())
-  , dotCache_(1, jac_.dof())
+  , dotCache_(2, jac_.dof())
 {}
 
 
@@ -97,7 +98,8 @@ void PlanarOrientationContactConstr::impl_compute(result_t& res, const argument_
   pgdata_->x(x);
 
   sva::PTransformd pos = surfaceFrame_*pgdata_->mbc().bodyPosW[bodyIndex_];
-  res(0) = (pos.rotation().row(axis_)).dot(targetFrame_.rotation().row(axis_));
+  res(0) = (pos.rotation().row(axis_)).dot(targetFrame_.rotation().row(coaxis_));
+  res(1) = (pos.rotation().row(axis_)).dot(targetFrame_.rotation().row(axis_));
 }
 
 
@@ -108,7 +110,9 @@ void PlanarOrientationContactConstr::impl_jacobian(jacobian_t& jac, const argume
 
   const Eigen::MatrixXd& mat = jac_.vectorJacobian(pgdata_->multibody(),
       pgdata_->mbc(), surfaceFrame_.rotation().row(axis_).transpose());
-  dotCache_.noalias() = targetFrame_.rotation().row(axis_)*mat.block(3, 0, 3, mat.cols());
+
+  dotCache_.row(0).noalias() = targetFrame_.rotation().row(coaxis_)*mat.block(3, 0, 3, mat.cols());
+  dotCache_.row(1).noalias() = targetFrame_.rotation().row(axis_)*mat.block(3, 0, 3, mat.cols());
   fullJacobianSparse(pgdata_->mb(), jac_, dotCache_, jac, {0, pgdata_->qParamsBegin()});
 }
 

@@ -255,7 +255,9 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
             new PlanarOrientationContactConstr(&pgdata, pc.bodyId,
                                                pc.targetFrame, pc.surfaceFrame,
                                                2));
-        problem.addConstraint(poc, {{1., 1.}}, {{1.}});
+        problem.addConstraint(poc, {{0., 0.},
+                                    {0., std::numeric_limits<double>::infinity()}},
+                              {{1.}, {1.}});
       }
 
       boost::shared_ptr<PlanarInclusionConstr> pic(
@@ -343,12 +345,13 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
       problem.addConstraint(fgnvc, {{0., 0.}}, {{1.}});
 
       // T axis must be aligned between target and surface frame.
-      /// @todo see why that part kill the PG :(
       boost::shared_ptr<PlanarOrientationContactConstr> poc(
           new PlanarOrientationContactConstr(&pgdata, pc.bodyId,
                                              pc.targetFrame, pc.surfaceFrame,
                                              0));
-      problem.addConstraint(poc, {{1., 1.}}, {{1.}});
+      problem.addConstraint(poc, {{0., 0.},
+                                  {0., std::numeric_limits<double>::infinity()}},
+                            {{1.}, {1.}});
     }
 
     if(!robotConfig.forceContacts.empty())
