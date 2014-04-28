@@ -92,7 +92,6 @@ private:
   sva::PTransformd surfaceFrame_;
 
   mutable rbd::Jacobian jac_;
-  mutable Eigen::MatrixXd dotCache_;
   mutable Eigen::MatrixXd dotCacheSum_;
 };
 

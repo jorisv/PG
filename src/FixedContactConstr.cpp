@@ -78,7 +78,6 @@ FixedOrientationContactConstr::FixedOrientationContactConstr(PGData* pgdata, int
   , target_(target)
   , surfaceFrame_(surfaceFrame)
   , jac_(pgdata->multibody(), bodyId)
-  , dotCache_(1, jac_.dof())
   , dotCacheSum_(3, jac_.dof())
 {}
 
@@ -105,8 +104,8 @@ void FixedOrientationContactConstr::dotDerivative(
 {
   const Eigen::MatrixXd& mat =
     jac_.vectorJacobian(pgdata_->multibody(), pgdata_->mbc(), posRow.transpose());
-  dotCache_.noalias() = targetRow*mat.block(3, 0, 3, mat.cols());
-  const_cast< Eigen::MatrixBase<Derived3>&>(jac).noalias() = dotCache_;
+  const_cast< Eigen::MatrixBase<Derived3>&>(jac).noalias() =
+    targetRow*mat.block(3, 0, 3, mat.cols());
 }
 
 
