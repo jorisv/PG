@@ -79,15 +79,18 @@ StdCostFunc::StdCostFunc(std::vector<PGData>& pgdatas,
     for(std::size_t i = 0; i < robotConfig.forceContactsMin.size(); ++i)
     {
       std::size_t gradientPos = pgdata.forceParamsBegin();
-      for(std::size_t j = 0; j < robotConfig.forceContacts.size(); ++j)
+      for(std::size_t j = 0; j < pgdata.forceDatas().size(); ++j)
       {
+        const PGData::ForceData& forceData = pgdata.forceDatas()[j];
         // we don't break since it could be many contact on the same body
-        if(robotConfig.forceContactsMin[i].bodyId == robotConfig.forceContacts[j].bodyId)
+        if(robotConfig.forceContactsMin[i].bodyId == forceData.bodyId)
         {
           data.forceContactsMin.push_back({j, gradientPos,
                                            robotConfig.forceContactsMin[i].scale});
         }
-        gradientPos += robotConfig.forceContacts[j].points.size()*3;
+        gradientPos += forceData.points.size()*3;
+      }
+    }
       }
     }
 
