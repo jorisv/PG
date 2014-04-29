@@ -35,13 +35,13 @@ FreeGripperPositionConstr::FreeGripperPositionConstr(
   PGData* pgdata, int bodyId,
   const sva::PTransformd& targetFrame,
   const sva::PTransformd& surfaceFrame)
-  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), 2, "FreeGripperPositionContact")
+  : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), 3, "FreeGripperPositionContact")
   , pgdata_(pgdata)
   , bodyIndex_(pgdata->multibody().bodyIndexById(bodyId))
   , targetFrame_(targetFrame)
   , surfaceFrame_(surfaceFrame)
-  , jac_(pgdata->multibody(), bodyId, surfaceFrame.translation())
-  , jacMat_(2, jac_.dof())
+  , jac_(pgdata->mb(), bodyId, surfaceFrame.translation())
+  , jacMat_(3, jac_.dof())
 {}
 
 
@@ -55,31 +55,24 @@ void FreeGripperPositionConstr::impl_compute(result_t& res, const argument_t& x)
 
   sva::PTransformd pos = surfaceFrame_*pgdata_->mbc().bodyPosW[bodyIndex_];
   Eigen::Vector3d vec = pos.translation() - targetFrame_.translation();
-  Eigen::RowVector3d B = targetFrame_.rotation().row(1);
-  Eigen::RowVector3d N = targetFrame_.rotation().row(2);
-  res(0) = std::pow(B.dot(vec), 2) + std::pow(N.dot(vec), 2);
-  res(1) = targetFrame_.rotation().row(0).dot(vec);
+
+  res(0) = targetFrame_.rotation().row(0).dot(vec);
+  res(1) = targetFrame_.rotation().row(1).dot(vec);
+  res(2) = targetFrame_.rotation().row(2).dot(vec);
 }
 
 
 void FreeGripperPositionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
-  jac.reserve(2*jac_.dof());
+  jac.reserve(3*jac_.dof());
 
   pgdata_->x(x);
 
-  sva::PTransformd pos = surfaceFrame_*pgdata_->mbc().bodyPosW[bodyIndex_];
-  Eigen::Vector3d vec = pos.translation() - targetFrame_.translation();
-  Eigen::RowVector3d B = targetFrame_.rotation().row(1);
-  Eigen::RowVector3d N = targetFrame_.rotation().row(2);
-  double resDistB = 2.*B.dot(vec);
-  double resDistN = 2.*N.dot(vec);
-
   const Eigen::MatrixXd& jacMat = jac_.jacobian(pgdata_->mb(), pgdata_->mbc());
 
-  jacMat_.row(0).noalias() = (resDistB*B)*jacMat.block(3, 0, 3, jac_.dof());
-  jacMat_.row(0).noalias() += (resDistN*N)*jacMat.block(3, 0, 3, jac_.dof());
-  jacMat_.row(1).noalias() = targetFrame_.rotation().row(0)*jacMat.block(3, 0, 3, jac_.dof());
+  jacMat_.row(0).noalias() = targetFrame_.rotation().row(0)*jacMat.block(3, 0, 3, jac_.dof());
+  jacMat_.row(1).noalias() = targetFrame_.rotation().row(1)*jacMat.block(3, 0, 3, jac_.dof());
+  jacMat_.row(2).noalias() = targetFrame_.rotation().row(2)*jacMat.block(3, 0, 3, jac_.dof());
   fullJacobianSparse(pgdata_->mb(), jac_, jacMat_,
                      jac, {0, pgdata_->qParamsBegin()});
 }

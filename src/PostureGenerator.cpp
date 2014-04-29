@@ -333,16 +333,13 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
 
     for(const FreeGripperContact& pc: robotConfig.freeGripperContacts)
     {
+      sva::PTransformd radiusX(Eigen::Vector3d(0., 0., pc.targetRadius));
       boost::shared_ptr<FreeGripperPositionConstr> fgpc(
-          new FreeGripperPositionConstr(&pgdata, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
-      double radiuasSquare = std::pow(pc.targetRadius, 2);
-      problem.addConstraint(fgpc, {{radiuasSquare, radiuasSquare},
-                                   {-pc.targetWidth/2., pc.targetWidth/2.}},
-                            {{1.}, {1.}});
-
-      boost::shared_ptr<FreeGripperNVecConstr> fgnvc(
-          new FreeGripperNVecConstr(&pgdata, pc.bodyId, pc.targetFrame, pc.surfaceFrame));
-      problem.addConstraint(fgnvc, {{0., 0.}}, {{1.}});
+          new FreeGripperPositionConstr(&pgdata, pc.bodyId, pc.targetFrame,
+                                        radiusX*pc.surfaceFrame));
+      problem.addConstraint(fgpc, {{-pc.targetWidth/2., pc.targetWidth/2.},
+                                   {0., 0.}, {0., 0.}},
+                                   {{1.}, {1.}, {1.}});
 
       // T axis must be aligned between target and surface frame.
       boost::shared_ptr<PlanarOrientationContactConstr> poc(
