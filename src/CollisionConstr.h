@@ -71,12 +71,18 @@ private:
     SCD::CD_Pair* pair;
     rbd::Jacobian jac;
     Eigen::MatrixXd jacMat;
+    double dist;
+    Eigen::Vector3d T_0_p, T_0_e;
   };
+
+private:
+  void updateCollisionData() const;
 
 private:
   PGData* pgdata_;
   int nrNonZero_;
   mutable std::vector<CollisionData> cols_;
+  mutable std::size_t xStamp_;
 };
 
 
@@ -112,12 +118,18 @@ private:
     Eigen::MatrixXd jac2Mat;
     Eigen::SparseMatrix<double, Eigen::RowMajor> jac2MatFull;
     SCD::CD_Pair* pair;
+    double dist;
+    Eigen::Vector3d T_0_p1, T_0_p2;
   };
+
+private:
+  void updateCollisionData() const;
 
 private:
   PGData* pgdata_;
   int nrNonZero_;
   mutable std::vector<CollisionData> cols_;
+  mutable std::size_t xStamp_;
 };
 
 } // namespace pg

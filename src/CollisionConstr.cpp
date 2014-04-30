@@ -83,6 +83,7 @@ EnvCollisionConstr::EnvCollisionConstr(PGData* pgdata, const std::vector<EnvColl
   : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), int(cols.size()), "EnvCollision")
   , pgdata_(pgdata)
   , nrNonZero_(0)
+  , xStamp_(0)
 {
   cols_.reserve(cols.size());
   for(const EnvCollision& sc: cols)
@@ -91,7 +92,7 @@ EnvCollisionConstr::EnvCollisionConstr(PGData* pgdata, const std::vector<EnvColl
     Eigen::MatrixXd jacMat(1, jac.dof());
     cols_.push_back({pgdata_->multibody().bodyIndexById(sc.bodyId),
                      sc.bodyT, new SCD::CD_Pair(sc.bodyHull, sc.envHull),
-                     jac, jacMat});
+                     jac, jacMat, 0., Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()});
     nrNonZero_ += jac.dof();
   }
 }
@@ -109,15 +110,15 @@ EnvCollisionConstr::~EnvCollisionConstr() throw()
 
 void EnvCollisionConstr::impl_compute(result_t& res, const argument_t& x) const throw()
 {
-  pgdata_->x(x);
+  if(pgdata_->x(x) != xStamp_)
+  {
+    updateCollisionData();
+  }
+
   int i = 0;
   for(const CollisionData& cd: cols_)
   {
-    sva::PTransformd X_0_b(pgdata_->mbc().bodyPosW[cd.bodyIndex]);
-
-    cd.pair->operator[](0)->setTransformation(toSCD(cd.bodyT*X_0_b));
-
-    res(i) = distance(cd.pair);
+    res(i) = cd.dist;
     ++i;
   }
 }
@@ -125,7 +126,11 @@ void EnvCollisionConstr::impl_compute(result_t& res, const argument_t& x) const 
 
 void EnvCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
-  pgdata_->x(x);
+  if(pgdata_->x(x) != xStamp_)
+  {
+    updateCollisionData();
+  }
+
   jac.reserve(nrNonZero_);
 
   int i = 0;
@@ -133,17 +138,11 @@ void EnvCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
   {
     sva::PTransformd X_0_b(pgdata_->mbc().bodyPosW[cd.bodyIndex]);
 
-    cd.pair->operator[](0)->setTransformation(toSCD(cd.bodyT*X_0_b));
-
-    double dist;
-    Eigen::Vector3d T_0_p, pEnv;
-    std::tie(dist, T_0_p, pEnv) = closestPoints(cd.pair);
-
-    Eigen::Vector3d dist3d(T_0_p - pEnv);
-    Eigen::Vector3d T_b_p(X_0_b.rotation()*(T_0_p - X_0_b.translation()));
+    Eigen::Vector3d dist3d(cd.T_0_p - cd.T_0_e);
+    Eigen::Vector3d T_b_p(X_0_b.rotation()*(cd.T_0_p - X_0_b.translation()));
     cd.jac.point(T_b_p);
 
-    double coef = std::copysign(2., dist);
+    double coef = std::copysign(2., cd.dist);
     const Eigen::MatrixXd& jacMat = cd.jac.jacobian(pgdata_->mb(), pgdata_->mbc());
     cd.jacMat.noalias() = coef*dist3d.transpose()*jacMat.block(3, 0, 3, cd.jac.dof());
     fullJacobianSparse(pgdata_->mb(), cd.jac, cd.jacMat, jac, {i, pgdata_->qParamsBegin()});
@@ -152,8 +151,20 @@ void EnvCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
 }
 
 
+void EnvCollisionConstr::updateCollisionData() const
+{
+  xStamp_ = pgdata_->xStamp();
+  for(CollisionData& cd: cols_)
+  {
+    sva::PTransformd X_0_b(pgdata_->mbc().bodyPosW[cd.bodyIndex]);
+    cd.pair->operator[](0)->setTransformation(toSCD(cd.bodyT*X_0_b));
+    std::tie(cd.dist, cd.T_0_p, cd.T_0_e) = closestPoints(cd.pair);
+  }
+}
+
+
 /*
- *                             EnvCollisionConstr
+ *                             SelfCollisionConstr
  */
 
 
@@ -161,6 +172,7 @@ SelfCollisionConstr::SelfCollisionConstr(PGData* pgdata, const std::vector<SelfC
   : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), int(cols.size()), "EnvCollision")
   , pgdata_(pgdata)
   , nrNonZero_(0)
+  , xStamp_(0)
 {
   cols_.reserve(cols.size());
   for(const SelfCollision& sc: cols)
@@ -182,7 +194,8 @@ SelfCollisionConstr::SelfCollisionConstr(PGData* pgdata, const std::vector<SelfC
                      sc.body1T, jac1, jac1Mat, jac1MatFull,
                      pgdata_->multibody().bodyIndexById(sc.body2Id),
                      sc.body2T, jac2, jac2Mat, jac2MatFull,
-                     new SCD::CD_Pair(sc.body1Hull, sc.body2Hull)});
+                     new SCD::CD_Pair(sc.body1Hull, sc.body2Hull),
+                     0., Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()});
     // not true, but better to ask bigger
     nrNonZero_ += jac1.dof() + jac2.dof();
   }
@@ -201,17 +214,15 @@ SelfCollisionConstr::~SelfCollisionConstr() throw()
 
 void SelfCollisionConstr::impl_compute(result_t& res, const argument_t& x) const throw()
 {
-  pgdata_->x(x);
+  if(pgdata_->x(x) != xStamp_)
+  {
+    updateCollisionData();
+  }
+
   int i = 0;
   for(const CollisionData& cd: cols_)
   {
-    sva::PTransformd X_0_b1(pgdata_->mbc().bodyPosW[cd.body1Index]);
-    sva::PTransformd X_0_b2(pgdata_->mbc().bodyPosW[cd.body2Index]);
-
-    cd.pair->operator[](0)->setTransformation(toSCD(cd.body1T*X_0_b1));
-    cd.pair->operator[](1)->setTransformation(toSCD(cd.body2T*X_0_b2));
-
-    res(i) = distance(cd.pair);
+    res(i) = cd.dist;
     ++i;
   }
 }
@@ -219,7 +230,10 @@ void SelfCollisionConstr::impl_compute(result_t& res, const argument_t& x) const
 
 void SelfCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
-  pgdata_->x(x);
+  if(pgdata_->x(x) != xStamp_)
+  {
+    updateCollisionData();
+  }
   jac.reserve(nrNonZero_);
 
   int i = 0;
@@ -228,21 +242,14 @@ void SelfCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) co
     sva::PTransformd X_0_b1(pgdata_->mbc().bodyPosW[cd.body1Index]);
     sva::PTransformd X_0_b2(pgdata_->mbc().bodyPosW[cd.body2Index]);
 
-    cd.pair->operator[](0)->setTransformation(toSCD(cd.body1T*X_0_b1));
-    cd.pair->operator[](1)->setTransformation(toSCD(cd.body2T*X_0_b2));
-
-    double dist;
-    Eigen::Vector3d T_0_p1, T_0_p2;
-    std::tie(dist, T_0_p1, T_0_p2) = closestPoints(cd.pair);
-
-    Eigen::Vector3d dist3d(T_0_p1 - T_0_p2);
-    Eigen::Vector3d T_b_p1(X_0_b1.rotation()*(T_0_p1 - X_0_b1.translation()));
-    Eigen::Vector3d T_b_p2(X_0_b2.rotation()*(T_0_p2 - X_0_b2.translation()));
+    Eigen::Vector3d dist3d(cd.T_0_p1 - cd.T_0_p2);
+    Eigen::Vector3d T_b_p1(X_0_b1.rotation()*(cd.T_0_p1 - X_0_b1.translation()));
+    Eigen::Vector3d T_b_p2(X_0_b2.rotation()*(cd.T_0_p2 - X_0_b2.translation()));
 
     cd.jac1.point(T_b_p1);
     cd.jac2.point(T_b_p2);
 
-    double coef = std::copysign(2., dist);
+    double coef = std::copysign(2., cd.dist);
     const Eigen::MatrixXd& jac1Mat = cd.jac1.jacobian(pgdata_->mb(), pgdata_->mbc());
     const Eigen::MatrixXd& jac2Mat = cd.jac2.jacobian(pgdata_->mb(), pgdata_->mbc());
 
@@ -253,6 +260,22 @@ void SelfCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) co
     updateFullJacobianSparse(pgdata_->mb(), cd.jac2, cd.jac2Mat, cd.jac2MatFull, {i, pgdata_->qParamsBegin()});
     jac += cd.jac1MatFull - cd.jac2MatFull;
     ++i;
+  }
+}
+
+
+void SelfCollisionConstr::updateCollisionData() const
+{
+  xStamp_ = pgdata_->xStamp();
+  for(CollisionData& cd: cols_)
+  {
+    sva::PTransformd X_0_b1(pgdata_->mbc().bodyPosW[cd.body1Index]);
+    sva::PTransformd X_0_b2(pgdata_->mbc().bodyPosW[cd.body2Index]);
+
+    cd.pair->operator[](0)->setTransformation(toSCD(cd.body1T*X_0_b1));
+    cd.pair->operator[](1)->setTransformation(toSCD(cd.body2T*X_0_b2));
+
+    std::tie(cd.dist, cd.T_0_p1, cd.T_0_p2) = closestPoints(cd.pair);
   }
 }
 
