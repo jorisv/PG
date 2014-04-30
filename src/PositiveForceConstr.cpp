@@ -81,7 +81,7 @@ void PositiveForceConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) co
     for(std::size_t i = 0; i < fd.points.size(); ++i)
     {
       sva::PTransformd X_0_pi = fd.points[i]*X_0_b;
-      const Eigen::MatrixXd& jacPointMat =
+      const auto& jacPointMat =
           jacPoints_[index].vectorJacobian(pgdata_->mb(),
                                            pgdata_->mbc(),
                                            fd.points[i].rotation().row(2).transpose())\

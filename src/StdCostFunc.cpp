@@ -91,6 +91,34 @@ StdCostFunc::StdCostFunc(std::vector<PGData>& pgdatas,
         gradientPos += forceData.points.size()*3;
       }
     }
+
+    for(std::size_t i = 0; i < robotConfig.torqueContactsMin.size(); ++i)
+    {
+      std::size_t gradientPos = pgdata.forceParamsBegin();
+      const TorqueContactMinimization& tcm = robotConfig.torqueContactsMin[i];
+      int bodyIndex = pgdata.mb().bodyIndexById(tcm.bodyId);
+      for(std::size_t j = 0; j < pgdata.forceDatas().size(); ++j)
+      {
+        const PGData::ForceData& forceData = pgdata.forceDatas()[j];
+        // we don't break since it could be many contact on the same body
+        if(tcm.bodyId == forceData.bodyId)
+        {
+          std::vector<Eigen::Vector3d> levers;
+          levers.reserve(forceData.points.size());
+          for(const sva::PTransformd& p: forceData.points)
+          {
+            levers.push_back(p.translation() - tcm.origin);
+          }
+          rbd::Jacobian jac(pgdata.mb(), tcm.bodyId);
+          Eigen::MatrixXd jacMat(1, jac.dof());
+          Eigen::MatrixXd jacMatTmp(3, jac.dof());
+          Eigen::SparseMatrix<double, Eigen::RowMajor> jacMatFull(1, pgdata.pbSize());
+          jacMatFull.reserve(jac.dof());
+          data.torqueContactsMin.push_back({bodyIndex, forceData.points, std::move(levers),
+                                            tcm.axis, jac, jacMat, jacMatTmp, jacMatFull,
+                                            j, gradientPos, tcm.scale});
+        }
+        gradientPos += forceData.points.size()*3;
       }
     }
 
@@ -179,6 +207,19 @@ void StdCostFunc::impl_compute(result_t& res, const argument_t& x) const throw()
       forceMin += forceTmp.squaredNorm()*fcmd.scale;
     }
 
+    double torqueContactMin = 0.;
+    for(const TorqueContactMinimizationData& tcmd: rd.torqueContactsMin)
+    {
+      const auto& forceData = rd.pgdata->forceDatas()[tcmd.forcePos];
+      const sva::PTransformd& X_0_b = rd.pgdata->mbc().bodyPosW[tcmd.bodyIndex];
+      for(std::size_t pi = 0; pi < tcmd.points.size(); ++pi)
+      {
+        sva::PTransformd X_0_pi = tcmd.points[pi]*X_0_b;
+        Eigen::Vector3d fBody(X_0_pi.rotation()*forceData.forces[pi].force());
+        torqueContactMin += std::pow(tcmd.axis.dot(tcmd.levers[pi].cross(fBody)), 2)*tcmd.scale;
+      }
+    }
+
     //Compute ellipse contact cost
     /*
     scalar_t ellipses = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
@@ -193,7 +234,7 @@ void StdCostFunc::impl_compute(result_t& res, const argument_t& x) const throw()
     */
 
     res(0) += posture*rd.postureScale + force +
-        pos + ori + forceMin;
+        pos + ori + forceMin + torqueContactMin;
   }
 }
 
@@ -264,6 +305,51 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
         gradient.coeffRef(index + 1) += forceTmp.y();
         gradient.coeffRef(index + 2) += forceTmp.z();
         index += 3;
+      }
+    }
+
+
+    for(TorqueContactMinimizationData& tcmd: rd.torqueContactsMin)
+    {
+      const auto& forceData = rd.pgdata->forceDatas()[tcmd.forcePos];
+      const sva::PTransformd& X_0_b = rd.pgdata->mbc().bodyPosW[tcmd.bodyIndex];
+
+      int forceIndex = int(tcmd.gradientPos);
+      for(std::size_t pi = 0; pi < tcmd.points.size(); ++pi)
+      {
+        sva::PTransformd X_0_pi = tcmd.points[pi]*X_0_b;
+        Eigen::Vector3d fBody(X_0_pi.rotation()*forceData.forces[pi].force());
+        Eigen::Vector3d lever = tcmd.levers[pi].cross(fBody);
+        Eigen::Matrix3d crossMat = sva::vector3ToCrossMatrix(tcmd.levers[pi]);
+        Eigen::RowVector3d dotCrossDiff(tcmd.axis.transpose()*crossMat);
+        double squareDiff = 2.*tcmd.axis.dot(lever)*tcmd.scale;
+
+
+        const auto& qDiffX = tcmd.jac.vectorJacobian(rd.pgdata->mb(), rd.pgdata->mbc(),
+          tcmd.points[pi].rotation().row(0).transpose()).block(3, 0, 3, tcmd.jac.dof());
+        tcmd.jacMatTmp.row(0) = forceData.forces[pi].force().transpose()*qDiffX;
+
+        const auto& qDiffY = tcmd.jac.vectorJacobian(rd.pgdata->mb(), rd.pgdata->mbc(),
+          tcmd.points[pi].rotation().row(1).transpose()).block(3, 0, 3, tcmd.jac.dof());
+        tcmd.jacMatTmp.row(1) = forceData.forces[pi].force().transpose()*qDiffY;
+
+        const auto& qDiffZ = tcmd.jac.vectorJacobian(rd.pgdata->mb(), rd.pgdata->mbc(),
+          tcmd.points[pi].rotation().row(2).transpose()).block(3, 0, 3, tcmd.jac.dof());
+        tcmd.jacMatTmp.row(2) = forceData.forces[pi].force().transpose()*qDiffZ;
+
+        tcmd.jacMat.noalias() = (squareDiff*dotCrossDiff)*tcmd.jacMatTmp;
+
+        updateFullJacobianSparse(rd.pgdata->mb(), tcmd.jac, tcmd.jacMat, tcmd.jacMatFull,
+                                 {0, rd.pgdata->qParamsBegin()});
+        gradient += tcmd.jacMatFull.transpose();
+
+        Eigen::RowVector3d fDiff;
+        fDiff = squareDiff*dotCrossDiff*X_0_pi.rotation();
+
+        gradient.coeffRef(forceIndex + 0) += fDiff.x();
+        gradient.coeffRef(forceIndex + 1) += fDiff.y();
+        gradient.coeffRef(forceIndex + 2) += fDiff.z();
+        forceIndex += 3;
       }
     }
 

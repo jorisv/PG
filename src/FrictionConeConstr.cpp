@@ -97,7 +97,7 @@ void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
       // Y axis
       //               dq
       // forceB.y()**2 => 2*forceB.y()*forceW*jacY
-      const Eigen::MatrixXd& jacPointVecZMat =
+      const auto& jacPointVecZMat =
           jacPoints_[index].vectorJacobian(pgdata_->mb(),
                                            pgdata_->mbc(),
                                            fd.points[i].rotation().row(2).transpose())\
@@ -105,7 +105,7 @@ void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
       jacPointsMatTmp_[index].row(0).noalias() =
           (-2.*muSquare*fBody.z())*(fd.forces[i].force().transpose()*jacPointVecZMat);
 
-      const Eigen::MatrixXd& jacPointVecXMat =
+      const auto& jacPointVecXMat =
           jacPoints_[index].vectorJacobian(pgdata_->mb(),
                                            pgdata_->mbc(),
                                            fd.points[i].rotation().row(0).transpose())\
@@ -113,7 +113,7 @@ void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) con
       jacPointsMatTmp_[index].noalias() +=
           (2.*fBody.x())*(fd.forces[i].force().transpose()*jacPointVecXMat);
 
-      const Eigen::MatrixXd& jacPointVecYMat =
+      const auto& jacPointVecYMat =
           jacPoints_[index].vectorJacobian(pgdata_->mb(),
                                            pgdata_->mbc(),
                                            fd.points[i].rotation().row(1).transpose())\

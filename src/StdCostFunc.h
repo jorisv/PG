@@ -70,6 +70,21 @@ private:
     double scale;
   };
 
+  struct TorqueContactMinimizationData
+  {
+    int bodyIndex;
+    std::vector<sva::PTransformd> points;
+    std::vector<Eigen::Vector3d> levers;
+    Eigen::Vector3d axis;
+    rbd::Jacobian jac;
+    Eigen::MatrixXd jacMat;
+    Eigen::MatrixXd jacMatTmp;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jacMatFull;
+    std::size_t forcePos;
+    std::size_t gradientPos;
+    double scale;
+  };
+
   struct RobotData
   {
     PGData* pgdata;
@@ -81,6 +96,7 @@ private:
     std::vector<BodyPositionTargetData> bodyPosTargets;
     std::vector<BodyOrientationTargetData> bodyOriTargets;
     std::vector<ForceContactMinimizationData> forceContactsMin;
+    std::vector<TorqueContactMinimizationData> torqueContactsMin;
   };
 
 private:

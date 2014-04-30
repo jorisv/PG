@@ -283,6 +283,23 @@ struct ForceContactMinimization
 };
 
 
+struct TorqueContactMinimization
+{
+  TorqueContactMinimization() {}
+  TorqueContactMinimization(int bId, const Eigen::Vector3d& o,
+                            const Eigen::Vector3d& a, double s)
+    : bodyId(bId)
+    , origin(o)
+    , axis(a)
+    , scale(s)
+  {}
+
+  int bodyId;
+  Eigen::Vector3d origin, axis;
+  double scale;
+};
+
+
 struct EllipseResult
 {
   int bodyIndex;  //Each ellipse is defined relatively to a Surface of a Body
@@ -343,6 +360,7 @@ struct RobotConfig
   std::vector<BodyPositionTarget> bodyPosTargets;
   std::vector<BodyOrientationTarget> bodyOriTargets;
   std::vector<ForceContactMinimization> forceContactsMin;
+  std::vector<TorqueContactMinimization> torqueContactsMin;
 };
 
 

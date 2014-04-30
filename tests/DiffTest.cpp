@@ -67,6 +67,25 @@ double checkGradient(
   return (jac - jacF).norm();
 }
 
+template <typename T>
+double checkQGradient(
+ const roboptim::GenericDifferentiableFunction<T>& function,
+ const typename roboptim::GenericDifferentiableFunction<T>::vector_t& x,
+    const pg::PGData& pgdata)
+{
+  auto rows = std::get<0>(function.jacobianSize());
+  auto cols = std::get<1>(function.jacobianSize());
+  typename roboptim::GenericFunctionTraits<T>::jacobian_t jac(rows, cols);
+  typename roboptim::GenericFunctionTraits<T>::jacobian_t jacF(rows, cols);
+
+  roboptim::GenericFiniteDifferenceGradient<T> fdfunction(function, 1e-5);
+  function.jacobian(jac, x);
+  fdfunction.jacobian(jacF, x);
+
+  int forceVar = pgdata.nrForcePoints()*3;
+  return (jac.block(0, 0, rows, cols - forceVar) -
+          jacF.block(0, 0, rows, cols - forceVar)).norm();
+}
 
 template <typename T>
 double checkForceGradient(
@@ -419,6 +438,8 @@ BOOST_AUTO_TEST_CASE(StdCostFunctionTest)
   robotConfig.bodyPosTargets = {{12, target, 3.45}};
   robotConfig.bodyOriTargets = {{12, oriTarget, 5.06}};
   robotConfig.forceContactsMin = {{12, 1.87}};
+  robotConfig.torqueContactsMin = {{12, Vector3d::Random(),
+                                    Vector3d::Random().normalized(), 2.92}};
 
   pg::StdCostFunc cost(pgdatas, {robotConfig}, {runConfig});
 
