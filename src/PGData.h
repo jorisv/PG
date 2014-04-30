@@ -70,7 +70,7 @@ public:
   PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity,
          int pbSize, int qBegin, int forceBegin);
 
-  void x(const Eigen::VectorXd& x);
+  std::size_t x(const Eigen::VectorXd& x);
 
   void forces(const std::vector<ForceContact>& fd);
   void ellipses(const std::vector<EllipseContact>& ed);
@@ -146,6 +146,11 @@ public:
     return gravity_;
   }
 
+  std::size_t xStamp() const
+  {
+    return xStamp_;
+  }
+
 private:
   rbd::MultiBody mb_;
   rbd::MultiBodyConfig mbc_;
@@ -166,6 +171,7 @@ private:
   int qBegin_, forceBegin_;
 
   std::vector<EllipseData> ellipseDatas_;
+  std::size_t xStamp_;
 };
 
 

@@ -47,6 +47,7 @@ PGData::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity,
   , pbSize_(pbSize)
   , qBegin_(qBegin)
   , forceBegin_(forceBegin)
+  , xStamp_(0)
 {
   xq_.setZero();
   mbc_.zero(mb_);
@@ -60,7 +61,7 @@ PGData::PGData(const rbd::MultiBody& mb, const Eigen::Vector3d& gravity,
 }
 
 
-void PGData::x(const Eigen::VectorXd& x)
+std::size_t PGData::x(const Eigen::VectorXd& x)
 {
   if(xq_ != x.segment(qBegin_, mb_.nrParams()) ||
      xf_ != x.segment(forceBegin_, nrForcePoints_*3))
@@ -69,6 +70,8 @@ void PGData::x(const Eigen::VectorXd& x)
     xf_ = x.segment(forceBegin_, nrForcePoints_*3);
     update();
   }
+
+   return xStamp_;
 }
 
 
@@ -107,6 +110,7 @@ void PGData::ellipses(const std::vector<EllipseContact>& ellipseContacts)
 
 void PGData::update()
 {
+  ++xStamp_;
   rbd::vectorToParam(xq_, mbc_.q);
   rbd::forwardKinematics(mb_, mbc_);
   patchMbc(mb_, mbc_);
