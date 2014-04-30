@@ -214,8 +214,7 @@ void StdCostFunc::impl_compute(result_t& res, const argument_t& x) const throw()
       const sva::PTransformd& X_0_b = rd.pgdata->mbc().bodyPosW[tcmd.bodyIndex];
       for(std::size_t pi = 0; pi < tcmd.points.size(); ++pi)
       {
-        sva::PTransformd X_0_pi = tcmd.points[pi]*X_0_b;
-        Eigen::Vector3d fBody(X_0_pi.rotation()*forceData.forces[pi].force());
+        Eigen::Vector3d fBody(X_0_b.rotation()*forceData.forces[pi].force());
         torqueContactMin += std::pow(tcmd.axis.dot(tcmd.levers[pi].cross(fBody)), 2)*tcmd.scale;
       }
     }
@@ -317,8 +316,7 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
       int forceIndex = int(tcmd.gradientPos);
       for(std::size_t pi = 0; pi < tcmd.points.size(); ++pi)
       {
-        sva::PTransformd X_0_pi = tcmd.points[pi]*X_0_b;
-        Eigen::Vector3d fBody(X_0_pi.rotation()*forceData.forces[pi].force());
+        Eigen::Vector3d fBody(X_0_b.rotation()*forceData.forces[pi].force());
         Eigen::Vector3d lever = tcmd.levers[pi].cross(fBody);
         Eigen::Matrix3d crossMat = sva::vector3ToCrossMatrix(tcmd.levers[pi]);
         Eigen::RowVector3d dotCrossDiff(tcmd.axis.transpose()*crossMat);
@@ -326,15 +324,15 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
 
 
         const auto& qDiffX = tcmd.jac.vectorJacobian(rd.pgdata->mb(), rd.pgdata->mbc(),
-          tcmd.points[pi].rotation().row(0).transpose()).block(3, 0, 3, tcmd.jac.dof());
+                                                     Eigen::Vector3d::UnitX()).block(3, 0, 3, tcmd.jac.dof());
         tcmd.jacMatTmp.row(0) = forceData.forces[pi].force().transpose()*qDiffX;
 
         const auto& qDiffY = tcmd.jac.vectorJacobian(rd.pgdata->mb(), rd.pgdata->mbc(),
-          tcmd.points[pi].rotation().row(1).transpose()).block(3, 0, 3, tcmd.jac.dof());
+                                                     Eigen::Vector3d::UnitY()).block(3, 0, 3, tcmd.jac.dof());
         tcmd.jacMatTmp.row(1) = forceData.forces[pi].force().transpose()*qDiffY;
 
         const auto& qDiffZ = tcmd.jac.vectorJacobian(rd.pgdata->mb(), rd.pgdata->mbc(),
-          tcmd.points[pi].rotation().row(2).transpose()).block(3, 0, 3, tcmd.jac.dof());
+                                                     Eigen::Vector3d::UnitZ()).block(3, 0, 3, tcmd.jac.dof());
         tcmd.jacMatTmp.row(2) = forceData.forces[pi].force().transpose()*qDiffZ;
 
         tcmd.jacMat.noalias() = (squareDiff*dotCrossDiff)*tcmd.jacMatTmp;
@@ -344,7 +342,7 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
         gradient += tcmd.jacMatFull.transpose();
 
         Eigen::RowVector3d fDiff;
-        fDiff = squareDiff*dotCrossDiff*X_0_pi.rotation();
+        fDiff = squareDiff*dotCrossDiff*X_0_b.rotation();
 
         gradient.coeffRef(forceIndex + 0) += fDiff.x();
         gradient.coeffRef(forceIndex + 1) += fDiff.y();
