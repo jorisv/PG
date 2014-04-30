@@ -65,6 +65,7 @@ def build_pg(pg):
   bodyPosTarget = pg.add_struct('BodyPositionTarget')
   bodyOriTarget = pg.add_struct('BodyOrientationTarget')
   forceContactMin = pg.add_struct('ForceContactMinimization')
+  torqueContactMin = pg.add_struct('TorqueContactMinimization')
   iterateQuantities = pg.add_struct('IterateQuantities')
   ellipseResult = pg.add_struct('EllipseResult')
   runConfig = pg.add_struct('RunConfig')
@@ -83,6 +84,7 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::BodyPositionTarget>', 'pg::BodyPositionTarget', 'vector')
   pg.add_container('std::vector<pg::BodyOrientationTarget>', 'pg::BodyOrientationTarget', 'vector')
   pg.add_container('std::vector<pg::ForceContactMinimization>', 'pg::ForceContactMinimization', 'vector')
+  pg.add_container('std::vector<pg::TorqueContactMinimization>', 'pg::TorqueContactMinimization', 'vector')
   pg.add_container('std::vector<Eigen::VectorXd>', 'Eigen::VectorXd', 'vector')
   pg.add_container('std::vector<std::vector<Eigen::VectorXd> >', 'std::vector<Eigen::VectorXd>', 'vector')
   pg.add_container('std::vector<pg::EllipseResult>', 'pg::EllipseResult', 'vector')
@@ -282,6 +284,18 @@ def build_pg(pg):
   forceContactMin.add_instance_attribute('bodyId', 'int')
   forceContactMin.add_instance_attribute('scale', 'double')
 
+  # TorqueContactMinimization
+  torqueContactMin.add_constructor([])
+  torqueContactMin.add_constructor([param('int', 'bodyId'),
+                                    param('const Eigen::Vector3d&', 'origin'),
+                                    param('const Eigen::Vector3d&', 'axis'),
+                                    param('double', 'scale')])
+
+  torqueContactMin.add_instance_attribute('bodyId', 'int')
+  torqueContactMin.add_instance_attribute('origin', 'Eigen::Vector3d')
+  torqueContactMin.add_instance_attribute('axis', 'Eigen::Vector3d')
+  torqueContactMin.add_instance_attribute('scale', 'double')
+
   # RobotConfig
   robotConfig.add_constructor([param('const rbd::MultiBody&', 'mb')])
   robotConfig.add_instance_attribute('fixedPosContacts', 'std::vector<pg::FixedPositionContact>')
@@ -307,6 +321,7 @@ def build_pg(pg):
   robotConfig.add_instance_attribute('bodyPosTargets', 'std::vector<pg::BodyPositionTarget>')
   robotConfig.add_instance_attribute('bodyOriTargets', 'std::vector<pg::BodyOrientationTarget>')
   robotConfig.add_instance_attribute('forceContactsMin', 'std::vector<pg::ForceContactMinimization>')
+  robotConfig.add_instance_attribute('torqueContactsMin', 'std::vector<pg::TorqueContactMinimization>')
 
   # RunConfig
   runConfig.add_constructor([])
