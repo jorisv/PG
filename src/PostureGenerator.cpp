@@ -333,22 +333,29 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
 
     for(const CylindricalContact& pc: robotConfig.cylindricalContacts)
     {
-      sva::PTransformd radiusX(Eigen::Vector3d(0., 0., pc.targetRadius));
-      boost::shared_ptr<CylindricalPositionConstr> fgpc(
-          new CylindricalPositionConstr(&pgdata, pc.bodyId, pc.targetFrame,
-                                        radiusX*pc.surfaceFrame));
-      problem.addConstraint(fgpc, {{-pc.targetWidth/2., pc.targetWidth/2.},
-                                   {0., 0.}, {0., 0.}},
-                                   {{1.}, {1.}, {1.}});
+      int bodyIndex = pgdata.mb().bodyIndexById(pc.bodyId);
+      // if the root body is a cylindrical contact and the root joint is a
+      // cylindrical joint we don't need to add cylindrical position and
+      // orientation constraint
+      if(bodyIndex != 0 || pgdata.mb().joint(0).type() != rbd::Joint::Cylindrical)
+      {
+        sva::PTransformd radiusX(Eigen::Vector3d(0., 0., pc.targetRadius));
+        boost::shared_ptr<CylindricalPositionConstr> fgpc(
+            new CylindricalPositionConstr(&pgdata, pc.bodyId, pc.targetFrame,
+                                          radiusX*pc.surfaceFrame));
+        problem.addConstraint(fgpc, {{-pc.targetWidth/2., pc.targetWidth/2.},
+                                     {0., 0.}, {0., 0.}},
+                                     {{1.}, {1.}, {1.}});
 
-      // T axis must be aligned between target and surface frame.
-      boost::shared_ptr<PlanarOrientationContactConstr> poc(
-          new PlanarOrientationContactConstr(&pgdata, pc.bodyId,
-                                             pc.targetFrame, pc.surfaceFrame,
-                                             0));
-      problem.addConstraint(poc, {{0., std::numeric_limits<double>::infinity()},
-                                  {0., 0.}, {0., 0.}},
-                                  {{1.}, {1.}, {1.}});
+        // T axis must be aligned between target and surface frame.
+        boost::shared_ptr<PlanarOrientationContactConstr> poc(
+            new PlanarOrientationContactConstr(&pgdata, pc.bodyId,
+                                               pc.targetFrame, pc.surfaceFrame,
+                                               0));
+        problem.addConstraint(poc, {{0., std::numeric_limits<double>::infinity()},
+                                    {0., 0.}, {0., 0.}},
+                                    {{1.}, {1.}, {1.}});
+      }
     }
 
     if(!robotConfig.forceContacts.empty())
