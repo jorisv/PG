@@ -30,6 +30,9 @@ StaticStabilityConstr::StaticStabilityConstr(PGData* pgdata)
   : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), 6, "StaticStability")
   , pgdata_(pgdata)
   , gravityForce_(-pgdata->robotMass()*pgdata->gravity())
+  , com_()
+  , comJac_(pgdata->mb())
+  , xStamp_(0)
   , jacPoints_(pgdata->nrForcePoints())
   , jacFullMat_(3, pgdata->mb().nrParams())
   , T_com_fi_jac_(3, pgdata->mb().nrParams())
@@ -53,7 +56,10 @@ StaticStabilityConstr::~StaticStabilityConstr() throw()
 
 void StaticStabilityConstr::impl_compute(result_t& res, const argument_t& x) const throw()
 {
-  pgdata_->x(x);
+  if(xStamp_ != pgdata_->x(x))
+  {
+    computeCoM();
+  }
 
   res.head<3>().setZero();
   res.tail<3>() = gravityForce_;
@@ -63,7 +69,7 @@ void StaticStabilityConstr::impl_compute(result_t& res, const argument_t& x) con
     for(std::size_t i = 0; i < fd.forces.size(); ++i)
     {
       sva::PTransformd X_0_pi = fd.points[i]*X_0_b;
-      Eigen::Vector3d T_com_fi(X_0_pi.translation() - pgdata_->com());
+      Eigen::Vector3d T_com_fi(X_0_pi.translation() - com_);
       Eigen::Vector3d fi_world(fd.forces[i].force());
       res.head<3>() += T_com_fi.cross(fi_world);
       res.tail<3>() += fi_world;
@@ -74,9 +80,15 @@ void StaticStabilityConstr::impl_compute(result_t& res, const argument_t& x) con
 
 void StaticStabilityConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
-  pgdata_->x(x);
-  couple_jac_.setZero();
+  if(xStamp_ != pgdata_->x(x))
+  {
+    computeCoM();
+  }
+
   jac.reserve(pgdata_->mb().nrDof()*3 + pgdata_->nrForcePoints()*(9*2));
+
+  couple_jac_.setZero();
+  const Eigen::MatrixXd& comJacMat = comJac_.jacobian(pgdata_->mb(), pgdata_->mbc());
 
   int index = 0;
   for(const PGData::ForceData& fd: pgdata_->forceDatas())
@@ -85,7 +97,7 @@ void StaticStabilityConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) 
     for(std::size_t i = 0; i < fd.forces.size(); ++i)
     {
       sva::PTransformd X_0_pi = fd.points[i]*X_0_b;
-      Eigen::Vector3d T_com_fi(X_0_pi.translation() - pgdata_->com());
+      Eigen::Vector3d T_com_fi(X_0_pi.translation() - com_);
 
       // kinematic jacobian
       const Eigen::MatrixXd& jacP = jacPoints_[index].jacobian(pgdata_->mb(),
@@ -93,7 +105,7 @@ void StaticStabilityConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) 
 
       // couple
       jacPoints_[index].fullJacobian(pgdata_->mb(), jacP.block(3, 0, 3, jacP.cols()), jacFullMat_);
-      T_com_fi_jac_.noalias() = jacFullMat_ - pgdata_->comJac();
+      T_com_fi_jac_.noalias() = jacFullMat_ - comJacMat;
       couple_jac_.noalias() += sva::vector3ToCrossMatrix((-fd.forces[i].force()).eval())*T_com_fi_jac_;
 
       // force
@@ -114,5 +126,13 @@ void StaticStabilityConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) 
   // fill couple
   fillSparse(couple_jac_, jac, {0, pgdata_->qParamsBegin()});
 }
+
+
+void StaticStabilityConstr::computeCoM() const
+{
+  xStamp_ = pgdata_->xStamp();
+  com_ = rbd::computeCoM(pgdata_->mb(), pgdata_->mbc());
+}
+
 
 } // pg

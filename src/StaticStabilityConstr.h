@@ -20,6 +20,7 @@
 #include <roboptim/core.hh>
 
 // RBDyn
+#include <RBDyn/CoM.h>
 #include <RBDyn/Jacobian.h>
 
 
@@ -46,9 +47,15 @@ public:
   }
 
 private:
+  void computeCoM() const;
+
+private:
   PGData* pgdata_;
   Eigen::Vector3d gravityForce_;
 
+  mutable Eigen::Vector3d com_;
+  mutable rbd::CoMJacobian comJac_;
+  mutable std::size_t xStamp_;
   mutable std::vector<rbd::Jacobian> jacPoints_;
   mutable Eigen::MatrixXd jacFullMat_;
   mutable Eigen::MatrixXd T_com_fi_jac_;

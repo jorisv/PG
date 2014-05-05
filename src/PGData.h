@@ -96,16 +96,6 @@ public:
     return robotMass_;
   }
 
-  const Eigen::Vector3d& com() const
-  {
-    return com_;
-  }
-
-  const Eigen::MatrixXd& comJac() const
-  {
-    return comJacMat_;
-  }
-
   int pbSize() const
   {
     return pbSize_;
@@ -155,10 +145,6 @@ private:
   rbd::MultiBody mb_;
   rbd::MultiBodyConfig mbc_;
   double robotMass_;
-
-  Eigen::Vector3d com_;
-  rbd::CoMJacobian comJac_;
-  Eigen::MatrixXd comJacMat_;
 
   Eigen::Vector3d gravity_;
 
