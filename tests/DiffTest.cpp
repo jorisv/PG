@@ -40,7 +40,7 @@
 #include "CollisionConstr.h"
 #include "StdCostFunc.h"
 #include "RobotLinkConstr.h"
-#include "FreeGripperConstr.h"
+#include "CylindricalSurfaceConstr.h"
 
 // Arm
 #include "XYZ12Arm.h"
@@ -502,7 +502,7 @@ BOOST_AUTO_TEST_CASE(FreeGripperPositionTest)
   sva::PTransformd target(qt, Vector3d::Random());
   sva::PTransformd surface(qs, Vector3d::Random());
 
-  pg::FreeGripperPositionConstr fgpc(&pgdata, 12, target, surface);
+  pg::CylindricalPositionConstr fgpc(&pgdata, 12, target, surface);
 
   for(int i = 0; i < 100; ++i)
   {
@@ -533,7 +533,7 @@ BOOST_AUTO_TEST_CASE(FreeGripperNVecTest)
   sva::PTransformd target(qt, Vector3d::Random());
   sva::PTransformd surface(qs, Vector3d::Random());
 
-  pg::FreeGripperNVecConstr fgnvc(&pgdata, 12, target, surface);
+  pg::CylindricalNVecConstr fgnvc(&pgdata, 12, target, surface);
 
   for(int i = 0; i < 100; ++i)
   {

@@ -580,7 +580,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     sva::PTransformd targetSurface(RotY(cst::pi<double>()/2.), Vector3d(0., 1., 0.));
     sva::PTransformd bodySurface(bodyFrame);
     double radius = 0.1;
-    rc.freeGripperContacts = {{id, radius, 5., targetSurface, bodySurface}};
+    rc.cylindricalContacts = {{id, radius, 5., targetSurface, bodySurface}};
 
     pgPb.robotConfigs({rc}, gravity);
     BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));

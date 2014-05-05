@@ -159,10 +159,10 @@ struct GripperContact
 };
 
 
-struct FreeGripperContact
+struct CylindricalContact
 {
-  FreeGripperContact() {}
-  FreeGripperContact(int bId, double tR, double tW,
+  CylindricalContact() {}
+  CylindricalContact(int bId, double tR, double tW,
                      const sva::PTransformd& tf, const sva::PTransformd& sf)
     : bodyId(bId)
     , targetRadius(tR)
@@ -344,7 +344,7 @@ struct RobotConfig
   std::vector<PlanarContact> planarContacts;
   std::vector<EllipseContact> ellipseContacts;
   std::vector<GripperContact> gripperContacts;
-  std::vector<FreeGripperContact> freeGripperContacts;
+  std::vector<CylindricalContact> cylindricalContacts;
   std::vector<ForceContact> forceContacts;
   std::vector<EnvCollision> envCollisions;
   std::vector<SelfCollision> selfCollisions;

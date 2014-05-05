@@ -34,7 +34,7 @@
 //#include "EllipseContactConstr.h"
 #include "CollisionConstr.h"
 #include "RobotLinkConstr.h"
-#include "FreeGripperConstr.h"
+#include "CylindricalSurfaceConstr.h"
 #include "IterationCallback.h"
 
 namespace pg
@@ -331,11 +331,11 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
       problem.addConstraint(pic, limInc, scalInc);
     }
 
-    for(const FreeGripperContact& pc: robotConfig.freeGripperContacts)
+    for(const CylindricalContact& pc: robotConfig.cylindricalContacts)
     {
       sva::PTransformd radiusX(Eigen::Vector3d(0., 0., pc.targetRadius));
-      boost::shared_ptr<FreeGripperPositionConstr> fgpc(
-          new FreeGripperPositionConstr(&pgdata, pc.bodyId, pc.targetFrame,
+      boost::shared_ptr<CylindricalPositionConstr> fgpc(
+          new CylindricalPositionConstr(&pgdata, pc.bodyId, pc.targetFrame,
                                         radiusX*pc.surfaceFrame));
       problem.addConstraint(fgpc, {{-pc.targetWidth/2., pc.targetWidth/2.},
                                    {0., 0.}, {0., 0.}},

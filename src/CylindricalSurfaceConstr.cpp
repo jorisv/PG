@@ -14,7 +14,7 @@
 // along with PG.  If not, see <http://www.gnu.org/licenses/>.
 
 // associated header
-#include "FreeGripperConstr.h"
+#include "CylindricalSurfaceConstr.h"
 
 // include
 // PG
@@ -27,11 +27,11 @@ namespace pg
 
 
 /*
- *                        FreeGripperPositionConstr
+ *                        CylindricalPositionConstr
  */
 
 
-FreeGripperPositionConstr::FreeGripperPositionConstr(
+CylindricalPositionConstr::CylindricalPositionConstr(
   PGData* pgdata, int bodyId,
   const sva::PTransformd& targetFrame,
   const sva::PTransformd& surfaceFrame)
@@ -45,11 +45,11 @@ FreeGripperPositionConstr::FreeGripperPositionConstr(
 {}
 
 
-FreeGripperPositionConstr::~FreeGripperPositionConstr() throw()
+CylindricalPositionConstr::~CylindricalPositionConstr() throw()
 {}
 
 
-void FreeGripperPositionConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void CylindricalPositionConstr::impl_compute(result_t& res, const argument_t& x) const throw()
 {
   pgdata_->x(x);
 
@@ -62,7 +62,7 @@ void FreeGripperPositionConstr::impl_compute(result_t& res, const argument_t& x)
 }
 
 
-void FreeGripperPositionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void CylindricalPositionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
   jac.reserve(3*jac_.dof());
 
@@ -79,11 +79,11 @@ void FreeGripperPositionConstr::impl_jacobian(jacobian_t& jac, const argument_t&
 
 
 /*
- *                        FreeGripperNVecConstr
+ *                        CylindricalNVecConstr
  */
 
 
-FreeGripperNVecConstr::FreeGripperNVecConstr(
+CylindricalNVecConstr::CylindricalNVecConstr(
   PGData* pgdata, int bodyId,
   const sva::PTransformd& targetFrame,
   const sva::PTransformd& surfaceFrame)
@@ -97,11 +97,11 @@ FreeGripperNVecConstr::FreeGripperNVecConstr(
 {}
 
 
-FreeGripperNVecConstr::~FreeGripperNVecConstr() throw()
+CylindricalNVecConstr::~CylindricalNVecConstr() throw()
 {}
 
 
-void FreeGripperNVecConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void CylindricalNVecConstr::impl_compute(result_t& res, const argument_t& x) const throw()
 {
   pgdata_->x(x);
 
@@ -113,7 +113,7 @@ void FreeGripperNVecConstr::impl_compute(result_t& res, const argument_t& x) con
 }
 
 
-void FreeGripperNVecConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void CylindricalNVecConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
 {
   jac.reserve(jac_.dof());
 

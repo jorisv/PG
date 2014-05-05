@@ -27,16 +27,16 @@ namespace pg
 class PGData;
 
 
-class FreeGripperPositionConstr : public roboptim::DifferentiableSparseFunction
+class CylindricalPositionConstr : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  FreeGripperPositionConstr(PGData* pgdata, int bodyId,
+  CylindricalPositionConstr(PGData* pgdata, int bodyId,
       const sva::PTransformd& targetFrame,
       const sva::PTransformd& surfaceFrame);
-  ~FreeGripperPositionConstr() throw();
+  ~CylindricalPositionConstr() throw();
 
 
   void impl_compute(result_t& res, const argument_t& x) const throw();
@@ -59,16 +59,16 @@ private:
 
 
 
-class FreeGripperNVecConstr : public roboptim::DifferentiableSparseFunction
+class CylindricalNVecConstr : public roboptim::DifferentiableSparseFunction
 {
 public:
   typedef typename parent_t::argument_t argument_t;
 
 public:
-  FreeGripperNVecConstr(PGData* pgdata, int bodyId,
+  CylindricalNVecConstr(PGData* pgdata, int bodyId,
       const sva::PTransformd& targetFrame,
       const sva::PTransformd& surfaceFrame);
-  ~FreeGripperNVecConstr() throw();
+  ~CylindricalNVecConstr() throw();
 
 
   void impl_compute(result_t& res, const argument_t& x) const throw();
