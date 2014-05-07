@@ -470,8 +470,12 @@ BOOST_AUTO_TEST_CASE(RobotLinkTest)
 
   pg::PGData pgdata1(mb, gravity, nrVar, qBegin, mb.nrParams() + qBegin);
   pg::PGData pgdata2(mb, gravity, nrVar, qBegin2, mb.nrParams() + qBegin2);
+  sva::PTransformd b1T(Quaterniond(Vector4d::Random().normalized()),
+                       Vector3d::Random());
+  sva::PTransformd b2T(Quaterniond(Vector4d::Random().normalized()),
+                       Vector3d::Random());
 
-  pg::RobotLinkConstr rlc(&pgdata1, &pgdata2, {12, 6});
+  pg::RobotLinkConstr rlc(&pgdata1, &pgdata2, {{12, b1T, b2T}, {6, b1T, b2T}});
 
   for(int i = 0; i < 100; ++i)
   {

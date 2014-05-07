@@ -69,6 +69,7 @@ def build_pg(pg):
   iterateQuantities = pg.add_struct('IterateQuantities')
   ellipseResult = pg.add_struct('EllipseResult')
   runConfig = pg.add_struct('RunConfig')
+  bodyLink = pg.add_struct('BodyLink')
   robotLink = pg.add_struct('RobotLink')
   cylindricalContact = pg.add_struct('CylindricalContact')
 
@@ -90,6 +91,7 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::EllipseResult>', 'pg::EllipseResult', 'vector')
   pg.add_container('std::vector<pg::RobotConfig>', 'pg::RobotConfig', 'vector')
   pg.add_container('std::vector<pg::RunConfig>', 'pg::RunConfig', 'vector')
+  pg.add_container('std::vector<pg::BodyLink>', 'pg::BodyLink', 'vector')
   pg.add_container('std::vector<pg::RobotLink>', 'pg::RobotLink', 'vector')
   pg.add_container('std::vector<pg::CylindricalContact>', 'pg::CylindricalContact', 'vector')
 
@@ -332,14 +334,24 @@ def build_pg(pg):
   runConfig.add_instance_attribute('initForces', 'std::vector<sva::ForceVecd>')
   runConfig.add_instance_attribute('targetQ', 'std::vector<std::vector<double> >')
 
+  # BodyLink
+  bodyLink.add_constructor([])
+  bodyLink.add_constructor([param('int', 'bodyId'),
+                            param('const sva::PTransformd&', 'body1T'),
+                            param('const sva::PTransformd&', 'body2T')])
+  bodyLink.add_instance_attribute('bodyId', 'int')
+  bodyLink.add_instance_attribute('body1T', 'sva::PTransformd')
+  bodyLink.add_instance_attribute('body2T', 'sva::PTransformd')
+
+
   # RobotLink
   robotLink.add_constructor([])
   robotLink.add_constructor([param('int', 'robot1Index'),
                              param('int', 'robot2Index'),
-                             param('std::vector<int>', 'linkedBodiesId')])
+                             param('std::vector<pg::BodyLink>', 'linkedBodies')])
   robotLink.add_instance_attribute('robot1Index', 'int')
   robotLink.add_instance_attribute('robot2Index', 'int')
-  robotLink.add_instance_attribute('linkedBodiesId', 'std::vector<int>')
+  robotLink.add_instance_attribute('linkedBodies', 'std::vector<pg::BodyLink>')
 
   # CylindricalContact
   cylindricalContact.add_constructor([])
@@ -389,7 +401,6 @@ if __name__ == '__main__':
   import_SCD_types(pg)
 
   # build list type
-  pg.add_container('std::vector<int>', 'int', 'vector')
   pg.add_container('std::vector<double>', 'double', 'vector')
   pg.add_container('std::vector<std::vector<double> >', 'std::vector<double>', 'vector')
   pg.add_container('std::vector<sva::PTransformd>', 'sva::PTransformd', 'vector')

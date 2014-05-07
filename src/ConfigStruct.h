@@ -364,23 +364,43 @@ struct RobotConfig
 };
 
 
+struct BodyLink
+{
+  BodyLink()
+    : bodyId(-1)
+    , body1T(sva::PTransformd::Identity())
+    , body2T(sva::PTransformd::Identity())
+  {}
+
+  BodyLink(int bId, const sva::PTransformd& b1T, const sva::PTransformd& b2T)
+    : bodyId(bId)
+    , body1T(b1T)
+    , body2T(b2T)
+  {}
+
+  int bodyId;
+  sva::PTransformd body1T;
+  sva::PTransformd body2T;
+};
+
+
 struct RobotLink
 {
   RobotLink()
     : robot1Index(-1)
     , robot2Index(-1)
-    , linkedBodiesId()
+    , linkedBodies()
   {}
 
-  RobotLink(int r1Index, int r2Index, std::vector<int> lbodiesId)
+  RobotLink(int r1Index, int r2Index, std::vector<BodyLink> lbodies)
     : robot1Index(r1Index)
     , robot2Index(r2Index)
-    , linkedBodiesId(std::move(lbodiesId))
+    , linkedBodies(std::move(lbodies))
   {}
 
   int robot1Index;
   int robot2Index;
-  std::vector<int> linkedBodiesId;
+  std::vector<BodyLink> linkedBodies;
 };
 
 

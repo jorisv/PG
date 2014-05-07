@@ -26,6 +26,7 @@
 namespace pg
 {
 class PGData;
+class BodyLink;
 
 class RobotLinkConstr : public roboptim::DifferentiableSparseFunction
 {
@@ -34,7 +35,7 @@ public:
 
 public:
   RobotLinkConstr(PGData* pgdata1, PGData* pgdata2,
-      const std::vector<int>& bodiesId);
+      const std::vector<BodyLink>& linkedBodies);
   ~RobotLinkConstr() throw();
 
   void impl_compute(result_t& res, const argument_t& x) const throw();
@@ -48,6 +49,7 @@ public:
 private:
   struct LinkData
   {
+    sva::PTransformd body1T, body2T;
     rbd::Jacobian jac1, jac2;
     Eigen::MatrixXd jacMat1, jacMat2;
   };

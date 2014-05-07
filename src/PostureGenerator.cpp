@@ -461,10 +461,10 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
   {
     boost::shared_ptr<RobotLinkConstr> rlc(
       new RobotLinkConstr(&pgdatas_[rl.robot1Index],
-                          &pgdatas_[rl.robot2Index], rl.linkedBodiesId));
+                          &pgdatas_[rl.robot2Index], rl.linkedBodies));
     typename RobotLinkConstr::intervals_t interval(rlc->outputSize(), {0., 0.});
     typename solver_t::problem_t::scales_t scale(rlc->outputSize(), 1.);
-    for(std::size_t i = 0; i < rl.linkedBodiesId.size(); ++i)
+    for(std::size_t i = 0; i < rl.linkedBodies.size(); ++i)
     {
       interval[i*6 + 0] = {1., 1.};
       interval[i*6 + 1] = {1., 1.};

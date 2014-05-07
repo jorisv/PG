@@ -546,7 +546,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     rc1.fixedPosContacts = {{id, target, sva::PTransformd::Identity()}};
     rc1.fixedOriContacts = {{id, oriTarget, sva::PTransformd::Identity()}};
 
-    pg::RobotLink rl(0, 1, {12});
+    pg::RobotLink rl(0, 1, {{12, sva::PTransformd::Identity(),
+                             sva::PTransformd::Identity()}});
     pg::RunConfig rc({mbcInit.q, {}, mbcInit.q});
 
     pgPb.robotConfigs({rc1, rc2}, gravity);
@@ -566,7 +567,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
   }
 
   /*
-   *                        FreeGripper
+   *                        CylindricalContact
    */
   {
     pg::PostureGenerator pgPb;

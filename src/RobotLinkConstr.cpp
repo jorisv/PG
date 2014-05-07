@@ -18,6 +18,7 @@
 
 // include
 // PG
+#include "ConfigStruct.h"
 #include "PGData.h"
 #include "FillSparse.h"
 
@@ -32,22 +33,23 @@ namespace pg
 
 
 RobotLinkConstr::RobotLinkConstr(PGData* pgdata1, PGData* pgdata2,
-      const std::vector<int>& bodiesId)
-  : roboptim::DifferentiableSparseFunction(pgdata1->pbSize(), int(6*bodiesId.size()),
+      const std::vector<BodyLink>& linkedBodies)
+  : roboptim::DifferentiableSparseFunction(pgdata1->pbSize(),
+                                           int(6*linkedBodies.size()),
                                            "RobotLink")
   , pgdata1_(pgdata1)
   , pgdata2_(pgdata2)
   , nrNonZero_(0)
   , links_()
 {
-  for(int bodyId: bodiesId)
+  for(const BodyLink& link: linkedBodies)
   {
-    rbd::Jacobian jac1(pgdata1_->mb(), bodyId);
-    rbd::Jacobian jac2(pgdata2_->mb(), bodyId);
+    rbd::Jacobian jac1(pgdata1_->mb(), link.bodyId, link.body1T.translation());
+    rbd::Jacobian jac2(pgdata2_->mb(), link.bodyId, link.body2T.translation());
     Eigen::MatrixXd jacMat1(6, jac1.dof());
     Eigen::MatrixXd jacMat2(6, jac2.dof());
 
-    links_.push_back({jac1, jac2, jacMat1, jacMat2});
+    links_.push_back({link.body1T, link.body2T, jac1, jac2, jacMat1, jacMat2});
 
     nrNonZero_ += jac1.dof()*6 + jac2.dof()*6;
   }
@@ -69,8 +71,8 @@ void RobotLinkConstr::impl_compute(result_t& res, const argument_t& x) const thr
     int index1 = link.jac1.jointsPath().back();
     int index2 = link.jac2.jointsPath().back();
 
-    const sva::PTransformd body1 = pgdata1_->mbc().bodyPosW[index1];
-    const sva::PTransformd body2 = pgdata2_->mbc().bodyPosW[index2];
+    sva::PTransformd body1 = link.body1T*pgdata1_->mbc().bodyPosW[index1];
+    sva::PTransformd body2 = link.body2T*pgdata2_->mbc().bodyPosW[index2];
 
     Eigen::Vector3d posErr = body1.translation() - body2.translation();
     /// @todo try to use rotation error
@@ -99,8 +101,8 @@ void RobotLinkConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const 
     int index1 = link.jac1.jointsPath().back();
     int index2 = link.jac2.jointsPath().back();
 
-    const sva::PTransformd body1 = pgdata1_->mbc().bodyPosW[index1];
-    const sva::PTransformd body2 = pgdata2_->mbc().bodyPosW[index2];
+    sva::PTransformd body1 = link.body1T*pgdata1_->mbc().bodyPosW[index1];
+    sva::PTransformd body2 = link.body2T*pgdata2_->mbc().bodyPosW[index2];
 
     link.jacMat1.block(3, 0, 3, link.jac1.dof()).noalias() =
       link.jac1.jacobian(pgdata1_->mb(), pgdata1_->mbc()).block(3, 0, 3, link.jac1.dof());
@@ -113,10 +115,12 @@ void RobotLinkConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const 
       axis(j) = 1.;
 
       const Eigen::MatrixXd& mat1 =
-          link.jac1.vectorJacobian(pgdata1_->multibody(), pgdata1_->mbc(), axis);
+          link.jac1.vectorJacobian(pgdata1_->multibody(), pgdata1_->mbc(),
+                                   link.body1T.rotation().row(j).transpose());
       link.jacMat1.row(j).noalias() = body2.rotation().row(j)*mat1.block(3, 0, 3, mat1.cols());
       const Eigen::MatrixXd& mat2 =
-          link.jac2.vectorJacobian(pgdata2_->multibody(), pgdata2_->mbc(), axis);
+          link.jac2.vectorJacobian(pgdata2_->multibody(), pgdata2_->mbc(),
+                                   link.body2T.rotation().row(j).transpose());
       link.jacMat2.row(j).noalias() = body1.rotation().row(j)*mat2.block(3, 0, 3, mat2.cols());
     }
 
