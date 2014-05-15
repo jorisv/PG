@@ -101,6 +101,7 @@ private:
 
 private:
   mutable std::vector<RobotData> robotDatas_;
+  double scale_;
 };
 
 } // namespace pg
