@@ -26,8 +26,8 @@
 // roboptim
 #include <roboptim/core/finite-difference-gradient.hh>
 
-// SCD
-#include <SCD/S_Object/S_Sphere.h>
+// sch
+#include <sch/S_Object/S_Sphere.h>
 
 // PG
 #include "ConfigStruct.h"
@@ -349,9 +349,9 @@ BOOST_AUTO_TEST_CASE(EnvCollisionTest)
 
   pg::PGData pgdata(mb, gravity, nrVar, qBegin, mb.nrParams());
 
-  SCD::S_Sphere hullBody(0.5);
-  SCD::S_Sphere hullEnv(0.5);
-  hullEnv.setTransformation(pg::toSCD(sva::PTransformd::Identity()));
+  sch::S_Sphere hullBody(0.5);
+  sch::S_Sphere hullEnv(0.5);
+  hullEnv.setTransformation(pg::tosch(sva::PTransformd::Identity()));
   pg::EnvCollision ec(12, &hullBody, sva::PTransformd::Identity(),
                       &hullEnv, 0.1);
 
@@ -379,8 +379,8 @@ BOOST_AUTO_TEST_CASE(SelfCollisionTest)
 
   pg::PGData pgdata(mb, gravity, nrVar, qBegin, mb.nrParams());
 
-  SCD::S_Sphere hullBody1(0.2);
-  SCD::S_Sphere hullBody2(0.2);
+  sch::S_Sphere hullBody1(0.2);
+  sch::S_Sphere hullBody2(0.2);
   pg::SelfCollision sc(12, &hullBody1, sva::PTransformd::Identity(),
                        6, &hullBody2, sva::PTransformd::Identity(),
                        0.1);

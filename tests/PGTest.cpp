@@ -26,8 +26,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/math/constants/constants.hpp>
 
-// SCD
-#include <SCD/S_Object/S_Sphere.h>
+// sch
+#include <sch/S_Object/S_Sphere.h>
 
 // RBDyn
 #include <RBDyn/FK.h>
@@ -37,7 +37,7 @@
 // PG
 #include "ConfigStruct.h"
 #include "PostureGenerator.h"
-#include "CollisionConstr.h" // toSCD
+#include "CollisionConstr.h" // tosch
 
 // Arm
 #include "Z12Arm.h"
@@ -442,9 +442,9 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
 
     pgPb.param("ipopt.tol", 1e-1);
     pgPb.param("ipopt.dual_inf_tol", 1e-1);
-    SCD::S_Sphere hullBody(0.5);
-    SCD::S_Sphere hullEnv(0.5);
-    hullEnv.setTransformation(pg::toSCD(sva::PTransformd::Identity()));
+    sch::S_Sphere hullBody(0.5);
+    sch::S_Sphere hullEnv(0.5);
+    hullEnv.setTransformation(pg::tosch(sva::PTransformd::Identity()));
 
     rc.envCollisions = {{id, &hullBody, sva::PTransformd::Identity(), &hullEnv, 0.1}};
     // we check that we couldn't go in collision
@@ -498,8 +498,8 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
 
     pgPb.param("ipopt.tol", 1e-1);
     pgPb.param("ipopt.dual_inf_tol", 1e-1);
-    SCD::S_Sphere hullBody1(0.5);
-    SCD::S_Sphere hullBody2(0.5);
+    sch::S_Sphere hullBody1(0.5);
+    sch::S_Sphere hullBody2(0.5);
 
     rc.selfCollisions = {{id1, &hullBody1, sva::PTransformd::Identity(),
                           id2, &hullBody2, sva::PTransformd::Identity(),

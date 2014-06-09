@@ -33,7 +33,7 @@
 
 
 // forward declaration
-namespace SCD
+namespace sch
 {
 class S_Object;
 }
@@ -197,8 +197,8 @@ struct ForceContact
 struct EnvCollision
 {
   EnvCollision() {}
-  EnvCollision(int bId, SCD::S_Object* bHull, const sva::PTransformd& bT,
-               SCD::S_Object* eHull,
+  EnvCollision(int bId, sch::S_Object* bHull, const sva::PTransformd& bT,
+               sch::S_Object* eHull,
                double md)
     : bodyId(bId)
     , bodyHull(bHull)
@@ -208,9 +208,9 @@ struct EnvCollision
   {}
 
   int bodyId;
-  SCD::S_Object* bodyHull;
+  sch::S_Object* bodyHull;
   sva::PTransformd bodyT;
-  SCD::S_Object* envHull;
+  sch::S_Object* envHull;
   double minDist;
 };
 
@@ -218,8 +218,8 @@ struct EnvCollision
 struct SelfCollision
 {
   SelfCollision() {}
-  SelfCollision(int b1Id, SCD::S_Object* b1Hull, const sva::PTransformd& b1T,
-                int b2Id, SCD::S_Object* b2Hull, const sva::PTransformd& b2T,
+  SelfCollision(int b1Id, sch::S_Object* b1Hull, const sva::PTransformd& b1T,
+                int b2Id, sch::S_Object* b2Hull, const sva::PTransformd& b2T,
                 double md)
     : body1Id(b1Id)
     , body1Hull(b1Hull)
@@ -231,10 +231,10 @@ struct SelfCollision
   {}
 
   int body1Id;
-  SCD::S_Object* body1Hull;
+  sch::S_Object* body1Hull;
   sva::PTransformd body1T;
   int body2Id;
-  SCD::S_Object* body2Hull;
+  sch::S_Object* body2Hull;
   sva::PTransformd body2T;
   double minDist;
 };

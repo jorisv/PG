@@ -17,9 +17,9 @@ from pybindgen import *
 import sys
 
 
-def import_SCD_types(mod):
-  mod.add_class('S_Object', foreign_cpp_namespace='SCD', import_from_module='scd')
-  mod.add_class('CD_Pair', foreign_cpp_namespace='SCD', import_from_module='scd')
+def import_sch_types(mod):
+  mod.add_class('S_Object', foreign_cpp_namespace='sch', import_from_module='sch')
+  mod.add_class('CD_Pair', foreign_cpp_namespace='sch', import_from_module='sch')
 
 
 def import_rbd_types(mod):
@@ -227,34 +227,34 @@ def build_pg(pg):
   # EnvCollision
   envCollision.add_constructor([])
   envCollision.add_constructor([param('int', 'bodyId'),
-                                param('SCD::S_Object*', 'bodyHull', transfer_ownership=False),
+                                param('sch::S_Object*', 'bodyHull', transfer_ownership=False),
                                 param('const sva::PTransformd&', 'bodyT'),
-                                param('SCD::S_Object*', 'envHull', transfer_ownership=False),
+                                param('sch::S_Object*', 'envHull', transfer_ownership=False),
                                 param('double', 'minDist')])
 
   envCollision.add_instance_attribute('bodyId', 'int')
   # pybindgen have some issue with ptr return
-  # envCollision.add_instance_attribute('bodyHull', retval('SCD::S_Object*',caller_owns_return=False))
+  # envCollision.add_instance_attribute('bodyHull', retval('sch::S_Object*',caller_owns_return=False))
   envCollision.add_instance_attribute('bodyT', 'sva::PTransformd')
-  # envCollision.add_instance_attribute('envHull', retval('SCD::S_Object*',caller_owns_return=False))
+  # envCollision.add_instance_attribute('envHull', retval('sch::S_Object*',caller_owns_return=False))
   envCollision.add_instance_attribute('minDist', 'double')
 
   # SelfCollision
   selfCollision.add_constructor([])
   selfCollision.add_constructor([param('int', 'body1Id'),
-                                 param('SCD::S_Object*', 'body1Hull', transfer_ownership=False),
+                                 param('sch::S_Object*', 'body1Hull', transfer_ownership=False),
                                  param('const sva::PTransformd&', 'body1T'),
                                  param('int', 'body2Id'),
-                                 param('SCD::S_Object*', 'body2Hull', transfer_ownership=False),
+                                 param('sch::S_Object*', 'body2Hull', transfer_ownership=False),
                                  param('const sva::PTransformd&', 'body2T'),
                                  param('double', 'minDist')])
 
   selfCollision.add_instance_attribute('body1Id', 'int')
   # pybindgen have some issue with ptr return
-  # selfCollision.add_instance_attribute('body2Hull', retval('SCD::S_Object*',caller_owns_return=False))
+  # selfCollision.add_instance_attribute('body2Hull', retval('sch::S_Object*',caller_owns_return=False))
   selfCollision.add_instance_attribute('body1T', 'sva::PTransformd')
   selfCollision.add_instance_attribute('body2Id', 'int')
-  # selfCollision.add_instance_attribute('body1Hull', retval('SCD::S_Object*',caller_owns_return=False))
+  # selfCollision.add_instance_attribute('body1Hull', retval('sch::S_Object*',caller_owns_return=False))
   selfCollision.add_instance_attribute('body2T', 'sva::PTransformd')
   selfCollision.add_instance_attribute('minDist', 'double')
 
@@ -386,8 +386,8 @@ if __name__ == '__main__':
   pg = Module('_pg', cpp_namespace='::pg')
   pg.add_include('<PostureGenerator.h>')
 
-  pg.add_include('<SCD/S_Object/S_Object.h>')
-  pg.add_include('<SCD/CD/CD_Pair.h>')
+  pg.add_include('<sch/S_Object/S_Object.h>')
+  pg.add_include('<sch/CD/CD_Pair.h>')
 
   dom_ex = pg.add_exception('std::domain_error', foreign_cpp_namespace=' ',
                                message_rvalue='%(EXC)s.what()')
@@ -398,7 +398,7 @@ if __name__ == '__main__':
   import_eigen3_types(pg)
   import_sva_types(pg)
   import_rbd_types(pg)
-  import_SCD_types(pg)
+  import_sch_types(pg)
 
   # build list type
   pg.add_container('std::vector<double>', 'double', 'vector')

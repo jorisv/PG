@@ -25,15 +25,15 @@
 // RBDyn
 #include <RBDyn/Jacobian.h>
 
-// SCD
-#include <SCD/Matrix/SCD_Types.h>
+// sch
+#include <sch/Matrix/SCH_Types.h>
 
 
 // forward declaration
-namespace SCD
+namespace sch
 {
 class CD_Pair;
-} // SCD
+} // sch
 
 namespace pg
 {
@@ -42,7 +42,7 @@ class EnvCollision;
 class SelfCollision;
 
 
-SCD::Matrix4x4 toSCD(const sva::PTransformd& t);
+sch::Matrix4x4 tosch(const sva::PTransformd& t);
 
 
 class EnvCollisionConstr : public roboptim::DifferentiableSparseFunction
@@ -68,7 +68,7 @@ private:
   {
     int bodyIndex;
     sva::PTransformd bodyT;
-    SCD::CD_Pair* pair;
+    sch::CD_Pair* pair;
     rbd::Jacobian jac;
     Eigen::MatrixXd jacMat;
     double dist;
@@ -117,7 +117,7 @@ private:
     rbd::Jacobian jac2;
     Eigen::MatrixXd jac2Mat;
     Eigen::SparseMatrix<double, Eigen::RowMajor> jac2MatFull;
-    SCD::CD_Pair* pair;
+    sch::CD_Pair* pair;
     double dist;
     Eigen::Vector3d T_0_p1, T_0_p2;
   };

@@ -17,8 +17,8 @@
 #include "CollisionConstr.h"
 
 // include
-// SCD
-#include <SCD/CD/CD_Pair.h>
+// sch
+#include <sch/CD/CD_Pair.h>
 
 // PG
 #include "ConfigStruct.h"
@@ -29,9 +29,9 @@ namespace pg
 {
 
 
-SCD::Matrix4x4 toSCD(const sva::PTransformd& t)
+sch::Matrix4x4 tosch(const sva::PTransformd& t)
 {
-  SCD::Matrix4x4 m;
+  sch::Matrix4x4 m;
   const Eigen::Matrix3d& rot = t.rotation();
   const Eigen::Vector3d& tran = t.translation();
 
@@ -52,7 +52,7 @@ SCD::Matrix4x4 toSCD(const sva::PTransformd& t)
 
 
 // return the pair signed squared distance
-double distance(SCD::CD_Pair* pair)
+double distance(sch::CD_Pair* pair)
 {
   return pair->getDistance();
 }
@@ -60,11 +60,11 @@ double distance(SCD::CD_Pair* pair)
 
 // return the pair signed squared distance and the closest point position in world frame
 std::tuple<double, Eigen::Vector3d, Eigen::Vector3d>
-closestPoints(SCD::CD_Pair* pair)
+closestPoints(sch::CD_Pair* pair)
 {
   using namespace Eigen;
 
-  SCD::Point3 pb1Tmp, pb2Tmp;
+  sch::Point3 pb1Tmp, pb2Tmp;
   double dist = pair->getClosestPoints(pb1Tmp, pb2Tmp);
 
   Vector3d T_0_p1(pb1Tmp[0], pb1Tmp[1], pb1Tmp[2]);
@@ -91,7 +91,7 @@ EnvCollisionConstr::EnvCollisionConstr(PGData* pgdata, const std::vector<EnvColl
     rbd::Jacobian jac(pgdata_->mb(), sc.bodyId);
     Eigen::MatrixXd jacMat(1, jac.dof());
     cols_.push_back({pgdata_->multibody().bodyIndexById(sc.bodyId),
-                     sc.bodyT, new SCD::CD_Pair(sc.bodyHull, sc.envHull),
+                     sc.bodyT, new sch::CD_Pair(sc.bodyHull, sc.envHull),
                      jac, jacMat, 0., Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()});
     nrNonZero_ += jac.dof();
   }
@@ -157,7 +157,7 @@ void EnvCollisionConstr::updateCollisionData() const
   for(CollisionData& cd: cols_)
   {
     sva::PTransformd X_0_b(pgdata_->mbc().bodyPosW[cd.bodyIndex]);
-    cd.pair->operator[](0)->setTransformation(toSCD(cd.bodyT*X_0_b));
+    cd.pair->operator[](0)->setTransformation(tosch(cd.bodyT*X_0_b));
     std::tie(cd.dist, cd.T_0_p, cd.T_0_e) = closestPoints(cd.pair);
   }
 }
@@ -194,7 +194,7 @@ SelfCollisionConstr::SelfCollisionConstr(PGData* pgdata, const std::vector<SelfC
                      sc.body1T, jac1, jac1Mat, jac1MatFull,
                      pgdata_->multibody().bodyIndexById(sc.body2Id),
                      sc.body2T, jac2, jac2Mat, jac2MatFull,
-                     new SCD::CD_Pair(sc.body1Hull, sc.body2Hull),
+                     new sch::CD_Pair(sc.body1Hull, sc.body2Hull),
                      0., Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()});
     // not true, but better to ask bigger
     nrNonZero_ += jac1.dof() + jac2.dof();
@@ -272,8 +272,8 @@ void SelfCollisionConstr::updateCollisionData() const
     sva::PTransformd X_0_b1(pgdata_->mbc().bodyPosW[cd.body1Index]);
     sva::PTransformd X_0_b2(pgdata_->mbc().bodyPosW[cd.body2Index]);
 
-    cd.pair->operator[](0)->setTransformation(toSCD(cd.body1T*X_0_b1));
-    cd.pair->operator[](1)->setTransformation(toSCD(cd.body2T*X_0_b2));
+    cd.pair->operator[](0)->setTransformation(tosch(cd.body1T*X_0_b1));
+    cd.pair->operator[](1)->setTransformation(tosch(cd.body2T*X_0_b2));
 
     std::tie(cd.dist, cd.T_0_p1, cd.T_0_p2) = closestPoints(cd.pair);
   }
