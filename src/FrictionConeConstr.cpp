@@ -47,11 +47,11 @@ FrictionConeConstr::FrictionConeConstr(PGData* pgdata)
 }
 
 
-FrictionConeConstr::~FrictionConeConstr() throw()
+FrictionConeConstr::~FrictionConeConstr()
 { }
 
 
-void FrictionConeConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void FrictionConeConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata_->x(x);
 
@@ -71,7 +71,7 @@ void FrictionConeConstr::impl_compute(result_t& res, const argument_t& x) const 
 }
 
 
-void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void FrictionConeConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   pgdata_->x(x);
   jac.reserve(nrNonZero_);

@@ -42,7 +42,7 @@ public:
                "Torque")
     , pgdata_(pgdata)
   {}
-  ~TorqueConstr() throw()
+  ~TorqueConstr()
   { }
 
 
@@ -82,7 +82,7 @@ public:
     , tl_(std::move(tl))
     , tu_(std::move(tu))
   {}
-  ~TorquePolyBoundsConstr() throw()
+  ~TorquePolyBoundsConstr()
   { }
 
 

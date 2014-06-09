@@ -98,7 +98,7 @@ EnvCollisionConstr::EnvCollisionConstr(PGData* pgdata, const std::vector<EnvColl
 }
 
 
-EnvCollisionConstr::~EnvCollisionConstr() throw()
+EnvCollisionConstr::~EnvCollisionConstr()
 {
   /// @todo try to use unique_ptr instead
   for(auto& cd: cols_)
@@ -108,7 +108,7 @@ EnvCollisionConstr::~EnvCollisionConstr() throw()
 }
 
 
-void EnvCollisionConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void EnvCollisionConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   if(pgdata_->x(x) != xStamp_)
   {
@@ -124,7 +124,7 @@ void EnvCollisionConstr::impl_compute(result_t& res, const argument_t& x) const 
 }
 
 
-void EnvCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void EnvCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   if(pgdata_->x(x) != xStamp_)
   {
@@ -202,7 +202,7 @@ SelfCollisionConstr::SelfCollisionConstr(PGData* pgdata, const std::vector<SelfC
 }
 
 
-SelfCollisionConstr::~SelfCollisionConstr() throw()
+SelfCollisionConstr::~SelfCollisionConstr()
 {
   /// @todo try to use unique_ptr instead
   for(auto& cd: cols_)
@@ -212,7 +212,7 @@ SelfCollisionConstr::~SelfCollisionConstr() throw()
 }
 
 
-void SelfCollisionConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void SelfCollisionConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   if(pgdata_->x(x) != xStamp_)
   {
@@ -228,7 +228,7 @@ void SelfCollisionConstr::impl_compute(result_t& res, const argument_t& x) const
 }
 
 
-void SelfCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void SelfCollisionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   if(pgdata_->x(x) != xStamp_)
   {

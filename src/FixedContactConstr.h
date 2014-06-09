@@ -35,13 +35,13 @@ public:
   FixedPositionContactConstr(PGData* pgdata, int bodyId,
       const Eigen::Vector3d& target,
       const sva::PTransformd& surfaceFrame);
-  ~FixedPositionContactConstr() throw();
+  ~FixedPositionContactConstr();
 
 
-  void impl_compute(result_t& res, const argument_t& x) const throw();
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw();
+  void impl_compute(result_t& res, const argument_t& x) const;
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const;
   void impl_gradient(gradient_t& /* gradient */,
-      const argument_t& /* x */, size_type /* functionId */) const throw()
+      const argument_t& /* x */, size_type /* functionId */) const
   {
     throw std::runtime_error("NEVER GO HERE");
   }
@@ -67,13 +67,13 @@ public:
   FixedOrientationContactConstr(PGData* pgdata, int bodyId,
       const Eigen::Matrix3d& target,
       const sva::PTransformd& surfaceFrame);
-  ~FixedOrientationContactConstr() throw();
+  ~FixedOrientationContactConstr();
 
 
-  void impl_compute(result_t& res, const argument_t& x) const throw();
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw();
+  void impl_compute(result_t& res, const argument_t& x) const;
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const;
   void impl_gradient(gradient_t& /* gradient */,
-      const argument_t& /* x */, size_type /* functionId */) const throw()
+      const argument_t& /* x */, size_type /* functionId */) const
   {
     throw std::runtime_error("NEVER GO HERE");
   }

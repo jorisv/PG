@@ -56,11 +56,11 @@ RobotLinkConstr::RobotLinkConstr(PGData* pgdata1, PGData* pgdata2,
 }
 
 
-RobotLinkConstr::~RobotLinkConstr() throw()
+RobotLinkConstr::~RobotLinkConstr()
 { }
 
 
-void RobotLinkConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void RobotLinkConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata1_->x(x);
   pgdata2_->x(x);
@@ -87,7 +87,7 @@ void RobotLinkConstr::impl_compute(result_t& res, const argument_t& x) const thr
 }
 
 
-void RobotLinkConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void RobotLinkConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   jac.reserve(nrNonZero_);
   jac.setZero();

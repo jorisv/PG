@@ -45,11 +45,11 @@ CylindricalPositionConstr::CylindricalPositionConstr(
 {}
 
 
-CylindricalPositionConstr::~CylindricalPositionConstr() throw()
+CylindricalPositionConstr::~CylindricalPositionConstr()
 {}
 
 
-void CylindricalPositionConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void CylindricalPositionConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata_->x(x);
 
@@ -62,7 +62,7 @@ void CylindricalPositionConstr::impl_compute(result_t& res, const argument_t& x)
 }
 
 
-void CylindricalPositionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void CylindricalPositionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   jac.reserve(3*jac_.dof());
 
@@ -97,11 +97,11 @@ CylindricalNVecConstr::CylindricalNVecConstr(
 {}
 
 
-CylindricalNVecConstr::~CylindricalNVecConstr() throw()
+CylindricalNVecConstr::~CylindricalNVecConstr()
 {}
 
 
-void CylindricalNVecConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void CylindricalNVecConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata_->x(x);
 
@@ -113,7 +113,7 @@ void CylindricalNVecConstr::impl_compute(result_t& res, const argument_t& x) con
 }
 
 
-void CylindricalNVecConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void CylindricalNVecConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   jac.reserve(jac_.dof());
 

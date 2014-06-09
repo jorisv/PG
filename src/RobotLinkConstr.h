@@ -36,12 +36,12 @@ public:
 public:
   RobotLinkConstr(PGData* pgdata1, PGData* pgdata2,
       const std::vector<BodyLink>& linkedBodies);
-  ~RobotLinkConstr() throw();
+  ~RobotLinkConstr();
 
-  void impl_compute(result_t& res, const argument_t& x) const throw();
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw();
+  void impl_compute(result_t& res, const argument_t& x) const;
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const;
   void impl_gradient(gradient_t& /* gradient */,
-      const argument_t& /* x */, size_type /* functionId */) const throw()
+      const argument_t& /* x */, size_type /* functionId */) const
   {
     throw std::runtime_error("NEVER GO HERE");
   }

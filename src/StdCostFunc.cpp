@@ -127,7 +127,7 @@ StdCostFunc::StdCostFunc(std::vector<PGData>& pgdatas,
 }
 
 
-void StdCostFunc::impl_compute(result_t& res, const argument_t& x) const throw()
+void StdCostFunc::impl_compute(result_t& res, const argument_t& x) const
 {
   res(0) = 0.;
 
@@ -238,7 +238,7 @@ void StdCostFunc::impl_compute(result_t& res, const argument_t& x) const throw()
 }
 
 void StdCostFunc::impl_gradient(gradient_t& gradient,
-    const argument_t& x, size_type /* functionId */) const throw()
+    const argument_t& x, size_type /* functionId */) const
 {
   gradient.reserve(robotDatas_[0].pgdata->pbSize());
   gradient.setZero();

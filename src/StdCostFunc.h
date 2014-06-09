@@ -38,9 +38,9 @@ public:
   StdCostFunc(std::vector<PGData>& pgdatas, const std::vector<RobotConfig>& robotConfigs,
               const std::vector<RunConfig>& runConfigs);
 
-  void impl_compute(result_t& res, const argument_t& x) const throw();
+  void impl_compute(result_t& res, const argument_t& x) const;
   void impl_gradient(gradient_t& gradient,
-      const argument_t& x, size_type /* functionId */) const throw();
+      const argument_t& x, size_type /* functionId */) const;
 
 private:
   struct BodyPositionTargetData

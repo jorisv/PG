@@ -47,11 +47,11 @@ PositiveForceConstr::PositiveForceConstr(PGData* pgdata)
 }
 
 
-PositiveForceConstr::~PositiveForceConstr() throw()
+PositiveForceConstr::~PositiveForceConstr()
 { }
 
 
-void PositiveForceConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void PositiveForceConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata_->x(x);
 
@@ -69,7 +69,7 @@ void PositiveForceConstr::impl_compute(result_t& res, const argument_t& x) const
 }
 
 
-void PositiveForceConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void PositiveForceConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   pgdata_->x(x);
   jac.reserve(nrNonZero_);

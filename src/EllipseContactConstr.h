@@ -82,7 +82,7 @@ public:
   }
 
 
-  ~EllipseContactConstr() throw()
+  ~EllipseContactConstr()
   { }
 
 

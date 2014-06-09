@@ -50,11 +50,11 @@ StaticStabilityConstr::StaticStabilityConstr(PGData* pgdata)
 }
 
 
-StaticStabilityConstr::~StaticStabilityConstr() throw()
+StaticStabilityConstr::~StaticStabilityConstr()
 { }
 
 
-void StaticStabilityConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void StaticStabilityConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   if(xStamp_ != pgdata_->x(x))
   {
@@ -78,7 +78,7 @@ void StaticStabilityConstr::impl_compute(result_t& res, const argument_t& x) con
 }
 
 
-void StaticStabilityConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void StaticStabilityConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   if(xStamp_ != pgdata_->x(x))
   {

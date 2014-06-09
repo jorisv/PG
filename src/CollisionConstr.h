@@ -52,13 +52,13 @@ public:
 
 public:
   EnvCollisionConstr(PGData* pgdata, const std::vector<EnvCollision>& cols);
-  ~EnvCollisionConstr() throw();
+  ~EnvCollisionConstr();
 
 
-  void impl_compute(result_t& res, const argument_t& x) const throw();
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw();
+  void impl_compute(result_t& res, const argument_t& x) const;
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const;
   void impl_gradient(gradient_t& /* gradient */,
-      const argument_t& /* x */, size_type /* functionId */) const throw()
+      const argument_t& /* x */, size_type /* functionId */) const
   {
     throw std::runtime_error("NEVER GO HERE");
   }
@@ -94,12 +94,12 @@ public:
 
 public:
   SelfCollisionConstr(PGData* pgdata, const std::vector<SelfCollision>& cols);
-  ~SelfCollisionConstr() throw();
+  ~SelfCollisionConstr();
 
-  void impl_compute(result_t& res, const argument_t& x) const throw();
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw();
+  void impl_compute(result_t& res, const argument_t& x) const;
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const;
   void impl_gradient(gradient_t& /* gradient */,
-      const argument_t& /* x */, size_type /* functionId */) const throw()
+      const argument_t& /* x */, size_type /* functionId */) const
   {
     throw std::runtime_error("NEVER GO HERE");
   }

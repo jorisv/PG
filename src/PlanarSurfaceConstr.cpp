@@ -44,11 +44,11 @@ PlanarPositionContactConstr::PlanarPositionContactConstr(PGData* pgdata, int bod
 {}
 
 
-PlanarPositionContactConstr::~PlanarPositionContactConstr() throw()
+PlanarPositionContactConstr::~PlanarPositionContactConstr()
 { }
 
 
-void PlanarPositionContactConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void PlanarPositionContactConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata_->x(x);
 
@@ -57,7 +57,7 @@ void PlanarPositionContactConstr::impl_compute(result_t& res, const argument_t& 
 }
 
 
-void PlanarPositionContactConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void PlanarPositionContactConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   pgdata_->x(x);
   jac.reserve(jac_.dof());
@@ -90,11 +90,11 @@ PlanarOrientationContactConstr::PlanarOrientationContactConstr(PGData* pgdata, i
 {}
 
 
-PlanarOrientationContactConstr::~PlanarOrientationContactConstr() throw()
+PlanarOrientationContactConstr::~PlanarOrientationContactConstr()
 { }
 
 
-void PlanarOrientationContactConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void PlanarOrientationContactConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata_->x(x);
 
@@ -105,7 +105,7 @@ void PlanarOrientationContactConstr::impl_compute(result_t& res, const argument_
 }
 
 
-void PlanarOrientationContactConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void PlanarOrientationContactConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   pgdata_->x(x);
   jac.reserve(jac_.dof()*3);
@@ -161,11 +161,11 @@ PlanarInclusionConstr::PlanarInclusionConstr(PGData* pgdata, int bodyId,
 }
 
 
-PlanarInclusionConstr::~PlanarInclusionConstr() throw()
+PlanarInclusionConstr::~PlanarInclusionConstr()
 { }
 
 
-void PlanarInclusionConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void PlanarInclusionConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata_->x(x);
 
@@ -188,7 +188,7 @@ void PlanarInclusionConstr::impl_compute(result_t& res, const argument_t& x) con
 }
 
 
-void PlanarInclusionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void PlanarInclusionConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   pgdata_->x(x);
   jac.reserve(outputSize()*jac_.dof());

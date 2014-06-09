@@ -40,13 +40,13 @@ public:
   PlanarPositionContactConstr(PGData* pgdata, int bodyId,
       const sva::PTransformd& targetFrame,
       const sva::PTransformd& surfaceFrame);
-  ~PlanarPositionContactConstr() throw();
+  ~PlanarPositionContactConstr();
 
 
-  void impl_compute(result_t& res, const argument_t& x) const throw();
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw();
+  void impl_compute(result_t& res, const argument_t& x) const;
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const;
   void impl_gradient(gradient_t& /* gradient */,
-      const argument_t& /* x */, size_type /* functionId */) const throw()
+      const argument_t& /* x */, size_type /* functionId */) const
   {
     throw std::runtime_error("NEVER GO HERE");
   }
@@ -73,13 +73,13 @@ public:
       const sva::PTransformd& targetFrame,
       const sva::PTransformd& surfaceFrame,
       int axis);
-  ~PlanarOrientationContactConstr() throw();
+  ~PlanarOrientationContactConstr();
 
 
-  void impl_compute(result_t& res, const argument_t& x) const throw();
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw();
+  void impl_compute(result_t& res, const argument_t& x) const;
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const;
   void impl_gradient(gradient_t& /* gradient */,
-      const argument_t& /* x */, size_type /* functionId */) const throw()
+      const argument_t& /* x */, size_type /* functionId */) const
   {
     throw std::runtime_error("NEVER GO HERE");
   }
@@ -109,13 +109,13 @@ public:
       const std::vector<Eigen::Vector2d>& targetPoints,
       const sva::PTransformd& surfaceFrame,
       const std::vector<Eigen::Vector2d>& surfacePoints);
-  ~PlanarInclusionConstr() throw();
+  ~PlanarInclusionConstr();
 
 
-  void impl_compute(result_t& res, const argument_t& x) const throw();
-  void impl_jacobian(jacobian_t& jac, const argument_t& x) const throw();
+  void impl_compute(result_t& res, const argument_t& x) const;
+  void impl_jacobian(jacobian_t& jac, const argument_t& x) const;
   void impl_gradient(gradient_t& /* gradient */,
-      const argument_t& /* x */, size_type /* functionId */) const throw()
+      const argument_t& /* x */, size_type /* functionId */) const
   {
     throw std::runtime_error("NEVER GO HERE");
   }

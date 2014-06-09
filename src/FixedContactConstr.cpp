@@ -42,11 +42,11 @@ FixedPositionContactConstr::FixedPositionContactConstr(PGData* pgdata, int bodyI
 {}
 
 
-FixedPositionContactConstr::~FixedPositionContactConstr() throw()
+FixedPositionContactConstr::~FixedPositionContactConstr()
 { }
 
 
-void FixedPositionContactConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void FixedPositionContactConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata_->x(x);
   sva::PTransformd pos = surfaceFrame_*pgdata_->mbc().bodyPosW[bodyIndex_];
@@ -54,7 +54,7 @@ void FixedPositionContactConstr::impl_compute(result_t& res, const argument_t& x
 }
 
 
-void FixedPositionContactConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void FixedPositionContactConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   pgdata_->x(x);
   jac.reserve(3*jac_.dof());
@@ -82,11 +82,11 @@ FixedOrientationContactConstr::FixedOrientationContactConstr(PGData* pgdata, int
 {}
 
 
-FixedOrientationContactConstr::~FixedOrientationContactConstr() throw()
+FixedOrientationContactConstr::~FixedOrientationContactConstr()
 { }
 
 
-void FixedOrientationContactConstr::impl_compute(result_t& res, const argument_t& x) const throw()
+void FixedOrientationContactConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata_->x(x);
   sva::PTransformd pos = surfaceFrame_*pgdata_->mbc().bodyPosW[bodyIndex_];
@@ -109,7 +109,7 @@ void FixedOrientationContactConstr::dotDerivative(
 }
 
 
-void FixedOrientationContactConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const throw()
+void FixedOrientationContactConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   pgdata_->x(x);
   jac.reserve(3*jac_.dof());
