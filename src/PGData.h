@@ -75,6 +75,7 @@ public:
   void forces(const std::vector<ForceContact>& fd);
   void ellipses(const std::vector<EllipseContact>& ed);
   void update();
+  void updateKinematics(const std::vector<std::vector<double>> q);
 
   const rbd::MultiBodyConfig& mbc() const
   {

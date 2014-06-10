@@ -137,4 +137,12 @@ void PGData::update()
 }
 
 
+void PGData::updateKinematics(const std::vector<std::vector<double>> q)
+{
+  mbc_.q = q;
+  rbd::forwardKinematics(mb_, mbc_);
+  patchMbc(mb_, mbc_);
+}
+
+
 } // pg

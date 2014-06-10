@@ -164,6 +164,8 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
 
     problem.startingPoint()->segment(pgdata.qParamsBegin(), pgdata.mb().nrParams()) =
       rbd::paramToVector(pgdata.multibody(), config.initQ);
+    // run forward kinematics to compute initial force
+    pgdata.updateKinematics(config.initQ);
 
     // if init force is not well sized we compute it
     if(int(config.initForces.size()) != pgdata.nrForcePoints())
