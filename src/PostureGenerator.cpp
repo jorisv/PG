@@ -457,6 +457,11 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
       }
     }
     */
+
+    // force PGData to make an update
+    // this avoid that a first call with a x identical to PGData::{xq_,xf_}
+    // don't update PGData
+    pgdata.update();
   }
 
   for(const RobotLink& rl: robotLinks_)
