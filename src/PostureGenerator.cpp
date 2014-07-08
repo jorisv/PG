@@ -262,14 +262,18 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
                                    {{1.}, {1.}, {1.}});
       }
 
-      boost::shared_ptr<PlanarInclusionConstr> pic(
-          new PlanarInclusionConstr(&pgdata, pc.bodyId,
-                                          pc.targetFrame, pc.targetPoints,
-                                          pc.surfaceFrame, pc.surfacePoints));
-      typename PlanarInclusionConstr::intervals_t limInc(
-            pic->outputSize(), {0., std::numeric_limits<double>::infinity()});
-      typename solver_t::problem_t::scales_t scalInc(pic->outputSize(), 1.);
-      problem.addConstraint(pic, limInc, scalInc);
+      // add planar inclusion only if there is points in both surfaces
+      if(pc.targetPoints.size() != 0 && pc.surfacePoints.size() != 0)
+      {
+         boost::shared_ptr<PlanarInclusionConstr> pic(
+            new PlanarInclusionConstr(&pgdata, pc.bodyId,
+                                            pc.targetFrame, pc.targetPoints,
+                                            pc.surfaceFrame, pc.surfacePoints));
+        typename PlanarInclusionConstr::intervals_t limInc(
+              pic->outputSize(), {0., std::numeric_limits<double>::infinity()});
+        typename solver_t::problem_t::scales_t scalInc(pic->outputSize(), 1.);
+        problem.addConstraint(pic, limInc, scalInc);
+      }
     }
 
     /*
