@@ -36,6 +36,7 @@
 #include "RobotLinkConstr.h"
 #include "CylindricalSurfaceConstr.h"
 #include "IterationCallback.h"
+#include "CoMHalfSpaceConstr.h"
 
 namespace pg
 {
@@ -225,6 +226,16 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
         problem.addConstraint(fcc, {{0., 0.}, {0., 0.}, {0., 0.}},
             {{1.}, {1.}, {1.}});
       }
+    }
+
+    for(const CoMHalfSpace& fc: robotConfig.comHalfSpace)
+    {
+        boost::shared_ptr<CoMHalfSpaceConstr> fcc(
+            new CoMHalfSpaceConstr(&pgdata, fc.O_, fc.n_));
+        typename EnvCollisionConstr::intervals_t limCom(
+          fcc->outputSize(), {0., std::numeric_limits<double>::infinity()});
+        typename solver_t::problem_t::scales_t scalCom(fcc->outputSize(), 1.);
+        problem.addConstraint(fcc, limCom, scalCom);
     }
 
     for(const FixedOrientationContact& fc: robotConfig.fixedOriContacts)

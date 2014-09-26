@@ -599,4 +599,35 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     BOOST_CHECK_SMALL(NErr - 1., 1e-5);
     toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12FreeGripper.py");
   }
+
+  {
+    pg::PostureGenerator pgPb;
+    pg::RobotConfig rc(mb);
+    pgPb.param("ipopt.print_level", 0);
+    pgPb.param("ipopt.linear_solver", "mumps");
+
+    int id = 12;
+    Eigen::Vector3d target(100., 0., 0.);
+    rc.bodyPosTargets = {{id, target, 1}};
+
+    // add com plane constraint
+    Eigen::Vector3d O(1.5,0.,0.);
+    Eigen::Vector3d n(-1.,0.,0.);
+    rc.comHalfSpace = {{{O}, {n}}};
+
+    pgPb.robotConfigs({rc}, gravity);
+    BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
+
+    mbcWork.q = pgPb.q();
+    forwardKinematics(mb, mbcWork);
+
+    // compute CoM
+    Eigen::Vector3d C = rbd::computeCoM(mb, mbcWork);
+    Eigen::Vector3d OC = C - O;
+
+    // check that the CoM is below the plane
+    BOOST_CHECK_GE(n.dot(OC), -1e-8);
+
+    toPython(mb, mbcWork, rc.forceContacts, pgPb.forces(),"Z12CoMPlane.py");
+  }
 }

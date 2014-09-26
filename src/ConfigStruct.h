@@ -57,6 +57,20 @@ struct FixedPositionContact
 };
 
 
+struct CoMHalfSpace
+{
+  CoMHalfSpace() {}
+  CoMHalfSpace(const std::vector<Eigen::Vector3d>& O,
+               const std::vector<Eigen::Vector3d>& n)
+    : O_(O)
+    , n_(n)
+  {}
+
+  std::vector<Eigen::Vector3d> O_; ///<
+  std::vector<Eigen::Vector3d> n_; ///<
+};
+
+
 struct FixedOrientationContact
 {
   FixedOrientationContact() {}
@@ -340,6 +354,7 @@ struct RobotConfig
 
   // constraints
   std::vector<FixedPositionContact> fixedPosContacts;
+  std::vector<CoMHalfSpace> comHalfSpace;
   std::vector<FixedOrientationContact> fixedOriContacts;
   std::vector<PlanarContact> planarContacts;
   std::vector<EllipseContact> ellipseContacts;

@@ -41,6 +41,7 @@
 #include "StdCostFunc.h"
 #include "RobotLinkConstr.h"
 #include "CylindricalSurfaceConstr.h"
+#include "CoMHalfSpaceConstr.h"
 
 // Arm
 #include "XYZ12Arm.h"
@@ -543,5 +544,28 @@ BOOST_AUTO_TEST_CASE(FreeGripperNVecTest)
   {
     VectorXd x(VectorXd::Random(pgdata.pbSize()));
     BOOST_CHECK_SMALL(checkGradient(fgnvc, x), 1e-4);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(CoMHalfSpaceTest)
+{
+  rbd::MultiBody mb;
+  rbd::MultiBodyConfig mbc;
+  std::tie(mb, mbc) = makeXYZ12Arm();
+
+  int qBegin = 5;
+  int nrVar = mb.nrParams() + qBegin;
+
+  pg::PGData pgdata(mb, gravity, nrVar, qBegin, mb.nrParams());
+
+  Eigen::Vector3d O(2., 0., 0.);
+  Eigen::Vector3d n(0., 4., 0.);
+
+  pg::CoMHalfSpaceConstr chs(&pgdata, {O,O*2}, {n,n*2});
+
+  for(int i = 0; i < 100; ++i)
+  {
+    Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize()));
+    BOOST_CHECK_SMALL(checkGradient(chs, x), 1e-4);
   }
 }
