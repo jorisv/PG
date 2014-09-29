@@ -240,6 +240,20 @@ struct SelfCollision
 };
 
 
+struct CoMHalfSpace
+{
+  CoMHalfSpace() {}
+  CoMHalfSpace(std::vector<Eigen::Vector3d> O,
+               std::vector<Eigen::Vector3d> n)
+    : origins(std::move(O))
+    , normals(std::move(n))
+  {}
+
+  std::vector<Eigen::Vector3d> origins; ///< origin of the plane
+  std::vector<Eigen::Vector3d> normals; ///< normal of the plane
+};
+
+
 struct BodyPositionTarget
 {
   BodyPositionTarget() {}
@@ -315,20 +329,6 @@ struct EllipseResult
     result << 2*this->r1 << ", " << 2*this->r2 << ", " << 180*this->theta/boost::math::constants::pi<double>() << ")\n";
     return result.str();
   }
-};
-
-
-struct CoMHalfSpace
-{
-  CoMHalfSpace() {}
-  CoMHalfSpace(const std::vector<Eigen::Vector3d>& O,
-               const std::vector<Eigen::Vector3d>& n)
-    : O_(O)
-    , n_(n)
-  {}
-
-  std::vector<Eigen::Vector3d> O_; ///< origin of the plane
-  std::vector<Eigen::Vector3d> n_; ///< normal of the plane
 };
 
 

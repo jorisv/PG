@@ -418,7 +418,7 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
     for(const CoMHalfSpace& fc: robotConfig.comHalfSpace)
     {
         boost::shared_ptr<CoMHalfSpaceConstr> fcc(
-            new CoMHalfSpaceConstr(&pgdata, fc.O_, fc.n_));
+            new CoMHalfSpaceConstr(&pgdata, fc.origins, fc.normals));
         typename EnvCollisionConstr::intervals_t limCom(
           fcc->outputSize(), {0., std::numeric_limits<double>::infinity()});
         typename solver_t::problem_t::scales_t scalCom(fcc->outputSize(), 1.);
