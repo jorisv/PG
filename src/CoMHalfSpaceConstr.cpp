@@ -33,16 +33,20 @@ namespace pg
  *                 CoMHalfSpace
  */
 
+
 CoMHalfSpaceConstr::CoMHalfSpaceConstr(PGData* pgdata,
-    const std::vector<Eigen::Vector3d>& O,
-    const std::vector<Eigen::Vector3d>& n)
-    : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), O.size(), "CoMHalfSpace")
+    std::vector<Eigen::Vector3d> O,
+    std::vector<Eigen::Vector3d> n)
+    : roboptim::DifferentiableSparseFunction(pgdata->pbSize(), int(O.size()),
+                                             "CoMHalfSpace")
   , pgdata_(pgdata)
-  , O_(O)
-  , n_(n)
+  , O_(std::move(O))
+  , n_(std::move(n))
   , jac_(pgdata->mb())
-  , eqJac_(O.size(), pgdata->mb().nrDof())
-{}
+  , eqJac_(O_.size(), pgdata->mb().nrDof())
+{
+  assert(O_.size() == n_.size());
+}
 
 
 CoMHalfSpaceConstr::~CoMHalfSpaceConstr()
@@ -52,6 +56,7 @@ CoMHalfSpaceConstr::~CoMHalfSpaceConstr()
 void CoMHalfSpaceConstr::impl_compute(result_t& res, const argument_t& x) const
 {
   pgdata_->x(x);
+
   Eigen::Vector3d C = rbd::computeCoM(pgdata_->mb(), pgdata_->mbc());
 
   for(std::size_t i = 0; i < O_.size(); i++)
@@ -65,9 +70,10 @@ void CoMHalfSpaceConstr::impl_compute(result_t& res, const argument_t& x) const
 void CoMHalfSpaceConstr::impl_jacobian(jacobian_t& jac, const argument_t& x) const
 {
   pgdata_->x(x);
-  jac.reserve(O_.size()*pgdata_->mb().nrDof());
-  const Eigen::MatrixXd& jacMat = jac_.jacobian(pgdata_->multibody(), pgdata_->mbc());
+  jac.reserve(int(O_.size())*pgdata_->mb().nrDof());
 
+  const Eigen::MatrixXd& jacMat = jac_.jacobian(pgdata_->multibody(),
+    pgdata_->mbc());
 
   for(std::size_t i = 0; i < O_.size(); i++)
   {

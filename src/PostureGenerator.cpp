@@ -228,16 +228,6 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
       }
     }
 
-    for(const CoMHalfSpace& fc: robotConfig.comHalfSpace)
-    {
-        boost::shared_ptr<CoMHalfSpaceConstr> fcc(
-            new CoMHalfSpaceConstr(&pgdata, fc.O_, fc.n_));
-        typename EnvCollisionConstr::intervals_t limCom(
-          fcc->outputSize(), {0., std::numeric_limits<double>::infinity()});
-        typename solver_t::problem_t::scales_t scalCom(fcc->outputSize(), 1.);
-        problem.addConstraint(fcc, limCom, scalCom);
-    }
-
     for(const FixedOrientationContact& fc: robotConfig.fixedOriContacts)
     {
       int bodyIndex = pgdata.mb().bodyIndexById(fc.bodyId);
@@ -423,6 +413,16 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
       }
       typename solver_t::problem_t::scales_t scalCol(sc->outputSize(), 1.);
       problem.addConstraint(sc, limCol, scalCol);
+    }
+
+    for(const CoMHalfSpace& fc: robotConfig.comHalfSpace)
+    {
+        boost::shared_ptr<CoMHalfSpaceConstr> fcc(
+            new CoMHalfSpaceConstr(&pgdata, fc.O_, fc.n_));
+        typename EnvCollisionConstr::intervals_t limCom(
+          fcc->outputSize(), {0., std::numeric_limits<double>::infinity()});
+        typename solver_t::problem_t::scales_t scalCom(fcc->outputSize(), 1.);
+        problem.addConstraint(fcc, limCom, scalCom);
     }
 
     /*

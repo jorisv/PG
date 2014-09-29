@@ -547,6 +547,7 @@ BOOST_AUTO_TEST_CASE(FreeGripperNVecTest)
   }
 }
 
+
 BOOST_AUTO_TEST_CASE(CoMHalfSpaceTest)
 {
   rbd::MultiBody mb;

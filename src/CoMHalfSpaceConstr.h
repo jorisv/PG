@@ -22,6 +22,7 @@
 // RBDyn
 #include <RBDyn/CoM.h>
 
+
 namespace pg
 {
 class PGData;
@@ -33,8 +34,8 @@ public:
 
 public:
   CoMHalfSpaceConstr(PGData* pgdata,
-      const std::vector<Eigen::Vector3d>& O,
-      const std::vector<Eigen::Vector3d>& n);
+      std::vector<Eigen::Vector3d> O,
+      std::vector<Eigen::Vector3d> n);
   ~CoMHalfSpaceConstr();
 
 

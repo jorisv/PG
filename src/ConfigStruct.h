@@ -57,20 +57,6 @@ struct FixedPositionContact
 };
 
 
-struct CoMHalfSpace
-{
-  CoMHalfSpace() {}
-  CoMHalfSpace(const std::vector<Eigen::Vector3d>& O,
-               const std::vector<Eigen::Vector3d>& n)
-    : O_(O)
-    , n_(n)
-  {}
-
-  std::vector<Eigen::Vector3d> O_; ///<
-  std::vector<Eigen::Vector3d> n_; ///<
-};
-
-
 struct FixedOrientationContact
 {
   FixedOrientationContact() {}
@@ -332,6 +318,20 @@ struct EllipseResult
 };
 
 
+struct CoMHalfSpace
+{
+  CoMHalfSpace() {}
+  CoMHalfSpace(const std::vector<Eigen::Vector3d>& O,
+               const std::vector<Eigen::Vector3d>& n)
+    : O_(O)
+    , n_(n)
+  {}
+
+  std::vector<Eigen::Vector3d> O_; ///< origin of the plane
+  std::vector<Eigen::Vector3d> n_; ///< normal of the plane
+};
+
+
 struct RobotConfig
 {
   RobotConfig()
@@ -354,7 +354,6 @@ struct RobotConfig
 
   // constraints
   std::vector<FixedPositionContact> fixedPosContacts;
-  std::vector<CoMHalfSpace> comHalfSpace;
   std::vector<FixedOrientationContact> fixedOriContacts;
   std::vector<PlanarContact> planarContacts;
   std::vector<EllipseContact> ellipseContacts;
@@ -363,6 +362,7 @@ struct RobotConfig
   std::vector<ForceContact> forceContacts;
   std::vector<EnvCollision> envCollisions;
   std::vector<SelfCollision> selfCollisions;
+  std::vector<CoMHalfSpace> comHalfSpace;
   std::vector<std::vector<double>> ql, qu;
   std::vector<std::vector<double>> tl, tu;
   std::vector<std::vector<Eigen::VectorXd>> tlPoly, tuPoly;
