@@ -68,6 +68,7 @@ def build_pg(pg):
   torqueContactMin = pg.add_struct('TorqueContactMinimization')
   iterateQuantities = pg.add_struct('IterateQuantities')
   ellipseResult = pg.add_struct('EllipseResult')
+  comHalfSpace = pg.add_struct('CoMHalfSpace')
   runConfig = pg.add_struct('RunConfig')
   bodyLink = pg.add_struct('BodyLink')
   robotLink = pg.add_struct('RobotLink')
@@ -82,10 +83,12 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::ForceContact>', 'pg::ForceContact', 'vector')
   pg.add_container('std::vector<pg::EnvCollision>', 'pg::EnvCollision', 'vector')
   pg.add_container('std::vector<pg::SelfCollision>', 'pg::SelfCollision', 'vector')
+  pg.add_container('std::vector<pg::CoMHalfSpace>', 'pg::CoMHalfSpace', 'vector')
   pg.add_container('std::vector<pg::BodyPositionTarget>', 'pg::BodyPositionTarget', 'vector')
   pg.add_container('std::vector<pg::BodyOrientationTarget>', 'pg::BodyOrientationTarget', 'vector')
   pg.add_container('std::vector<pg::ForceContactMinimization>', 'pg::ForceContactMinimization', 'vector')
   pg.add_container('std::vector<pg::TorqueContactMinimization>', 'pg::TorqueContactMinimization', 'vector')
+  pg.add_container('std::vector<Eigen::Vector3d>', 'Eigen::Vector3d', 'vector')
   pg.add_container('std::vector<Eigen::VectorXd>', 'Eigen::VectorXd', 'vector')
   pg.add_container('std::vector<std::vector<Eigen::VectorXd> >', 'std::vector<Eigen::VectorXd>', 'vector')
   pg.add_container('std::vector<pg::EllipseResult>', 'pg::EllipseResult', 'vector')
@@ -258,6 +261,13 @@ def build_pg(pg):
   selfCollision.add_instance_attribute('body2T', 'sva::PTransformd')
   selfCollision.add_instance_attribute('minDist', 'double')
 
+  # CoMHalfSpace
+  comHalfSpace.add_constructor([])
+  comHalfSpace.add_constructor([param('const std::vector<Eigen::Vector3d>&', 'O'),
+                                param('const std::vector<Eigen::Vector3d>&', 'n')])
+  comHalfSpace.add_instance_attribute('origins', 'std::vector<Eigen::Vector3d>')
+  comHalfSpace.add_instance_attribute('normals', 'std::vector<Eigen::Vector3d>')
+
   # BodyPositionTarget
   bodyPosTarget.add_constructor([])
   bodyPosTarget.add_constructor([param('int', 'bodyId'),
@@ -309,6 +319,7 @@ def build_pg(pg):
   robotConfig.add_instance_attribute('forceContacts', 'std::vector<pg::ForceContact>')
   robotConfig.add_instance_attribute('envCollisions', 'std::vector<pg::EnvCollision>')
   robotConfig.add_instance_attribute('selfCollisions', 'std::vector<pg::SelfCollision>')
+  robotConfig.add_instance_attribute('comHalfSpace', 'std::vector<pg::CoMHalfSpace>')
   robotConfig.add_instance_attribute('ql', 'std::vector<std::vector<double> >')
   robotConfig.add_instance_attribute('qu', 'std::vector<std::vector<double> >')
   robotConfig.add_instance_attribute('tl', 'std::vector<std::vector<double> >')
