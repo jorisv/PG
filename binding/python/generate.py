@@ -319,7 +319,7 @@ def build_pg(pg):
   robotConfig.add_instance_attribute('forceContacts', 'std::vector<pg::ForceContact>')
   robotConfig.add_instance_attribute('envCollisions', 'std::vector<pg::EnvCollision>')
   robotConfig.add_instance_attribute('selfCollisions', 'std::vector<pg::SelfCollision>')
-  robotConfig.add_instance_attribute('comHalfSpace', 'std::vector<pg::CoMHalfSpace>')
+  robotConfig.add_instance_attribute('comHalfSpaces', 'std::vector<pg::CoMHalfSpace>')
   robotConfig.add_instance_attribute('ql', 'std::vector<std::vector<double> >')
   robotConfig.add_instance_attribute('qu', 'std::vector<std::vector<double> >')
   robotConfig.add_instance_attribute('tl', 'std::vector<std::vector<double> >')

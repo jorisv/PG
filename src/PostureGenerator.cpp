@@ -415,7 +415,7 @@ bool PostureGenerator::run(const std::vector<RunConfig>& configs)
       problem.addConstraint(sc, limCol, scalCol);
     }
 
-    for(const CoMHalfSpace& fc: robotConfig.comHalfSpace)
+    for(const CoMHalfSpace& fc: robotConfig.comHalfSpaces)
     {
         boost::shared_ptr<CoMHalfSpaceConstr> fcc(
             new CoMHalfSpaceConstr(&pgdata, fc.origins, fc.normals));

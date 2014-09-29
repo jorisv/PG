@@ -362,7 +362,7 @@ struct RobotConfig
   std::vector<ForceContact> forceContacts;
   std::vector<EnvCollision> envCollisions;
   std::vector<SelfCollision> selfCollisions;
-  std::vector<CoMHalfSpace> comHalfSpace;
+  std::vector<CoMHalfSpace> comHalfSpaces;
   std::vector<std::vector<double>> ql, qu;
   std::vector<std::vector<double>> tl, tu;
   std::vector<std::vector<Eigen::VectorXd>> tlPoly, tuPoly;

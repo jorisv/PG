@@ -613,7 +613,7 @@ BOOST_AUTO_TEST_CASE(PGTestZ12)
     // add com plane constraint
     Eigen::Vector3d O(1.5,0.,0.);
     Eigen::Vector3d n(-1.,0.,0.);
-    rc.comHalfSpace = {{{O}, {n}}};
+    rc.comHalfSpaces = {{{O}, {n}}};
 
     pgPb.robotConfigs({rc}, gravity);
     BOOST_REQUIRE(pgPb.run({{mbcInit.q, {}, mbcInit.q}}));
