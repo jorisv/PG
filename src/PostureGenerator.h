@@ -21,6 +21,8 @@
 #include <boost/bind.hpp>
 
 // roboptim
+#include <roboptim/core/differentiable-function.hh>
+#include <roboptim/core/linear-function.hh>
 #include <roboptim/core/solver.hh>
 #include <roboptim/core/solver-factory.hh>
 
