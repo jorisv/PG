@@ -12,7 +12,6 @@ notifications:
 branches:
   only:
   - master
-  - multi_robot
 script:
   - . ./.travis/common.sh; export PKG_CONFIG_PATH="$install_dir/lib/pkgconfig:$PKG_CONFIG_PATH"; pkg-config  --print-errors --variable=plugindir roboptim-core; export LD_LIBRARY_PATH=`pkg-config --variable=plugindir roboptim-core`:$LD_LIBRARY_PATH; ./.travis/run build
 after_success: ./.travis/run after_success
