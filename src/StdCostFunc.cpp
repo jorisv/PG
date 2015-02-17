@@ -172,12 +172,10 @@ void StdCostFunc::impl_compute(result_t& res, const argument_t& x) const
     {
       for(const auto& fd: rd.pgdata->forceDatas())
       {
-        Eigen::Vector3d forceTmp(Eigen::Vector3d::Zero());
         for(const sva::ForceVecd& fv: fd.forces)
         {
-          forceTmp += fv.force();
+          force += fv.force().squaredNorm()*rd.forceScale;
         }
-        force += forceTmp.squaredNorm()*rd.forceScale;
       }
     }
 
@@ -267,15 +265,10 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
       int index = rd.pgdata->forceParamsBegin();
       for(const auto& fd: rd.pgdata->forceDatas())
       {
-        Eigen::Vector3d forceTmp(Eigen::Vector3d::Zero());
-        for(const sva::ForceVecd& fv: fd.forces)
-        {
-          forceTmp += fv.force();
-        }
-        forceTmp *= 2.*rd.forceScale*scale_;
-
         for(std::size_t i = 0; i < fd.forces.size(); ++i)
         {
+          Eigen::Vector3d forceTmp = fd.forces[i].force()*rd.forceScale*scale_*2.;
+
           gradient.coeffRef(index + 0) += forceTmp.x();
           gradient.coeffRef(index + 1) += forceTmp.y();
           gradient.coeffRef(index + 2) += forceTmp.z();
