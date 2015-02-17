@@ -200,12 +200,10 @@ void StdCostFunc::impl_compute(result_t& res, const argument_t& x) const
     for(const ForceContactMinimizationData& fcmd: rd.forceContactsMin)
     {
       const auto& forceData = rd.pgdata->forceDatas()[fcmd.forcePos];
-      Eigen::Vector3d forceTmp(Eigen::Vector3d::Zero());
       for(const sva::ForceVecd& fv: forceData.forces)
       {
-        forceTmp += fv.force();
+        forceMin += fv.force().squaredNorm()*fcmd.scale;
       }
-      forceMin += forceTmp.squaredNorm()*fcmd.scale;
     }
 
     double torqueContactMin = 0.;
@@ -290,17 +288,12 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
     for(const ForceContactMinimizationData& fcmd: rd.forceContactsMin)
     {
       const auto& forceData = rd.pgdata->forceDatas()[fcmd.forcePos];
-      Eigen::Vector3d forceTmp(Eigen::Vector3d::Zero());
       int index = int(fcmd.gradientPos);
-
-      for(const sva::ForceVecd& fv: forceData.forces)
-      {
-        forceTmp += fv.force();
-      }
-      forceTmp *= 2.*fcmd.scale*scale_;
 
       for(std::size_t i = 0; i < forceData.forces.size(); ++i)
       {
+        Eigen::Vector3d forceTmp = forceData.forces[i].force()*fcmd.scale*scale_*2.;
+
         gradient.coeffRef(index + 0) += forceTmp.x();
         gradient.coeffRef(index + 1) += forceTmp.y();
         gradient.coeffRef(index + 2) += forceTmp.z();
