@@ -17,6 +17,9 @@
 #include "PostureGenerator.h"
 
 // include
+// roboptim
+#include <roboptim/core/solver-factory.hh>
+
 // RBDyn
 #include <RBDyn/MultiBody.h>
 #include <RBDyn/MultiBodyConfig.h>

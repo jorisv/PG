@@ -21,8 +21,9 @@
 #include <boost/bind.hpp>
 
 // roboptim
+#include <roboptim/core/linear-function.hh>
+#include <roboptim/core/differentiable-function.hh>
 #include <roboptim/core/solver.hh>
-#include <roboptim/core/solver-factory.hh>
 
 // PG
 #include "ConfigStruct.h"
@@ -40,21 +41,14 @@ class PostureGenerator
 public:
   typedef roboptim::EigenMatrixSparse functionType_t;
 
-  //TODO: this could be written in a cleaner way
-  typedef boost::mpl::push_back<
-    boost::mpl::vector< >,
-    roboptim::GenericLinearFunction<functionType_t> >::type
-    constraints1_t;
-  typedef boost::mpl::push_back<
-    constraints1_t,
-    roboptim::GenericDifferentiableFunction<functionType_t> >::type
-    constraints_t;
+  typedef boost::mpl::vector<
+    roboptim::LinearSparseFunction,
+    roboptim::DifferentiableSparseFunction> constraints_t;
 
   //define the solver
-  typedef ::roboptim::Solver<
-      ::roboptim::GenericDifferentiableFunction<functionType_t>,
-      constraints_t
-      > solver_t;
+  typedef roboptim::Solver<
+      roboptim::DifferentiableSparseFunction,
+      constraints_t> solver_t;
 
   typedef IterationCallback < solver_t::problem_t,
     solver_t::solverState_t > iteration_callback_t;
