@@ -1,5 +1,8 @@
-find_package(PythonInterp REQUIRED)
-find_package(PythonLibs REQUIRED)
+include(../../cmake/python.cmake)
+
+# Look for Python 2.7
+SET(Python_ADDITIONAL_VERSIONS 2.7)
+FINDPYTHON()
 
 # PG
 
@@ -20,7 +23,7 @@ add_custom_command (
 set(SOURCES ${OUTPUT_BINDING})
 include_directories(.)
 include_directories(../../src)
-include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(SYSTEM ${PYTHON_INCLUDE_DIRS})
 
 add_library(_pg SHARED ${SOURCES})
 target_link_libraries(_pg PG)
@@ -33,17 +36,6 @@ set_target_properties(_pg PROPERTIES PREFIX "")
 set_target_properties(_pg PROPERTIES INSTALL_RPATH
     "${CMAKE_INSTALL_RPATH};${ROBOPTIM_CORE_PLUGIN_IPOPT_LIBRARY_DIRS}")
 
-
 # install rules
-# find python version (not implemented in cmake 2.8.5)
-execute_process(COMMAND "${PYTHON_EXECUTABLE}" -V ERROR_VARIABLE _VERSION
-                OUTPUT_QUIET ERROR_STRIP_TRAILING_WHITESPACE)
-string(REPLACE "Python " "" PYTHON_VERSION_STRING "${_VERSION}")
-string(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+.*" "\\1"
-       PYTHON_VERSION_MAJOR "${PYTHON_VERSION_STRING}")
-string(REGEX REPLACE "^[0-9]+\\.([0-9])+\\.[0-9]+.*" "\\1"
-       PYTHON_VERSION_MINOR "${PYTHON_VERSION_STRING}")
-set(INSTALL_PATH
-  "lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages/pg/")
-install(TARGETS _pg DESTINATION ${INSTALL_PATH})
-install(FILES __init__.py DESTINATION ${INSTALL_PATH})
+install(TARGETS _pg DESTINATION "${PYTHON_SITELIB}/pg")
+PYTHON_INSTALL_BUILD(pg __init__.py "${PYTHON_SITELIB}")
