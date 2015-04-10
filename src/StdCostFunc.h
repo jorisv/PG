@@ -85,6 +85,27 @@ private:
     double scale;
   };
 
+  struct NormalForceTargetData
+  {
+    std::size_t forcePos;
+    std::size_t gradientPos;
+    double target;
+    rbd::Jacobian jac;
+    Eigen::MatrixXd jacMat;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jacMatFull;
+    double scale;
+  };
+
+  struct TangentialForceMinimizationData
+  {
+    std::size_t forcePos;
+    std::size_t gradientPos;
+    rbd::Jacobian jac;
+    Eigen::MatrixXd jacMat;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> jacMatFull;
+    double scale;
+  };
+
   struct RobotData
   {
     PGData* pgdata;
@@ -97,6 +118,8 @@ private:
     std::vector<BodyOrientationTargetData> bodyOriTargets;
     std::vector<ForceContactMinimizationData> forceContactsMin;
     std::vector<TorqueContactMinimizationData> torqueContactsMin;
+    std::vector<NormalForceTargetData> normalForceTargets;
+    std::vector<TangentialForceMinimizationData> tanForceMin;
   };
 
 private:

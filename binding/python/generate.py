@@ -66,6 +66,8 @@ def build_pg(pg):
   bodyOriTarget = pg.add_struct('BodyOrientationTarget')
   forceContactMin = pg.add_struct('ForceContactMinimization')
   torqueContactMin = pg.add_struct('TorqueContactMinimization')
+  normalForceTarget = pg.add_struct('NormalForceTarget')
+  tanForceMin = pg.add_struct('TangentialForceMinimization')
   iterateQuantities = pg.add_struct('IterateQuantities')
   ellipseResult = pg.add_struct('EllipseResult')
   comHalfSpace = pg.add_struct('CoMHalfSpace')
@@ -88,6 +90,8 @@ def build_pg(pg):
   pg.add_container('std::vector<pg::BodyOrientationTarget>', 'pg::BodyOrientationTarget', 'vector')
   pg.add_container('std::vector<pg::ForceContactMinimization>', 'pg::ForceContactMinimization', 'vector')
   pg.add_container('std::vector<pg::TorqueContactMinimization>', 'pg::TorqueContactMinimization', 'vector')
+  pg.add_container('std::vector<pg::NormalForceTarget>', 'pg::NormalForceTarget', 'vector')
+  pg.add_container('std::vector<pg::TangentialForceMinimization>', 'pg::TangentialForceMinimization', 'vector')
   pg.add_container('std::vector<Eigen::Vector3d>', 'Eigen::Vector3d', 'vector')
   pg.add_container('std::vector<Eigen::VectorXd>', 'Eigen::VectorXd', 'vector')
   pg.add_container('std::vector<std::vector<Eigen::VectorXd> >', 'std::vector<Eigen::VectorXd>', 'vector')
@@ -308,6 +312,24 @@ def build_pg(pg):
   torqueContactMin.add_instance_attribute('axis', 'Eigen::Vector3d')
   torqueContactMin.add_instance_attribute('scale', 'double')
 
+  # NormalForceTarget
+  normalForceTarget.add_constructor([])
+  normalForceTarget.add_constructor([param('int', 'bodyId'),
+                                     param('double', 'target'),
+                                     param('double', 'scale')])
+
+  normalForceTarget.add_instance_attribute('bodyId', 'int')
+  normalForceTarget.add_instance_attribute('target', 'double')
+  normalForceTarget.add_instance_attribute('scale', 'double')
+
+  # TangentialForceMinimization
+  tanForceMin.add_constructor([])
+  tanForceMin.add_constructor([param('int', 'bodyId'),
+                                     param('double', 'scale')])
+
+  tanForceMin.add_instance_attribute('bodyId', 'int')
+  tanForceMin.add_instance_attribute('scale', 'double')
+
   # RobotConfig
   robotConfig.add_constructor([param('const rbd::MultiBody&', 'mb')])
   robotConfig.add_instance_attribute('fixedPosContacts', 'std::vector<pg::FixedPositionContact>')
@@ -335,6 +357,8 @@ def build_pg(pg):
   robotConfig.add_instance_attribute('bodyOriTargets', 'std::vector<pg::BodyOrientationTarget>')
   robotConfig.add_instance_attribute('forceContactsMin', 'std::vector<pg::ForceContactMinimization>')
   robotConfig.add_instance_attribute('torqueContactsMin', 'std::vector<pg::TorqueContactMinimization>')
+  robotConfig.add_instance_attribute('normalForceTargets', 'std::vector<pg::NormalForceTarget>')
+  robotConfig.add_instance_attribute('tanForceMin', 'std::vector<pg::TangentialForceMinimization>')
 
   # RunConfig
   runConfig.add_constructor([])

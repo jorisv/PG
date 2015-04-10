@@ -123,6 +123,49 @@ StdCostFunc::StdCostFunc(std::vector<PGData>& pgdatas,
       }
     }
 
+    for(std::size_t i = 0; i < robotConfig.normalForceTargets.size(); ++i)
+    {
+      std::size_t gradientPos = pgdata.forceParamsBegin();
+      for(std::size_t j = 0; j < pgdata.forceDatas().size(); ++j)
+      {
+        const PGData::ForceData& forceData = pgdata.forceDatas()[j];
+        // we don't break since it could be many contact on the same body
+        if(robotConfig.normalForceTargets[i].bodyId == forceData.bodyId)
+        {
+          rbd::Jacobian jac(pgdata.mb(), robotConfig.normalForceTargets[i].bodyId);
+          Eigen::MatrixXd jacMat(1, jac.dof());
+          Eigen::SparseMatrix<double, Eigen::RowMajor> jacMatFull(1, pgdata.pbSize());
+          jacMatFull.reserve(jac.dof());
+          data.normalForceTargets.push_back({j, gradientPos,
+                                             robotConfig.normalForceTargets[i].target,
+                                             jac, jacMat, jacMatFull,
+                                             robotConfig.normalForceTargets[i].scale});
+        }
+        gradientPos += forceData.points.size()*3;
+      }
+    }
+
+    for(std::size_t i = 0; i < robotConfig.tanForceMin.size(); ++i)
+    {
+      std::size_t gradientPos = pgdata.forceParamsBegin();
+      for(std::size_t j = 0; j < pgdata.forceDatas().size(); ++j)
+      {
+        const PGData::ForceData& forceData = pgdata.forceDatas()[j];
+        // we don't break since it could be many contact on the same body
+        if(robotConfig.tanForceMin[i].bodyId == forceData.bodyId)
+        {
+          rbd::Jacobian jac(pgdata.mb(), robotConfig.tanForceMin[i].bodyId);
+          Eigen::MatrixXd jacMat(1, jac.dof());
+          Eigen::SparseMatrix<double, Eigen::RowMajor> jacMatFull(1, pgdata.pbSize());
+          jacMatFull.reserve(jac.dof());
+          data.tanForceMin.push_back({j, gradientPos,
+                                      jac, jacMat, jacMatFull,
+                                      robotConfig.tanForceMin[i].scale});
+        }
+        gradientPos += forceData.points.size()*3;
+      }
+    }
+
     robotDatas_[robotIndex] = std::move(data);
   }
 }
@@ -216,6 +259,35 @@ void StdCostFunc::impl_compute(result_t& res, const argument_t& x) const
       }
     }
 
+    double normalForceTarget = 0.;
+    for(const NormalForceTargetData& nft: rd.normalForceTargets)
+    {
+      const auto& forceData = rd.pgdata->forceDatas()[nft.forcePos];
+      const sva::PTransformd& X_0_b = rd.pgdata->mbc().bodyPosW[forceData.bodyIndex];
+      double nForceSum = 0.;
+      for(std::size_t pi = 0; pi < forceData.points.size(); ++pi)
+      {
+        // force in the point pi frame
+        sva::PTransformd X_0_pi = forceData.points[pi]*X_0_b;
+        nForceSum += (X_0_pi.rotation()*forceData.forces[pi].force()).z();
+      }
+      normalForceTarget += std::pow(nForceSum - nft.target, 2)*nft.scale;
+    }
+
+    double tanForceMin = 0.;
+    for(const TangentialForceMinimizationData& tfm: rd.tanForceMin)
+    {
+      const auto& forceData = rd.pgdata->forceDatas()[tfm.forcePos];
+      const sva::PTransformd& X_0_b = rd.pgdata->mbc().bodyPosW[forceData.bodyIndex];
+      for(std::size_t pi = 0; pi < forceData.points.size(); ++pi)
+      {
+        // force in the point pi frame
+        sva::PTransformd X_0_pi = forceData.points[pi]*X_0_b;
+        Eigen::Vector3d fPoint(X_0_pi.rotation()*forceData.forces[pi].force());
+        tanForceMin += Eigen::Vector2d(fPoint.x(), fPoint.y()).squaredNorm()*tfm.scale;
+      }
+    }
+
     //Compute ellipse contact cost
     /*
     scalar_t ellipses = scalar_t(0., Eigen::VectorXd::Zero(this->inputSize()));
@@ -230,7 +302,8 @@ void StdCostFunc::impl_compute(result_t& res, const argument_t& x) const
     */
 
     res(0) += (posture*rd.postureScale + force +
-        pos + ori + forceMin + torqueContactMin)*scale_;
+        pos + ori + forceMin + torqueContactMin + normalForceTarget +
+        tanForceMin)*scale_;
   }
 }
 
@@ -334,6 +407,93 @@ void StdCostFunc::impl_gradient(gradient_t& gradient,
         gradient.coeffRef(forceIndex + 0) += fDiff.x();
         gradient.coeffRef(forceIndex + 1) += fDiff.y();
         gradient.coeffRef(forceIndex + 2) += fDiff.z();
+        forceIndex += 3;
+      }
+    }
+
+
+    for(NormalForceTargetData& nft: rd.normalForceTargets)
+    {
+      const auto& forceData = rd.pgdata->forceDatas()[nft.forcePos];
+      const sva::PTransformd& X_0_b = rd.pgdata->mbc().bodyPosW[forceData.bodyIndex];
+
+      double nForceSum = 0.;
+      for(std::size_t pi = 0; pi < forceData.points.size(); ++pi)
+      {
+        // force in the point pi frame
+        sva::PTransformd X_0_pi = forceData.points[pi]*X_0_b;
+        nForceSum += (X_0_pi.rotation()*forceData.forces[pi].force()).z();
+      }
+      double error = nForceSum - nft.target;
+
+      int forceIndex = int(nft.gradientPos);
+      double scale = scale_*nft.scale;
+      for(std::size_t pi = 0; pi < forceData.points.size(); ++pi)
+      {
+        double coef = 2.*scale*error;
+        sva::PTransformd X_0_pi = forceData.points[pi]*X_0_b;
+
+        const auto& jacPointMat =
+            nft.jac.vectorJacobian(rd.pgdata->mb(),
+                                   rd.pgdata->mbc(),
+                                   forceData.points[pi].rotation().row(2).transpose())\
+            .block(3, 0, 3, nft.jac.dof());
+        nft.jacMat.noalias() = (coef*forceData.forces[pi].force().transpose())*
+          jacPointMat;
+        updateFullJacobianSparse(rd.pgdata->mb(), nft.jac, nft.jacMat,
+                                 nft.jacMatFull,
+                                 {0, rd.pgdata->qParamsBegin()});
+        gradient += nft.jacMatFull.transpose();
+
+        Eigen::RowVector3d fDiff;
+        fDiff = coef*X_0_pi.rotation().row(2);
+        gradient.coeffRef(forceIndex + 0) += fDiff.x();
+        gradient.coeffRef(forceIndex + 1) += fDiff.y();
+        gradient.coeffRef(forceIndex + 2) += fDiff.z();
+        forceIndex += 3;
+      }
+    }
+
+
+    for(TangentialForceMinimizationData& tfm: rd.tanForceMin)
+    {
+      const auto& forceData = rd.pgdata->forceDatas()[tfm.forcePos];
+      const sva::PTransformd& X_0_b = rd.pgdata->mbc().bodyPosW[forceData.bodyIndex];
+
+      int forceIndex = int(tfm.gradientPos);
+      double scale = scale_*tfm.scale;
+      for(std::size_t pi = 0; pi < forceData.points.size(); ++pi)
+      {
+        sva::PTransformd X_0_pi = forceData.points[pi]*X_0_b;
+        Eigen::Vector3d fPoint(X_0_pi.rotation()*forceData.forces[pi].force());
+
+        double coefT = 2.*scale*fPoint.x();
+        double coefB = 2.*scale*fPoint.y();
+
+        auto fillGradient =
+          [forceIndex, pi, &X_0_pi, &forceData, &rd, &gradient, &tfm](int row, double coef)
+        {
+          const auto& jacPointMat =
+              tfm.jac.vectorJacobian(rd.pgdata->mb(),
+                                     rd.pgdata->mbc(),
+                                     forceData.points[pi].rotation().row(row).transpose())\
+              .block(3, 0, 3, tfm.jac.dof());
+          tfm.jacMat.noalias() = (coef*forceData.forces[pi].force().transpose())*
+            jacPointMat;
+          updateFullJacobianSparse(rd.pgdata->mb(), tfm.jac, tfm.jacMat,
+                                   tfm.jacMatFull,
+                                   {0, rd.pgdata->qParamsBegin()});
+          gradient += tfm.jacMatFull.transpose();
+
+          Eigen::RowVector3d fDiff;
+          fDiff = coef*X_0_pi.rotation().row(row);
+          gradient.coeffRef(forceIndex + 0) += fDiff.x();
+          gradient.coeffRef(forceIndex + 1) += fDiff.y();
+          gradient.coeffRef(forceIndex + 2) += fDiff.z();
+        };
+        fillGradient(0, coefT);
+        fillGradient(1, coefB);
+
         forceIndex += 3;
       }
     }

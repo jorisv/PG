@@ -314,6 +314,34 @@ struct TorqueContactMinimization
 };
 
 
+struct NormalForceTarget
+{
+  NormalForceTarget() {}
+  NormalForceTarget(int bId, double t, double s)
+    : bodyId(bId)
+    , target(t)
+    , scale(s)
+  {}
+
+  int bodyId;
+  double target;
+  double scale;
+};
+
+
+struct TangentialForceMinimization
+{
+  TangentialForceMinimization() {}
+  TangentialForceMinimization(int bId, double s)
+    : bodyId(bId)
+    , scale(s)
+  {}
+
+  int bodyId;
+  double scale;
+};
+
+
 struct EllipseResult
 {
   int bodyIndex;  //Each ellipse is defined relatively to a Surface of a Body
@@ -376,6 +404,8 @@ struct RobotConfig
   std::vector<BodyOrientationTarget> bodyOriTargets;
   std::vector<ForceContactMinimization> forceContactsMin;
   std::vector<TorqueContactMinimization> torqueContactsMin;
+  std::vector<NormalForceTarget> normalForceTargets;
+  std::vector<TangentialForceMinimization> tanForceMin;
 };
 
 

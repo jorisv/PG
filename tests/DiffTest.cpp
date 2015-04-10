@@ -441,6 +441,8 @@ BOOST_AUTO_TEST_CASE(StdCostFunctionTest)
   robotConfig.forceContactsMin = {{12, 1.87}};
   robotConfig.torqueContactsMin = {{12, Vector3d::Random(),
                                     Vector3d::Random().normalized(), 2.92}};
+  robotConfig.normalForceTargets = {{12, 2., 1.33}};
+  robotConfig.tanForceMin = {{12, 1.33}};
 
   pg::StdCostFunc cost(pgdatas, {robotConfig}, {runConfig});
 
