@@ -28,6 +28,8 @@
 namespace pg
 {
 
+const double SCH_REL_PREC = 1e-6;
+
 
 sch::Matrix4x4 tosch(const sva::PTransformd& t)
 {
@@ -90,8 +92,11 @@ EnvCollisionConstr::EnvCollisionConstr(PGData* pgdata, const std::vector<EnvColl
   {
     rbd::Jacobian jac(pgdata_->mb(), sc.bodyId);
     Eigen::MatrixXd jacMat(1, jac.dof());
+    sch::CD_Pair* sch_pair = new sch::CD_Pair(sc.bodyHull, sc.envHull);
+    sch_pair->setEpsilon(std::numeric_limits<double>::epsilon());
+    sch_pair->setRelativePrecision(SCH_REL_PREC);
     cols_.push_back({pgdata_->multibody().bodyIndexById(sc.bodyId),
-                     sc.bodyT, new sch::CD_Pair(sc.bodyHull, sc.envHull),
+                     sc.bodyT, sch_pair,
                      jac, jacMat, 0., Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()});
     nrNonZero_ += jac.dof();
   }
@@ -190,11 +195,14 @@ SelfCollisionConstr::SelfCollisionConstr(PGData* pgdata, const std::vector<SelfC
                                                              pgdata_->pbSize());
     jac2MatFull.reserve(jac2.dof());
 
+    sch::CD_Pair* sch_pair = new sch::CD_Pair(sc.body1Hull, sc.body2Hull);
+    sch_pair->setEpsilon(std::numeric_limits<double>::epsilon());
+    sch_pair->setRelativePrecision(SCH_REL_PREC);
     cols_.push_back({pgdata_->multibody().bodyIndexById(sc.body1Id),
                      sc.body1T, jac1, jac1Mat, jac1MatFull,
                      pgdata_->multibody().bodyIndexById(sc.body2Id),
                      sc.body2T, jac2, jac2Mat, jac2MatFull,
-                     new sch::CD_Pair(sc.body1Hull, sc.body2Hull),
+                     sch_pair,
                      0., Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()});
     // not true, but better to ask bigger
     nrNonZero_ += jac1.dof() + jac2.dof();

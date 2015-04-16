@@ -361,7 +361,7 @@ BOOST_AUTO_TEST_CASE(EnvCollisionTest)
   for(int i = 0; i < 50; ++i)
   {
     Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize())*3.14);
-    BOOST_CHECK_SMALL(checkGradient(ecc, x, 1e-4), 1e-1);
+    BOOST_CHECK_SMALL(checkGradient(ecc, x, 1e-8), 1e-3);
   }
 }
 
@@ -391,7 +391,7 @@ BOOST_AUTO_TEST_CASE(SelfCollisionTest)
   for(int i = 0; i < 50; ++i)
   {
     Eigen::VectorXd x(Eigen::VectorXd::Random(pgdata.pbSize())*3.14);
-    BOOST_CHECK_SMALL(checkGradient(scc, x, 1e-4), 1e-1);
+    BOOST_CHECK_SMALL(checkGradient(scc, x, 1e-8), 1e-3);
   }
 }
 
